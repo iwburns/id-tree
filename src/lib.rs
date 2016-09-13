@@ -1,5 +1,55 @@
 pub type NodeId = usize;
 
+pub struct TreeBuilder<T> {
+    root: Option<Node<T>>,
+    capacity: usize
+}
+
+impl<T> TreeBuilder<T> {
+    pub fn new() -> TreeBuilder<T> {
+        TreeBuilder {
+            root: None,
+            capacity: 0
+        }
+    }
+
+    pub fn with_root(&mut self, root: Node<T>) -> TreeBuilder<T> {
+        TreeBuilder {
+            root: Some(root),
+            capacity: self.capacity
+        }
+    }
+
+    pub fn with_capacity(&mut self, capacity: usize) -> TreeBuilder<T> {
+        TreeBuilder {
+            root: self.root.take(),
+            capacity: capacity
+        }
+    }
+
+    pub fn build(&mut self) -> Tree<T> {
+
+        let mut tree = Tree {
+            root: None,
+            nodes: Vec::with_capacity(self.capacity),
+            free_ids: Vec::new() //todo: should this start with capacity too?
+        };
+
+        if self.root.is_some() {
+            tree.nodes.push(self.root.take());
+            tree.root = Some(0);
+        }
+
+        tree
+    }
+}
+
+pub struct Tree<T> {
+    root: Option<NodeId>,
+    nodes: Vec<Option<Node<T>>>,
+    free_ids: Vec<NodeId>
+}
+
 pub struct Node<T> {
     data: T,
     parent: Option<NodeId>,
@@ -45,8 +95,51 @@ impl<T> Node<T> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
+mod tree_builder_tests {
+    use super::TreeBuilder;
+    use super::Node;
+    use super::NodeId;
+
+    #[test]
+    fn test_new() {
+        let tb: TreeBuilder<i32> = TreeBuilder::new();
+        assert!(tb.root.is_none());
+        assert_eq!(tb.capacity, 0);
+    }
+
+    #[test]
+    fn test_with_root() {
+        let tb: TreeBuilder<i32> = TreeBuilder::new()
+            .with_root(Node::new(5));
+
+        assert_eq!(tb.root.unwrap().data(), &5);
+        assert_eq!(tb.capacity, 0);
+    }
+
+    #[test]
+    fn test_with_capacity() {
+        let tb: TreeBuilder<i32> = TreeBuilder::new()
+            .with_capacity(10);
+
+        assert!(tb.root.is_none());
+        assert_eq!(tb.capacity, 10);
+    }
+
+    #[test]
+    fn test_with_root_with_capacity() {
+        let tb: TreeBuilder<i32> = TreeBuilder::new()
+            .with_root(Node::new(5))
+            .with_capacity(10);
+
+        assert_eq!(tb.root.unwrap().data(), &5);
+        assert_eq!(tb.capacity, 10);
+    }
+}
+
+#[cfg(test)]
+mod node_tests {
+    use super::Node;
+    use super::NodeId;
 
     #[test]
     fn test_new() {
