@@ -1,4 +1,11 @@
-pub type NodeId = usize;
+extern crate snowflake;
+use self::snowflake::ProcessUniqueId;
+
+#[derive(Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
+pub struct NodeId {
+    tree_id: ProcessUniqueId,
+    node_id: usize
+}
 
 pub struct TreeBuilder<T> {
     root: Option<Node<T>>,
@@ -29,15 +36,24 @@ impl<T> TreeBuilder<T> {
 
     pub fn build(&mut self) -> Tree<T> {
 
+        let tree_id = ProcessUniqueId::new();
+
         let mut tree = Tree {
+            id: tree_id,
             root: None,
             nodes: Vec::with_capacity(self.capacity),
             free_ids: Vec::new() //todo: should this start with capacity too?
         };
 
         if self.root.is_some() {
+
+            let node_id = NodeId {
+                tree_id: tree_id,
+                node_id: 0
+            };
+
             tree.nodes.push(self.root.take());
-            tree.root = Some(0);
+            tree.root = Some(node_id);
         }
 
         tree
@@ -45,6 +61,7 @@ impl<T> TreeBuilder<T> {
 }
 
 pub struct Tree<T> {
+    id: ProcessUniqueId,
     root: Option<NodeId>,
     nodes: Vec<Option<Node<T>>>,
     free_ids: Vec<NodeId>
@@ -98,7 +115,6 @@ impl<T> Node<T> {
 mod tree_builder_tests {
     use super::TreeBuilder;
     use super::Node;
-    use super::NodeId;
 
     #[test]
     fn test_new() {
@@ -140,6 +156,7 @@ mod tree_builder_tests {
 mod node_tests {
     use super::Node;
     use super::NodeId;
+    use super::snowflake::ProcessUniqueId;
 
     #[test]
     fn test_new() {
@@ -163,9 +180,12 @@ mod node_tests {
     #[test]
     fn test_parent() {
         let node = Node::new(5);
-        assert_eq!(node.parent(), None);
+        assert!(node.parent().is_none());
 
-        let parent_id: NodeId = 0;
+        let parent_id: NodeId = NodeId {
+            tree_id: ProcessUniqueId::new(),
+            node_id: 0
+        };
         let mut node = Node::new(5);
         node.set_parent(parent_id);
 
@@ -177,8 +197,13 @@ mod node_tests {
         let node = Node::new(5);
         assert_eq!(node.children().len(), 0);
 
+        let tree_id = ProcessUniqueId::new();
+
         let mut node = Node::new(5);
-        let child_id: NodeId = 2;
+        let child_id: NodeId = NodeId {
+            tree_id: tree_id,
+            node_id: 2
+        };
         node.add_child(child_id);
         let children = node.children();
 
@@ -186,7 +211,10 @@ mod node_tests {
         assert_eq!(children.get(0).unwrap(), &child_id);
 
         let mut node = Node::new(5);
-        let child_id: NodeId = 2;
+        let child_id: NodeId = NodeId {
+            tree_id: tree_id,
+            node_id: 2
+        };
         node.children_mut().push(child_id);
         let children = node.children();
 
