@@ -9,6 +9,8 @@ pub struct NodeId {
 
 //todo: add optional string mapping with HashMap<String, NodeId>
 // and add convenience methods for getting nodes by String name
+// maybe this should be made into a different type of tree which
+// would possibly hide NodeIds from the user?
 
 pub struct TreeBuilder<T> {
     root: Option<Node<T>>,
@@ -89,13 +91,40 @@ impl<T> Tree<T> {
         if !self.is_valid_node_id(parent_id) {
             //todo: is panic the right tool here?
             // maybe having this return Result would be better.
-            panic!("Invalid NodeId given for parent_id");
+            panic!("Invalid NodeId given for parent_id.");
         }
 
         let new_child_id = self.insert_new_node(child);
         self.set_as_parent_and_child(parent_id, new_child_id);
 
         new_child_id
+    }
+
+    pub fn remove_node_drop_children(&mut self, node_id: NodeId) -> Node<T> {
+        if !self.is_valid_node_id(node_id) {
+            //todo: is panic the right tool here?
+            // maybe having this return Result would be better.
+            panic!("Invalid NodeId given for node_id.");
+        }
+
+        println!("processing node_id: {:?}", node_id);
+
+        if self.is_root_node(node_id) {
+            self.root = None;
+        }
+
+        let node = self.remove_node(node_id);
+
+        for child_id in node.children() {
+            //todo: there's some extra processing going on here that doesn't need to be happening.
+            // grandchildren (and below) are cleaning up their parent's child references when
+            // they don't actually matter because they are all going to be dropped.
+            // we need a function that drops all children without cleaning up any references at all.
+            println!("processing child");
+            self.remove_node_drop_children(*child_id);
+        }
+
+        node
     }
 
     pub fn get(&self, node_id: NodeId) -> Option<&Node<T>> {
@@ -144,6 +173,36 @@ impl<T> Tree<T> {
         }
     }
 
+    fn remove_node(&mut self, node_id: NodeId) -> Node<T> {
+        debug_assert!(self.is_valid_node_id(node_id), "Invalid node_id found in what should be a protected function.");
+
+        println!("removing node: {:?}", node_id);
+
+        self.nodes.push(None);
+        let mut node = self.nodes.swap_remove(node_id.index).expect("node_id refers to a None value");
+
+        println!("parent: {:?}", node.parent());
+
+        self.free_ids.push(node_id);
+
+        //todo: it seems like I might be missing an edge case here, but I'm not sure what it is
+        // found the issue, as we recurse down the tree, the parent has already been removed,
+        // this means that we need to find a different way to do this after dealing with the root node
+        // that we are removing.
+        // the logic for this likely doesn't belong here as this logic is pretty accurate for the
+        // concept of removing a single node.
+        if let Some(parent_id) = node.parent() {
+            if let Some(parent_node) = self.get_mut(parent_id) {
+                println!("removing children");
+                parent_node.children_mut().retain(|&child_id| child_id != node_id);
+            }
+        }
+
+        node.parent = None;
+
+        node
+    }
+
     fn new_node_id(&self, node_index: usize) -> NodeId {
         NodeId {
             tree_id: self.id,
@@ -168,6 +227,15 @@ impl<T> Tree<T> {
         }
 
         true
+    }
+
+    fn is_root_node(&self, node_id: NodeId) -> bool {
+        match self.root {
+            Some(root_id) => {
+                root_id == node_id
+            },
+            None => false
+        }
     }
 }
 
@@ -369,12 +437,27 @@ mod tree_tests {
 
         assert_eq!(child_1_ref.data(), &1);
         assert_eq!(child_2_ref.data(), &2);
+    }
 
-//        for (index, child_id) in root_children.into_iter().enumerate() {
-//            let child_data = (index + 1) as i32;
-//            let child_ref = tree.get(*child_id).unwrap();
-//            assert_eq!(child_ref.data(), &child_data);
-//        }
+    #[test]
+    fn test_remove_node_drop_children() {
+
+        let mut tree = TreeBuilder::new()
+            .with_root(Node::new(5))
+            .build();
+
+        let root_node_id = tree.root_node_id().unwrap();
+
+        let node_1_id = tree.add_child(root_node_id, Node::new(1));
+        let node_2_id = tree.add_child(node_1_id, Node::new(2));
+        let node_3_id = tree.add_child(node_1_id, Node::new(3));
+
+        let node_1 = tree.remove_node_drop_children(node_1_id);
+
+        assert_eq!(node_1.data(), &1);
+        assert_eq!(node_1.children().len(), 0);
+        assert!(tree.get(node_2_id).is_none());
+        assert!(tree.get(node_3_id).is_none());
     }
 }
 
