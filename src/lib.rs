@@ -107,22 +107,14 @@ impl<T> Tree<T> {
             panic!("Invalid NodeId given for node_id.");
         }
 
-        println!("processing node_id: {:?}", node_id);
-
         if self.is_root_node(node_id) {
             self.root = None;
         }
 
-        let node = self.remove_node(node_id);
+        self.drop_children_recursive(node_id);
 
-        for child_id in node.children() {
-            //todo: there's some extra processing going on here that doesn't need to be happening.
-            // grandchildren (and below) are cleaning up their parent's child references when
-            // they don't actually matter because they are all going to be dropped.
-            // we need a function that drops all children without cleaning up any references at all.
-            println!("processing child");
-            self.remove_node_drop_children(*child_id);
-        }
+        let mut node = self.remove_node(node_id);
+        node.children_mut().clear();
 
         node
     }
@@ -174,33 +166,40 @@ impl<T> Tree<T> {
     }
 
     fn remove_node(&mut self, node_id: NodeId) -> Node<T> {
-        debug_assert!(self.is_valid_node_id(node_id), "Invalid node_id found in what should be a protected function.");
 
-        println!("removing node: {:?}", node_id);
-
-        self.nodes.push(None);
-        let mut node = self.nodes.swap_remove(node_id.index).expect("node_id refers to a None value");
-
-        println!("parent: {:?}", node.parent());
-
-        self.free_ids.push(node_id);
+        let mut node = self.remove_node_dirty(node_id);
 
         //todo: it seems like I might be missing an edge case here, but I'm not sure what it is
-        // found the issue, as we recurse down the tree, the parent has already been removed,
-        // this means that we need to find a different way to do this after dealing with the root node
-        // that we are removing.
-        // the logic for this likely doesn't belong here as this logic is pretty accurate for the
-        // concept of removing a single node.
         if let Some(parent_id) = node.parent() {
             if let Some(parent_node) = self.get_mut(parent_id) {
-                println!("removing children");
                 parent_node.children_mut().retain(|&child_id| child_id != node_id);
             }
+            //todo: I don't like modifying the node directly like this externally.
+            node.parent = None;
         }
 
-        node.parent = None;
+        node
+    }
+
+    fn remove_node_dirty(&mut self, node_id: NodeId) -> Node<T> {
+        debug_assert!(self.is_valid_node_id(node_id), "Invalid node_id found in what should be a 'protected' function.");
+
+        self.nodes.push(None);
+        let node = self.nodes.swap_remove(node_id.index).expect("node_id refers to a None value even though it is should be valid.");
+        self.free_ids.push(node_id);
 
         node
+    }
+
+    fn drop_children_recursive(&mut self, node_id: NodeId) {
+
+        //todo: is there a way to avoid this clone?
+        let children = self.get(node_id).unwrap().children().clone();
+
+        for child_id in children {
+            self.drop_children_recursive(child_id);
+            self.remove_node_dirty(child_id);
+        }
     }
 
     fn new_node_id(&self, node_index: usize) -> NodeId {
@@ -456,6 +455,7 @@ mod tree_tests {
 
         assert_eq!(node_1.data(), &1);
         assert_eq!(node_1.children().len(), 0);
+        assert!(tree.get(node_1_id).is_none());
         assert!(tree.get(node_2_id).is_none());
         assert!(tree.get(node_3_id).is_none());
     }
