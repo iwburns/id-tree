@@ -82,6 +82,19 @@ impl<T> Tree<T> {
         new_root_id
     }
 
+    pub fn add_child(&mut self, parent_id: NodeId, child: Node<T>) -> NodeId {
+        if !self.is_valid_node_id(parent_id) {
+            //todo: is panic the right tool here?
+            // maybe having this return Result would be better.
+            panic!("Invalid NodeId given for parent_id");
+        }
+
+        let new_child_id = self.insert_new_node(child);
+        self.set_as_parent_and_child(parent_id, new_child_id);
+
+        new_child_id
+    }
+
     pub fn get(&self, node_id: NodeId) -> Option<&Node<T>> {
         if self.is_valid_node_id(node_id) {
             return (*self.nodes.get(node_id.index).unwrap()).as_ref();
@@ -166,7 +179,7 @@ impl<T> Node<T> {
         Node {
             data: data,
             parent: None,
-            children: Vec::new()
+            children: Vec::new() //todo: should we have the option for specifying capacity here?
         }
     }
 
@@ -319,6 +332,46 @@ mod tree_tests {
         let root_node_id = tree.root_node_id().unwrap();
 
         assert_eq!(root_id, root_node_id);
+    }
+
+    #[test]
+    fn test_add_child() {
+        let mut tree = TreeBuilder::new()
+            .with_root(Node::new(5))
+            .build();
+
+        let node_1 = Node::new(1);
+        let node_2 = Node::new(2);
+
+        let root_id = tree.root_node_id().unwrap();
+        let node_1_id = tree.add_child(root_id, node_1);
+        let node_2_id = tree.add_child(root_id, node_2);
+
+        let node_1_ref = tree.get(node_1_id).unwrap();
+        let node_2_ref = tree.get(node_2_id).unwrap();
+        assert_eq!(node_1_ref.data(), &1);
+        assert_eq!(node_2_ref.data(), &2);
+
+        assert_eq!(node_1_ref.parent().unwrap(), root_id);
+        assert_eq!(node_2_ref.parent().unwrap(), root_id);
+
+        let root_node_ref = tree.get(root_id).unwrap();
+        let root_children: &Vec<NodeId> = root_node_ref.children();
+
+        let child_1_id = root_children.get(0).unwrap();
+        let child_2_id = root_children.get(1).unwrap();
+
+        let child_1_ref = tree.get(*child_1_id).unwrap();
+        let child_2_ref = tree.get(*child_2_id).unwrap();
+
+        assert_eq!(child_1_ref.data(), &1);
+        assert_eq!(child_2_ref.data(), &2);
+
+//        for (index, child_id) in root_children.into_iter().enumerate() {
+//            let child_data = (index + 1) as i32;
+//            let child_ref = tree.get(*child_id).unwrap();
+//            assert_eq!(child_ref.data(), &child_data);
+//        }
     }
 }
 
