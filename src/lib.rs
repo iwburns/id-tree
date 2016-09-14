@@ -174,7 +174,6 @@ impl<T> Tree<T> {
             if let Some(parent_node) = self.get_mut(parent_id) {
                 parent_node.children_mut().retain(|&child_id| child_id != node_id);
             }
-            //todo: I don't like modifying the node directly like this externally.
             node.set_parent(None);
         }
 
