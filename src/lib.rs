@@ -114,6 +114,7 @@ impl<T> Tree<T> {
         self.drop_children_recursive(node_id);
 
         let mut node = self.remove_node(node_id);
+        //clear children because they're no longer valid
         node.children_mut().clear();
 
         node
@@ -173,8 +174,9 @@ impl<T> Tree<T> {
         if let Some(parent_id) = node.parent() {
             if let Some(parent_node) = self.get_mut(parent_id) {
                 parent_node.children_mut().retain(|&child_id| child_id != node_id);
+            } else {
+                panic!("Invalid parent_id for node_id: {:?}", node_id);
             }
-            node.set_parent(None);
         }
 
         node
@@ -454,6 +456,7 @@ mod tree_tests {
 
         assert_eq!(node_1.data(), &1);
         assert_eq!(node_1.children().len(), 0);
+        assert_eq!(node_1.parent().unwrap(), root_node_id);
         assert!(tree.get(node_1_id).is_none());
         assert!(tree.get(node_2_id).is_none());
         assert!(tree.get(node_3_id).is_none());
