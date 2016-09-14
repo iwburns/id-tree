@@ -7,6 +7,9 @@ pub struct NodeId {
     index: usize
 }
 
+//todo: add optional string mapping with HashMap<String, NodeId>
+// and add convenience methods for getting nodes by String name
+
 pub struct TreeBuilder<T> {
     root: Option<Node<T>>,
     capacity: usize
