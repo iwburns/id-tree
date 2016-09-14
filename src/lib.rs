@@ -120,6 +120,16 @@ impl<T> Tree<T> {
         node
     }
 
+    pub fn remove_node_orphan_children(&mut self, node_id: NodeId) -> Node<T> {
+        if !self.is_valid_node_id(node_id) {
+            //todo: is panic the right tool here?
+            // maybe having this return Result would be better.
+            panic!("Invalid NodeId given for node_id.");
+        }
+
+        self.remove_node(node_id)
+    }
+
     pub fn get(&self, node_id: NodeId) -> Option<&Node<T>> {
         if self.is_valid_node_id(node_id) {
             return (*self.nodes.get(node_id.index).unwrap()).as_ref();
@@ -460,6 +470,29 @@ mod tree_tests {
         assert!(tree.get(node_1_id).is_none());
         assert!(tree.get(node_2_id).is_none());
         assert!(tree.get(node_3_id).is_none());
+    }
+
+    #[test]
+    fn test_remove_node_orphan_children() {
+
+        let mut tree = TreeBuilder::new()
+            .with_root(Node::new(5))
+            .build();
+
+        let root_node_id = tree.root_node_id().unwrap();
+
+        let node_1_id = tree.add_child(root_node_id, Node::new(1));
+        let node_2_id = tree.add_child(node_1_id, Node::new(2));
+        let node_3_id = tree.add_child(node_1_id, Node::new(3));
+
+        let node_1 = tree.remove_node_orphan_children(node_1_id);
+
+        assert_eq!(node_1.data(), &1);
+        assert_eq!(node_1.children().len(), 2);
+        assert_eq!(node_1.parent().unwrap(), root_node_id);
+        assert!(tree.get(node_1_id).is_none());
+        assert_eq!(tree.get(node_2_id).unwrap().data(), &2);
+        assert_eq!(tree.get(node_3_id).unwrap().data(), &3);
     }
 }
 
