@@ -144,7 +144,7 @@ impl<T> Tree<T> {
 
         self.get_mut(child_id)
             .expect("child_id refers to a None value.")
-            .set_parent(parent_id);
+            .set_parent(Some(parent_id));
     }
 
     fn insert_new_node(&mut self, new_node: Node<T>) -> NodeId {
@@ -175,7 +175,7 @@ impl<T> Tree<T> {
                 parent_node.children_mut().retain(|&child_id| child_id != node_id);
             }
             //todo: I don't like modifying the node directly like this externally.
-            node.parent = None;
+            node.set_parent(None);
         }
 
         node
@@ -269,8 +269,8 @@ impl<T> Node<T> {
         &self.children
     }
 
-    fn set_parent(&mut self, parent: NodeId) {
-        self.parent = Some(parent);
+    fn set_parent(&mut self, parent: Option<NodeId>) {
+        self.parent = parent;
     }
 
     fn add_child(&mut self, child: NodeId) {
@@ -496,7 +496,7 @@ mod node_tests {
             index: 0
         };
         let mut node = Node::new(5);
-        node.set_parent(parent_id);
+        node.set_parent(Some(parent_id));
 
         assert_eq!(node.parent(), Some(parent_id))
     }
