@@ -178,7 +178,7 @@ impl<T> Tree<T> {
 
     fn remove_node(&mut self, node_id: NodeId) -> Node<T> {
 
-        let mut node = self.remove_node_dirty(node_id);
+        let node = self.remove_node_dirty(node_id);
 
         //todo: it seems like I might be missing an edge case here, but I'm not sure what it is
         if let Some(parent_id) = node.parent() {
@@ -341,7 +341,6 @@ mod tree_builder_tests {
 
 #[cfg(test)]
 mod tree_tests {
-    use super::Tree;
     use super::TreeBuilder;
     use super::NodeId;
     use super::Node;
