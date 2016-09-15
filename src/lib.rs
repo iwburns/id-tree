@@ -2,6 +2,9 @@ extern crate snowflake;
 use self::snowflake::ProcessUniqueId;
 
 //todo: split tree/treebuilder and node/nodebuilder up into two separate files.
+// this is really hard to do because tree depends upon private node functions.
+// we can get around this by making tree/treebuilder a sub-module of node,
+// but that seems odd to me.  Maybe that is the correct path forward though.
 
 #[derive(Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
 pub struct NodeId {
