@@ -257,10 +257,15 @@ pub struct Node<T> {
 
 impl<T> Node<T> {
     pub fn new(data: T) -> Node<T> {
+        Node::new_with_child_capacity(data, 0)
+    }
+
+    //todo: make a NodeBuilder for this kind of thing
+    pub fn new_with_child_capacity(data: T, capacity: usize) -> Node<T> {
         Node {
             data: data,
             parent: None,
-            children: Vec::new() //todo: should we have the option for specifying capacity here?
+            children: Vec::with_capacity(capacity)
         }
     }
 
@@ -504,7 +509,14 @@ mod node_tests {
 
     #[test]
     fn test_new() {
-        let _node = Node::new(5);
+        let node = Node::new(5);
+        assert_eq!(node.children.capacity(), 0);
+    }
+
+    #[test]
+    fn test_new_with_capacity() {
+        let node = Node::new_with_child_capacity(5, 10);
+        assert_eq!(node.children.capacity(), 10);
     }
 
     #[test]
