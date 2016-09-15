@@ -1,6 +1,8 @@
 extern crate snowflake;
 use self::snowflake::ProcessUniqueId;
 
+//todo: split tree/treebuilder and node/nodebuilder up into two separate files.
+
 #[derive(Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
 pub struct NodeId {
     tree_id: ProcessUniqueId,
