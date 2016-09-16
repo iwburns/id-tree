@@ -5,3 +5,7 @@ authors = ["Ian <iwburns8@gmail.com>"]
 
 [dependencies]
 snowflake = "1.2.0"
+
+[[example]]
+name = "basic"
+path = "examples/basic.rs"
