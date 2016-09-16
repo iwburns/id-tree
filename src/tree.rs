@@ -1,6 +1,7 @@
 use super::snowflake::ProcessUniqueId;
 use super::Node;
 use super::NodeId;
+use super::MutableNode;
 
 //todo: add optional string mapping with HashMap<String, NodeId>
 // and add convenience methods for getting nodes by String name
