@@ -8,6 +8,8 @@ use super::MutableNode;
 // maybe this should be made into a different type of tree which
 // would possibly hide NodeIds from the user?
 
+//todo: clean this up a bit more if possible.
+
 pub struct TreeBuilder<T> {
     root: Option<Node<T>>,
     capacity: usize,
