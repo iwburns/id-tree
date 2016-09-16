@@ -4,7 +4,7 @@ use super::MutableNode;
 pub struct Node<T> {
     data: T,
     parent: Option<NodeId>,
-    children: Vec<NodeId>
+    children: Vec<NodeId>,
 }
 
 impl<T> Node<T> {
@@ -17,7 +17,7 @@ impl<T> Node<T> {
         Node {
             data: data,
             parent: None,
-            children: Vec::with_capacity(capacity)
+            children: Vec::with_capacity(capacity),
         }
     }
 
@@ -87,46 +87,42 @@ mod node_tests {
 
     #[test]
     fn test_parent() {
-        let node = Node::new(5);
+        let mut node = Node::new(5);
         assert!(node.parent().is_none());
 
         let parent_id: NodeId = NodeId {
             tree_id: ProcessUniqueId::new(),
-            index: 0
+            index: 0,
         };
-        let mut node = Node::new(5);
-        node.set_parent(Some(parent_id));
 
-        assert_eq!(node.parent(), Some(parent_id))
+        node.set_parent(Some(parent_id));
+        assert_eq!(node.parent(), Some(parent_id));
     }
 
     #[test]
     fn test_children() {
-        let node = Node::new(5);
+        let mut node = Node::new(5);
         assert_eq!(node.children().len(), 0);
 
-        let tree_id = ProcessUniqueId::new();
-
-        let mut node = Node::new(5);
         let child_id: NodeId = NodeId {
-            tree_id: tree_id,
-            index: 2
+            tree_id: ProcessUniqueId::new(),
+            index: 0,
         };
         node.add_child(child_id);
-        let children = node.children();
 
-        assert_eq!(children.len(), 1);
-        assert_eq!(children.get(0).unwrap(), &child_id);
+        assert_eq!(node.children().len(), 1);
+        assert_eq!(node.children().get(0).unwrap(), &child_id);
 
         let mut node = Node::new(5);
+        assert_eq!(node.children().len(), 0);
+
         let child_id: NodeId = NodeId {
-            tree_id: tree_id,
-            index: 2
+            tree_id: ProcessUniqueId::new(),
+            index: 0,
         };
         node.children_mut().push(child_id);
-        let children = node.children();
 
-        assert_eq!(children.len(), 1);
-        assert_eq!(children.get(0).unwrap(), &child_id);
+        assert_eq!(node.children().len(), 1);
+        assert_eq!(node.children().get(0).unwrap(), &child_id);
     }
 }
