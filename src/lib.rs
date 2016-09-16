@@ -11,7 +11,7 @@ pub use tree::Tree;
 #[derive(Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
 pub struct NodeId {
     tree_id: ProcessUniqueId,
-    index: usize
+    index: usize,
 }
 
 trait MutableNode {

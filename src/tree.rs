@@ -10,28 +10,28 @@ use super::MutableNode;
 
 pub struct TreeBuilder<T> {
     root: Option<Node<T>>,
-    capacity: usize
+    capacity: usize,
 }
 
 impl<T> TreeBuilder<T> {
     pub fn new() -> TreeBuilder<T> {
         TreeBuilder {
             root: None,
-            capacity: 0
+            capacity: 0,
         }
     }
 
     pub fn with_root(&mut self, root: Node<T>) -> TreeBuilder<T> {
         TreeBuilder {
             root: Some(root),
-            capacity: self.capacity
+            capacity: self.capacity,
         }
     }
 
     pub fn with_capacity(&mut self, capacity: usize) -> TreeBuilder<T> {
         TreeBuilder {
             root: self.root.take(),
-            capacity: capacity
+            capacity: capacity,
         }
     }
 
@@ -43,14 +43,14 @@ impl<T> TreeBuilder<T> {
             id: tree_id,
             root: None,
             nodes: Vec::with_capacity(self.capacity),
-            free_ids: Vec::new() //todo: should this start with capacity too?
+            free_ids: Vec::new(), //todo: should this start with capacity too?
         };
 
         if self.root.is_some() {
 
             let node_id = NodeId {
                 tree_id: tree_id,
-                index: 0
+                index: 0,
             };
 
             tree.nodes.push(self.root.take());
@@ -65,7 +65,7 @@ pub struct Tree<T> {
     id: ProcessUniqueId,
     root: Option<NodeId>,
     nodes: Vec<Option<Node<T>>>,
-    free_ids: Vec<NodeId>
+    free_ids: Vec<NodeId>,
 }
 
 impl<T> Tree<T> {
@@ -212,7 +212,7 @@ impl<T> Tree<T> {
     fn new_node_id(&self, node_index: usize) -> NodeId {
         NodeId {
             tree_id: self.id,
-            index: node_index
+            index: node_index,
         }
     }
 
