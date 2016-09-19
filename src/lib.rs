@@ -3,7 +3,6 @@ use self::snowflake::ProcessUniqueId;
 
 mod node;
 mod tree;
-mod iter;
 
 pub use node::Node;
 pub use tree::TreeBuilder;

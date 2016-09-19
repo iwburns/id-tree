@@ -1,7 +1,7 @@
 [package]
 name = "id-tree"
 version = "0.1.0"
-authors = ["Ian <iwburns8@gmail.com>"]
+authors = ["Ian Burns<iwburns8@gmail.com>"]
 
 [dependencies]
 snowflake = "1.2.0"
