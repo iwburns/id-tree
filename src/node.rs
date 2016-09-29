@@ -31,7 +31,7 @@ impl<T> Node<T> {
     /// ```
     /// use id_tree::Node;
     ///
-    /// let _two: Node<i32> = Node::new_with_child_capacity(2, 3); //will have space for 3 children
+    /// let _two: Node<i32> = Node::new_with_child_capacity(2, 3); //will have pre-allocated space for 3 children
     /// ```
     ///
     //todo: make a NodeBuilder for this kind of thing
@@ -44,7 +44,7 @@ impl<T> Node<T> {
     }
 
     ///
-    /// Gets an immutable reference to the data contained within the Node.
+    /// Returns an immutable reference to the data contained within the Node.
     ///
     /// ```
     /// use id_tree::Node;
@@ -60,7 +60,7 @@ impl<T> Node<T> {
     }
 
     ///
-    /// Gets a mutable reference to the data contained within the Node.
+    /// Returns a mutable reference to the data contained within the Node.
     ///
     /// ```
     /// use id_tree::Node;
@@ -75,12 +75,36 @@ impl<T> Node<T> {
         &mut self.data
     }
 
-    //todo: document this.
+    ///
+    /// Returns a `Some` value containing the NodeId of this Node's parent if it exists; returns `None` if it does not.
+    ///
+    /// **Note:** A Node cannot have a parent until after it has been inserted into a Tree.
+    ///
+    /// ```
+    /// use id_tree::Node;
+    ///
+    /// let five: Node<i32> = Node::new(5);
+    ///
+    /// assert!(five.parent().is_none());
+    /// ```
+    ///
     pub fn parent(&self) -> Option<NodeId> {
         self.parent
     }
 
-    //todo: document this.
+    ///
+    /// Returns an immutable reference to a Vec containing the NodeIds of this Node's children.
+    ///
+    /// **Note:** A Node cannot have any children until after it has been inserted into a Tree.
+    ///
+    /// ```
+    /// use id_tree::Node;
+    ///
+    /// let six: Node<i32> = Node::new(6);
+    ///
+    /// assert_eq!(six.children().len(), 0);
+    /// ```
+    ///
     pub fn children(&self) -> &Vec<NodeId> {
         &self.children
     }
