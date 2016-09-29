@@ -1,6 +1,9 @@
 use super::NodeId;
 use super::MutableNode;
 
+///
+/// A container that wraps data in a given Tree.
+///
 pub struct Node<T> {
     data: T,
     parent: Option<NodeId>,
@@ -8,10 +11,29 @@ pub struct Node<T> {
 }
 
 impl<T> Node<T> {
+    ///
+    /// Creates a new Node with the data provided.
+    ///
+    /// ```
+    /// use id_tree::Node;
+    ///
+    /// let _one: Node<i32> = Node::new(1);
+    /// ```
+    ///
     pub fn new(data: T) -> Node<T> {
         Node::new_with_child_capacity(data, 0)
     }
 
+    ///
+    /// Creates a new Node with the data provided and pre-allocates space for the given number of
+    /// children.
+    ///
+    /// ```
+    /// use id_tree::Node;
+    ///
+    /// let _two: Node<i32> = Node::new_with_child_capacity(2, 3); //will have space for 3 children
+    /// ```
+    ///
     //todo: make a NodeBuilder for this kind of thing
     pub fn new_with_child_capacity(data: T, capacity: usize) -> Node<T> {
         Node {
@@ -21,18 +43,44 @@ impl<T> Node<T> {
         }
     }
 
+    ///
+    /// Gets an immutable reference to the data contained within the Node.
+    ///
+    /// ```
+    /// use id_tree::Node;
+    ///
+    /// let node_three: Node<i32> = Node::new(3);
+    /// let three = 3;
+    ///
+    /// assert_eq!(node_three.data(), &three);
+    /// ```
+    ///
     pub fn data(&self) -> &T {
         &self.data
     }
 
+    ///
+    /// Gets a mutable reference to the data contained within the Node.
+    ///
+    /// ```
+    /// use id_tree::Node;
+    ///
+    /// let mut node_four: Node<i32> = Node::new(4);
+    /// let mut four = 4;
+    ///
+    /// assert_eq!(node_four.data_mut(), &mut four);
+    /// ```
+    ///
     pub fn data_mut(&mut self) -> &mut T {
         &mut self.data
     }
 
+    //todo: document this.
     pub fn parent(&self) -> Option<NodeId> {
         self.parent
     }
 
+    //todo: document this.
     pub fn children(&self) -> &Vec<NodeId> {
         &self.children
     }
