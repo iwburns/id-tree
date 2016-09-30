@@ -3,11 +3,7 @@ use super::Node;
 use super::NodeId;
 use super::MutableNode;
 
-//todo: add optional string mapping with HashMap<String, NodeId>
-// and add convenience methods for getting nodes by String name
-// maybe this should be made into a different type of tree which
-// would possibly hide NodeIds from the user?
-
+//todo: remove panic!()s and replace with custom errors and return Result values instead
 //todo: clean this up a bit more if possible.
 
 pub struct TreeBuilder<T> {
