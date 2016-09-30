@@ -2,10 +2,19 @@
 //!
 //! In this implementation, the `Tree` owns all of the `Node`s and all inter-`Node` relationships are
 //! managed with `NodeId`s.  This means that you will need a reference to the `Tree` to get a
-//! reference to any `Node`'s parent or child `Node`s.
+//! reference to any `Node`'s parent or any of its children.
 //!
 //! It is also important to note that this library does not support arbitrary Graph creation.  Any
-//! given Node can have **up to one parent** and **an arbitrary number of children**.
+//! given Node can have up to **one parent**, an **arbitrary number of children**, and there can be
+//! **no cycles**.
+//!
+//! -----------------------------------------------------------------------------------------------
+//!
+//! _**Disclaimer:** This library should be considered a Work-in-Progress until it reaches v1.0.0.
+//! Breaking changes will be avoided at all costs, but until v1.0.0 hits, they are a definite
+//! possibility. With that in mind, it would be wise to find a version number that works for you
+//! (preferably whatever the current version is when you read this) and stick with it until you are
+//! ready to upgrade to the next version._
 //!
 
 extern crate snowflake;
