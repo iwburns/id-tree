@@ -23,6 +23,7 @@ use self::snowflake::ProcessUniqueId;
 mod node;
 mod tree;
 
+pub use node::NodeBuilder;
 pub use node::Node;
 pub use tree::TreeBuilder;
 pub use tree::Tree;

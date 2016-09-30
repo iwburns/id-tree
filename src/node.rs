@@ -2,6 +2,74 @@ use super::NodeId;
 use super::MutableNode;
 
 ///
+/// A `Node` builder.  Provides more control over how a `Node` is created.
+///
+/// _Note: Right now `Node`s aren't that complicated, but they might get more complicated later.
+/// This allows us to not break the `Node` API itself, while admittedly being a bit over-
+/// engineered at this point in the development process._
+///
+pub struct NodeBuilder<T> {
+    data: T,
+    child_capacity: usize,
+}
+
+impl<T> NodeBuilder<T> {
+
+    ///
+    /// Creates a new `NodeBuilder` with the required data.
+    ///
+    /// ```
+    /// use id_tree::NodeBuilder;
+    ///
+    /// let _node_builder = NodeBuilder::new(5);
+    /// ```
+    ///
+    pub fn new(data: T) -> NodeBuilder<T> {
+        NodeBuilder {
+            data: data,
+            child_capacity: 0,
+        }
+    }
+
+    ///
+    /// Set the child capacity of the `NodeBuilder`.
+    ///
+    /// ```
+    /// use id_tree::NodeBuilder;
+    ///
+    /// let _node_builder = NodeBuilder::new(5).with_child_capacity(3);
+    /// ```
+    ///
+    pub fn with_child_capacity(mut self, child_capacity: usize) -> NodeBuilder<T> {
+        self.child_capacity = child_capacity;
+        self
+    }
+
+    ///
+    /// Build a `Node` based upon the current settings in the `NodeBuilder`.
+    ///
+    /// ```
+    /// use id_tree::NodeBuilder;
+    /// use id_tree::Node;
+    ///
+    /// let node: Node<i32> = NodeBuilder::new(5)
+    ///         .with_child_capacity(3)
+    ///         .build();
+    ///
+    /// assert_eq!(node.data(), &5);
+    /// assert_eq!(node.children().capacity(), 3);
+    /// ```
+    ///
+    pub fn build(self) -> Node<T> {
+        Node {
+            data: self.data,
+            parent: None,
+            children: Vec::with_capacity(self.child_capacity),
+        }
+    }
+}
+
+///
 /// A container that wraps data in a given Tree.
 ///
 pub struct Node<T> {
@@ -21,26 +89,7 @@ impl<T> Node<T> {
     /// ```
     ///
     pub fn new(data: T) -> Node<T> {
-        Node::new_with_child_capacity(data, 0)
-    }
-
-    ///
-    /// Creates a new Node with the data provided and pre-allocates space for the given number of
-    /// children.
-    ///
-    /// ```
-    /// use id_tree::Node;
-    ///
-    /// let _two: Node<i32> = Node::new_with_child_capacity(2, 3); //will have pre-allocated space for 3 children
-    /// ```
-    ///
-    //todo: make a NodeBuilder for this kind of thing
-    pub fn new_with_child_capacity(data: T, capacity: usize) -> Node<T> {
-        Node {
-            data: data,
-            parent: None,
-            children: Vec::with_capacity(capacity),
-        }
+        NodeBuilder::new(data).build()
     }
 
     ///
@@ -125,6 +174,27 @@ impl<T> MutableNode for Node<T> {
 }
 
 #[cfg(test)]
+mod node_bulder_tests {
+    use super::NodeBuilder;
+
+    #[test]
+    fn test_new() {
+        let five = 5;
+        let node = NodeBuilder::new(5).build();
+        assert_eq!(node.data(), &five);
+        assert_eq!(node.children.capacity(), 0);
+    }
+
+    #[test]
+    fn test_with_child_capacity() {
+        let five = 5;
+        let node = NodeBuilder::new(5).with_child_capacity(10).build();
+        assert_eq!(node.data(), &five);
+        assert_eq!(node.children.capacity(), 10);
+    }
+}
+
+#[cfg(test)]
 mod node_tests {
     use super::Node;
     use super::super::NodeId;
@@ -135,12 +205,6 @@ mod node_tests {
     fn test_new() {
         let node = Node::new(5);
         assert_eq!(node.children.capacity(), 0);
-    }
-
-    #[test]
-    fn test_new_with_capacity() {
-        let node = Node::new_with_child_capacity(5, 10);
-        assert_eq!(node.children.capacity(), 10);
     }
 
     #[test]
