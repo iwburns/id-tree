@@ -9,6 +9,7 @@ use super::MutableNode;
 pub struct TreeBuilder<T> {
     root: Option<Node<T>>,
     node_capacity: usize,
+    swap_capacity: usize,
 }
 
 impl<T> TreeBuilder<T> {
@@ -16,24 +17,26 @@ impl<T> TreeBuilder<T> {
         TreeBuilder {
             root: None,
             node_capacity: 0,
+            swap_capacity: 0,
         }
     }
 
-    pub fn with_root(&mut self, root: Node<T>) -> TreeBuilder<T> {
-        TreeBuilder {
-            root: Some(root),
-            node_capacity: self.node_capacity,
-        }
+    pub fn with_root(mut self, root: Node<T>) -> TreeBuilder<T> {
+        self.root = Some(root);
+        self
     }
 
-    pub fn with_node_capacity(&mut self, node_capacity: usize) -> TreeBuilder<T> {
-        TreeBuilder {
-            root: self.root.take(),
-            node_capacity: node_capacity,
-        }
+    pub fn with_node_capacity(mut self, node_capacity: usize) -> TreeBuilder<T> {
+        self.node_capacity = node_capacity;
+        self
     }
 
-    pub fn build(&mut self) -> Tree<T> {
+    pub fn with_swap_capacity(mut self, swap_capacity: usize) -> TreeBuilder<T> {
+        self.swap_capacity = swap_capacity;
+        self
+    }
+
+    pub fn build(mut self) -> Tree<T> {
 
         let tree_id = ProcessUniqueId::new();
 
@@ -41,7 +44,7 @@ impl<T> TreeBuilder<T> {
             id: tree_id,
             root: None,
             nodes: Vec::with_capacity(self.node_capacity),
-            free_ids: Vec::new(), //todo: should this start with capacity too?
+            free_ids: Vec::with_capacity(self.swap_capacity),//todo: write tests for this.
         };
 
         if self.root.is_some() {
@@ -67,6 +70,10 @@ pub struct Tree<T> {
 }
 
 impl<T> Tree<T> {
+    pub fn new() -> Tree<T> {
+        TreeBuilder::new().build() //todo: add test for this.
+    }
+
     pub fn set_root(&mut self, new_root: Node<T>) -> NodeId {
         let new_root_id = self.insert_new_node(new_root);
 
