@@ -145,6 +145,10 @@ impl<T> TreeBuilder<T> {
     }
 }
 
+//todo: add more data here.
+///
+/// A tree structure consisting of `Node`s.
+///
 pub struct Tree<T> {
     id: ProcessUniqueId,
     root: Option<NodeId>,
@@ -153,10 +157,35 @@ pub struct Tree<T> {
 }
 
 impl<T> Tree<T> {
+
+    ///
+    /// Creates a new `Tree` with default settings.
+    ///
+    /// ```
+    /// use id_tree::Tree;
+    ///
+    /// let _tree: Tree<i32> = Tree::new();
+    /// ```
+    ///
     pub fn new() -> Tree<T> {
         TreeBuilder::new().build()
     }
 
+    ///
+    /// Sets the root of the `Tree`.
+    ///
+    /// If there is already a root `Node` present in the tree, that `Node` is set as the first child
+    /// of the new root.
+    ///
+    /// ```
+    /// use id_tree::Tree;
+    /// use id_tree::Node;
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    ///
+    /// tree.set_root(Node::new(5));
+    /// ```
+    ///
     pub fn set_root(&mut self, new_root: Node<T>) -> NodeId {
         let new_root_id = self.insert_new_node(new_root);
 
@@ -171,6 +200,23 @@ impl<T> Tree<T> {
         new_root_id
     }
 
+    ///
+    /// Add a new `Node` to the tree as the child of a `Node` specified by the given `NodeId`.
+    /// Returns the `NodeId` of the child that was added.
+    ///
+    /// ```
+    /// use id_tree::Tree;
+    /// use id_tree::Node;
+    ///
+    /// let root_node = Node::new(1);
+    /// let child_node = Node::new(2);
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.set_root(root_node);
+    ///
+    /// tree.add_child(root_id, child_node);
+    /// ```
+    ///
     pub fn add_child(&mut self, parent_id: NodeId, child: Node<T>) -> NodeId {
         if !self.is_valid_node_id(parent_id) {
             //todo: is panic the right tool here?
@@ -184,6 +230,76 @@ impl<T> Tree<T> {
         new_child_id
     }
 
+    ///
+    /// Get an immutable reference to a `Node`.
+    ///
+    /// If the `NodeId` provided is invalid (whether the
+    /// `Node` in question has already been removed, or the `NodeId` belongs to a different `Tree`),
+    /// this function returns a None value.
+    ///
+    /// ```
+    /// use id_tree::Tree;
+    /// use id_tree::Node;
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.set_root(Node::new(5));
+    ///
+    /// let root_node: &Node<i32> = tree.get(root_id).unwrap();
+    /// ```
+    ///
+    pub fn get(&self, node_id: NodeId) -> Option<&Node<T>> {
+        if self.is_valid_node_id(node_id) {
+            return (*self.nodes.get(node_id.index).unwrap()).as_ref();
+        }
+        None
+    }
+
+    ///
+    /// Get a mutable reference to a `Node`.
+    ///
+    /// If the `NodeId` provided is invalid (whether the
+    /// `Node` in question has already been removed, or the `NodeId` belongs to a different `Tree`),
+    /// this function returns a None value.
+    ///
+    /// ```
+    /// use id_tree::Tree;
+    /// use id_tree::Node;
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.set_root(Node::new(5));
+    ///
+    /// let root_node: &mut Node<i32> = tree.get_mut(root_id).unwrap();
+    /// ```
+    ///
+    pub fn get_mut(&mut self, node_id: NodeId) -> Option<&mut Node<T>> {
+        if self.is_valid_node_id(node_id) {
+            return (*self.nodes.get_mut(node_id.index).unwrap()).as_mut();
+        }
+        None
+    }
+
+    ///
+    /// Remove a `Node` from the `Tree` and return it while dropping all of its children
+    /// from the `Tree`.
+    ///
+    /// The `Node` that is returned will have its children cleared because those `NodeId`s are no
+    /// longer valid.
+    ///
+    /// ```
+    /// use id_tree::Tree;
+    /// use id_tree::Node;
+    ///
+    /// let root_node = Node::new(1);
+    /// let child_node = Node::new(2);
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.set_root(root_node);
+    ///
+    /// tree.add_child(root_id, child_node);
+    ///
+    /// let root_node = tree.remove_node_drop_children(root_id);
+    /// ```
+    ///
     pub fn remove_node_drop_children(&mut self, node_id: NodeId) -> Node<T> {
         if !self.is_valid_node_id(node_id) {
             //todo: is panic the right tool here?
@@ -204,6 +320,28 @@ impl<T> Tree<T> {
         node
     }
 
+    ///
+    /// Remove a `Node` from the `Tree` and return it while leaving all of its children in the
+    /// `Tree`.
+    ///
+    /// The `Node` that is returned will maintain its children because those `NodeId`s are still
+    /// valid. These orphaned `Node`s will remain in memory until the `Tree` goes out of scope.
+    ///
+    /// ```
+    /// use id_tree::Tree;
+    /// use id_tree::Node;
+    ///
+    /// let root_node = Node::new(1);
+    /// let child_node = Node::new(2);
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.set_root(root_node);
+    ///
+    /// tree.add_child(root_id, child_node);
+    ///
+    /// let root_node = tree.remove_node_orphan_children(root_id);
+    /// ```
+    ///
     pub fn remove_node_orphan_children(&mut self, node_id: NodeId) -> Node<T> {
         if !self.is_valid_node_id(node_id) {
             //todo: is panic the right tool here?
@@ -214,20 +352,23 @@ impl<T> Tree<T> {
         self.remove_node(node_id)
     }
 
-    pub fn get(&self, node_id: NodeId) -> Option<&Node<T>> {
-        if self.is_valid_node_id(node_id) {
-            return (*self.nodes.get(node_id.index).unwrap()).as_ref();
-        }
-        None
-    }
-
-    pub fn get_mut(&mut self, node_id: NodeId) -> Option<&mut Node<T>> {
-        if self.is_valid_node_id(node_id) {
-            return (*self.nodes.get_mut(node_id.index).unwrap()).as_mut();
-        }
-        None
-    }
-
+    ///
+    /// Returns the `NodeId` of the root `Node` if it exists.  Otherwise a None value is returned.
+    ///
+    /// This might be useful if you only ever want to traverse the tree in its entirety.  In that
+    /// situation, you can throw away all of the `NodeId`s after the tree has been constructed since
+    /// you can always find the root `Node`'s `NodeId`.
+    ///
+    /// ```
+    /// use id_tree::Tree;
+    /// use id_tree::Node;
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.set_root(Node::new(5));
+    ///
+    /// assert_eq!(root_id, tree.root_node_id().unwrap());
+    /// ```
+    ///
     pub fn root_node_id(&self) -> Option<NodeId> {
         self.root
     }
