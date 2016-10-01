@@ -8,28 +8,28 @@ use super::MutableNode;
 
 pub struct TreeBuilder<T> {
     root: Option<Node<T>>,
-    capacity: usize,
+    node_capacity: usize,
 }
 
 impl<T> TreeBuilder<T> {
     pub fn new() -> TreeBuilder<T> {
         TreeBuilder {
             root: None,
-            capacity: 0,
+            node_capacity: 0,
         }
     }
 
     pub fn with_root(&mut self, root: Node<T>) -> TreeBuilder<T> {
         TreeBuilder {
             root: Some(root),
-            capacity: self.capacity,
+            node_capacity: self.node_capacity,
         }
     }
 
-    pub fn with_capacity(&mut self, capacity: usize) -> TreeBuilder<T> {
+    pub fn with_node_capacity(&mut self, node_capacity: usize) -> TreeBuilder<T> {
         TreeBuilder {
             root: self.root.take(),
-            capacity: capacity,
+            node_capacity: node_capacity,
         }
     }
 
@@ -40,7 +40,7 @@ impl<T> TreeBuilder<T> {
         let mut tree = Tree {
             id: tree_id,
             root: None,
-            nodes: Vec::with_capacity(self.capacity),
+            nodes: Vec::with_capacity(self.node_capacity),
             free_ids: Vec::new(), //todo: should this start with capacity too?
         };
 
@@ -252,7 +252,7 @@ mod tree_builder_tests {
     fn test_new() {
         let tb: TreeBuilder<i32> = TreeBuilder::new();
         assert!(tb.root.is_none());
-        assert_eq!(tb.capacity, 0);
+        assert_eq!(tb.node_capacity, 0);
     }
 
     #[test]
@@ -261,26 +261,26 @@ mod tree_builder_tests {
             .with_root(Node::new(5));
 
         assert_eq!(tb.root.unwrap().data(), &5);
-        assert_eq!(tb.capacity, 0);
+        assert_eq!(tb.node_capacity, 0);
     }
 
     #[test]
     fn test_with_capacity() {
         let tb: TreeBuilder<i32> = TreeBuilder::new()
-            .with_capacity(10);
+            .with_node_capacity(10);
 
         assert!(tb.root.is_none());
-        assert_eq!(tb.capacity, 10);
+        assert_eq!(tb.node_capacity, 10);
     }
 
     #[test]
     fn test_with_root_with_capacity() {
         let tb: TreeBuilder<i32> = TreeBuilder::new()
             .with_root(Node::new(5))
-            .with_capacity(10);
+            .with_node_capacity(10);
 
         assert_eq!(tb.root.unwrap().data(), &5);
-        assert_eq!(tb.capacity, 10);
+        assert_eq!(tb.node_capacity, 10);
     }
 }
 

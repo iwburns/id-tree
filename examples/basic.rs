@@ -7,7 +7,7 @@ use id_tree::Tree;
 
 fn main() {
     let mut tree: Tree<i32> = TreeBuilder::new()
-        .with_capacity(3)
+        .with_node_capacity(3)
         .build();
 
     let root_node = Node::new(1);
