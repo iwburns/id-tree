@@ -2,7 +2,7 @@ use super::NodeId;
 use super::MutableNode;
 
 ///
-/// A `Node` builder.  Provides more control over how a `Node` is created.
+/// A `Node` builder that provides more control over how a `Node` is created.
 ///
 /// _Note: Right now `Node`s aren't that complicated, but they might get more complicated later.
 /// This allows us to not break the `Node` API itself, while admittedly being a bit over-

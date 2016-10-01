@@ -4,8 +4,9 @@ use super::NodeId;
 use super::MutableNode;
 
 //todo: remove panic!()s and replace with custom errors and return Result values instead
-//todo: clean this up a bit more if possible.
-
+///
+/// A `Tree` builder that provides more control over how a `Tree` is created.
+///
 pub struct TreeBuilder<T> {
     root: Option<Node<T>>,
     node_capacity: usize,
@@ -13,6 +14,15 @@ pub struct TreeBuilder<T> {
 }
 
 impl<T> TreeBuilder<T> {
+    ///
+    /// Creates a new `TreeBuilder` with the default settings.
+    ///
+    /// ```
+    /// use id_tree::TreeBuilder;
+    ///
+    /// let _tree_builder: TreeBuilder<i32> = TreeBuilder::new();
+    /// ```
+    ///
     pub fn new() -> TreeBuilder<T> {
         TreeBuilder {
             root: None,
@@ -21,21 +31,94 @@ impl<T> TreeBuilder<T> {
         }
     }
 
+    ///
+    /// Sets the root `Node` of the `TreeBuilder`.
+    ///
+    /// ```
+    /// use id_tree::TreeBuilder;
+    /// use id_tree::Node;
+    ///
+    /// let _tree_builder = TreeBuilder::new().with_root(Node::new(1));
+    /// ```
+    ///
     pub fn with_root(mut self, root: Node<T>) -> TreeBuilder<T> {
         self.root = Some(root);
         self
     }
 
+    ///
+    /// Sets the node_capacity of the `TreeBuilder`.
+    ///
+    /// Since `Tree`s own their `Node`s, they must allocate storage space as `Node`s are inserted.
+    /// Using this setting allows the `Tree` to pre-allocate space for `Node`s ahead of time, so
+    /// that the space allocations don't happen as the `Node`s are inserted.
+    ///
+    /// _Use of this setting is recommended if you know the **maximum number** of `Node`s that your
+    /// `Tree` will **contain** at **any given time**._
+    ///
+    /// ```
+    /// use id_tree::TreeBuilder;
+    ///
+    /// let _tree_builder: TreeBuilder<i32> = TreeBuilder::new().with_node_capacity(3);
+    /// ```
+    ///
     pub fn with_node_capacity(mut self, node_capacity: usize) -> TreeBuilder<T> {
         self.node_capacity = node_capacity;
         self
     }
 
+    ///
+    /// Sets the swap_capacity of the `TreeBuilder`.
+    ///
+    /// This is important because `Tree`s attempt to save time by re-using storage space when `Node`s
+    /// are removed (instead of shuffling `Node`s around internally).  To do this, the `Tree` must
+    /// store information about the space left behind when a `Node` is removed. Using this setting
+    /// allows the `Tree` to pre-allocate this storage space instead of doing so as `Node`s are
+    /// removed from the `Tree`.
+    ///
+    /// _Use of this setting is recommended if you know the **maximum "net number of
+    /// removals"** that have occurred **at any given time**._
+    ///
+    /// For example:
+    /// ---
+    /// In **Scenario 1**:
+    ///
+    /// * Add 3 `Node`s, Remove 2 `Node`s, Add 1 `Node`.
+    ///
+    /// The most amount of nodes that have been removed at any given time is **2**.
+    ///
+    /// But in **Scenario 2**:
+    ///
+    /// * Add 3 `Node`s, Remove 2 `Node`s, Add 1 `Node`, Remove 2 `Node`s.
+    ///
+    /// The most amount of nodes that have been removed at any given time is **3**.
+    ///
+    /// ```
+    /// use id_tree::TreeBuilder;
+    ///
+    /// let _tree_builder: TreeBuilder<i32> = TreeBuilder::new().with_swap_capacity(3);
+    /// ```
+    ///
     pub fn with_swap_capacity(mut self, swap_capacity: usize) -> TreeBuilder<T> {
         self.swap_capacity = swap_capacity;
         self
     }
 
+    ///
+    /// Build a `Tree` based upon the current settings in the `TreeBuilder`.
+    ///
+    /// ```
+    /// use id_tree::TreeBuilder;
+    /// use id_tree::Tree;
+    /// use id_tree::Node;
+    ///
+    /// let _tree: Tree<i32> = TreeBuilder::new()
+    ///         .with_root(Node::new(5))
+    ///         .with_node_capacity(3)
+    ///         .with_swap_capacity(2)
+    ///         .build();
+    /// ```
+    ///
     pub fn build(mut self) -> Tree<T> {
 
         let tree_id = ProcessUniqueId::new();
