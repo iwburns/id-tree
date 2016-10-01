@@ -4,6 +4,9 @@ use super::NodeId;
 use super::MutableNode;
 
 //todo: remove panic!()s and replace with custom errors and return Result values instead
+
+//todo: see if we can avoid bounds checks since we are managing the Ids manually here anyway.
+
 ///
 /// A `Tree` builder that provides more control over how a `Tree` is created.
 ///
@@ -127,7 +130,7 @@ impl<T> TreeBuilder<T> {
             id: tree_id,
             root: None,
             nodes: Vec::with_capacity(self.node_capacity),
-            free_ids: Vec::with_capacity(self.swap_capacity),//todo: write tests for this.
+            free_ids: Vec::with_capacity(self.swap_capacity),
         };
 
         if self.root.is_some() {
