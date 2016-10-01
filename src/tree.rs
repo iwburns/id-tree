@@ -71,7 +71,7 @@ pub struct Tree<T> {
 
 impl<T> Tree<T> {
     pub fn new() -> Tree<T> {
-        TreeBuilder::new().build() //todo: add test for this.
+        TreeBuilder::new().build()
     }
 
     pub fn set_root(&mut self, new_root: Node<T>) -> NodeId {
@@ -260,6 +260,7 @@ mod tree_builder_tests {
         let tb: TreeBuilder<i32> = TreeBuilder::new();
         assert!(tb.root.is_none());
         assert_eq!(tb.node_capacity, 0);
+        assert_eq!(tb.swap_capacity, 0);
     }
 
     #[test]
@@ -269,103 +270,144 @@ mod tree_builder_tests {
 
         assert_eq!(tb.root.unwrap().data(), &5);
         assert_eq!(tb.node_capacity, 0);
+        assert_eq!(tb.swap_capacity, 0);
     }
 
     #[test]
-    fn test_with_capacity() {
+    fn test_with_node_capacity() {
         let tb: TreeBuilder<i32> = TreeBuilder::new()
             .with_node_capacity(10);
 
         assert!(tb.root.is_none());
         assert_eq!(tb.node_capacity, 10);
+        assert_eq!(tb.swap_capacity, 0);
     }
 
     #[test]
-    fn test_with_root_with_capacity() {
+    fn test_with_swap_capacity() {
+        let tb: TreeBuilder<i32> = TreeBuilder::new()
+            .with_swap_capacity(10);
+
+        assert!(tb.root.is_none());
+        assert_eq!(tb.node_capacity, 0);
+        assert_eq!(tb.swap_capacity, 10);
+    }
+
+    #[test]
+    fn test_with_all_settings() {
         let tb: TreeBuilder<i32> = TreeBuilder::new()
             .with_root(Node::new(5))
-            .with_node_capacity(10);
+            .with_node_capacity(10)
+            .with_swap_capacity(3);
 
         assert_eq!(tb.root.unwrap().data(), &5);
         assert_eq!(tb.node_capacity, 10);
+        assert_eq!(tb.swap_capacity, 3);
+    }
+
+    #[test]
+    fn test_build() {
+        let tree = TreeBuilder::new()
+            .with_root(Node::new(5))
+            .with_node_capacity(10)
+            .with_swap_capacity(3)
+            .build();
+
+        let root = tree.get(tree.root_node_id().unwrap()).unwrap();
+
+        assert_eq!(root.data(), &5);
+        assert_eq!(tree.nodes.capacity(), 10);
+        assert_eq!(tree.free_ids.capacity(), 3);
     }
 }
 
 #[cfg(test)]
 mod tree_tests {
+    use super::Tree;
     use super::TreeBuilder;
     use super::super::NodeId;
     use super::super::Node;
 
     #[test]
+    fn test_new() {
+        let tree: Tree<i32> = Tree::new();
+
+        assert_eq!(tree.root, None);
+        assert_eq!(tree.nodes.len(), 0);
+        assert_eq!(tree.free_ids.len(), 0);
+    }
+
+
+    #[test]
     fn test_get() {
-        let root_node = Node::new(5);
-        let mut tree = TreeBuilder::new().build();
+        let tree = TreeBuilder::new().with_root(Node::new(5)).build();
 
-        let root_id = tree.set_root(root_node);
+        let root = tree.get(tree.root.unwrap()).unwrap();
 
-        let root_node_ref = tree.get(root_id).unwrap();
-        assert_eq!(root_node_ref.data(), &5);
+        assert_eq!(root.data(), &5);
     }
 
     #[test]
     fn test_get_mut() {
-        let root_node = Node::new(5);
-        let mut tree = TreeBuilder::new().build();
+        let mut tree = TreeBuilder::new().with_root(Node::new(5)).build();
 
-        let root_id = tree.set_root(root_node);
+        let root_id = tree.root.unwrap();
 
         {
-            let root_node_ref: &mut Node<i32> = tree.get_mut(root_id).unwrap();
-            assert_eq!(root_node_ref.data(), &5);
+            let root = tree.get(root_id).unwrap();
+            assert_eq!(root.data(), &5);
         }
 
         {
-            let root_node_ref: &mut Node<i32> = tree.get_mut(root_id).unwrap();
-            *root_node_ref.data_mut() = 6;
+            let root = tree.get_mut(root_id).unwrap();
+            *root.data_mut() = 6;
         }
 
-        let root_node_ref = tree.get_mut(root_id).unwrap();
-        assert_eq!(root_node_ref.data(), &6);
+        let root = tree.get(root_id).unwrap();
+        assert_eq!(root.data(), &6);
     }
 
     #[test]
     fn test_set_root() {
-        let node_a = Node::new(5);
-        let node_b = Node::new(6);
+        let a = 5;
+        let b = 6;
+        let node_a = Node::new(a);
+        let node_b = Node::new(b);
+
         let mut tree = TreeBuilder::new().build();
 
         let node_a_id = tree.set_root(node_a);
-        let root_id = tree.root_node_id().unwrap();
+        let root_id = tree.root.unwrap();
         assert_eq!(node_a_id, root_id);
+
         {
             let node_a_ref = tree.get(node_a_id).unwrap();
             let root_ref = tree.get(root_id).unwrap();
-            assert_eq!(node_a_ref.data(), &5);
-            assert_eq!(root_ref.data(), &5);
+            assert_eq!(node_a_ref.data(), &a);
+            assert_eq!(root_ref.data(), &a);
         }
 
         let node_b_id = tree.set_root(node_b);
-        let root_id = tree.root_node_id().unwrap();
+        let root_id = tree.root.unwrap();
         assert_eq!(node_b_id, root_id);
+
         {
             let node_b_ref = tree.get(node_b_id).unwrap();
             let root_ref = tree.get(root_id).unwrap();
-            assert_eq!(node_b_ref.data(), &6);
-            assert_eq!(root_ref.data(), &6);
+            assert_eq!(node_b_ref.data(), &b);
+            assert_eq!(root_ref.data(), &b);
 
             let node_b_child_id = node_b_ref.children().get(0).unwrap();
             let node_b_child_ref = tree.get(*node_b_child_id).unwrap();
-            assert_eq!(node_b_child_ref.data(), &5);
+            assert_eq!(node_b_child_ref.data(), &a);
         }
     }
 
     #[test]
     fn test_root_node_id() {
-        let root_node = Node::new(5);
-        let mut tree = TreeBuilder::new().build();
+        let tree = TreeBuilder::new().with_root(Node::new(5)).build();
 
-        let root_id = tree.set_root(root_node);
+        let root_id = tree.root.unwrap();
         let root_node_id = tree.root_node_id().unwrap();
 
         assert_eq!(root_id, root_node_id);
@@ -373,24 +415,28 @@ mod tree_tests {
 
     #[test]
     fn test_add_child() {
+        let a = 1;
+        let b = 2;
+        let r = 5;
+
         let mut tree = TreeBuilder::new()
-            .with_root(Node::new(5))
+            .with_root(Node::new(r))
             .build();
 
-        let node_1 = Node::new(1);
-        let node_2 = Node::new(2);
+        let node_a = Node::new(a);
+        let node_b = Node::new(b);
 
-        let root_id = tree.root_node_id().unwrap();
-        let node_1_id = tree.add_child(root_id, node_1);
-        let node_2_id = tree.add_child(root_id, node_2);
+        let root_id = tree.root.unwrap();
+        let node_a_id = tree.add_child(root_id, node_a);
+        let node_b_id = tree.add_child(root_id, node_b);
 
-        let node_1_ref = tree.get(node_1_id).unwrap();
-        let node_2_ref = tree.get(node_2_id).unwrap();
-        assert_eq!(node_1_ref.data(), &1);
-        assert_eq!(node_2_ref.data(), &2);
+        let node_a_ref = tree.get(node_a_id).unwrap();
+        let node_b_ref = tree.get(node_b_id).unwrap();
+        assert_eq!(node_a_ref.data(), &a);
+        assert_eq!(node_b_ref.data(), &b);
 
-        assert_eq!(node_1_ref.parent().unwrap(), root_id);
-        assert_eq!(node_2_ref.parent().unwrap(), root_id);
+        assert_eq!(node_a_ref.parent().unwrap(), root_id);
+        assert_eq!(node_b_ref.parent().unwrap(), root_id);
 
         let root_node_ref = tree.get(root_id).unwrap();
         let root_children: &Vec<NodeId> = root_node_ref.children();
@@ -401,8 +447,8 @@ mod tree_tests {
         let child_1_ref = tree.get(*child_1_id).unwrap();
         let child_2_ref = tree.get(*child_2_id).unwrap();
 
-        assert_eq!(child_1_ref.data(), &1);
-        assert_eq!(child_2_ref.data(), &2);
+        assert_eq!(child_1_ref.data(), &a);
+        assert_eq!(child_2_ref.data(), &b);
     }
 
     #[test]
@@ -412,9 +458,9 @@ mod tree_tests {
             .with_root(Node::new(5))
             .build();
 
-        let root_node_id = tree.root_node_id().unwrap();
+        let root_id = tree.root.unwrap();
 
-        let node_1_id = tree.add_child(root_node_id, Node::new(1));
+        let node_1_id = tree.add_child(root_id, Node::new(1));
         let node_2_id = tree.add_child(node_1_id, Node::new(2));
         let node_3_id = tree.add_child(node_1_id, Node::new(3));
 
@@ -422,7 +468,7 @@ mod tree_tests {
 
         assert_eq!(node_1.data(), &1);
         assert_eq!(node_1.children().len(), 0);
-        assert_eq!(node_1.parent().unwrap(), root_node_id);
+        assert_eq!(node_1.parent().unwrap(), root_id);
         assert!(tree.get(node_1_id).is_none());
         assert!(tree.get(node_2_id).is_none());
         assert!(tree.get(node_3_id).is_none());
@@ -435,9 +481,9 @@ mod tree_tests {
             .with_root(Node::new(5))
             .build();
 
-        let root_node_id = tree.root_node_id().unwrap();
+        let root_id = tree.root.unwrap();
 
-        let node_1_id = tree.add_child(root_node_id, Node::new(1));
+        let node_1_id = tree.add_child(root_id, Node::new(1));
         let node_2_id = tree.add_child(node_1_id, Node::new(2));
         let node_3_id = tree.add_child(node_1_id, Node::new(3));
 
@@ -445,7 +491,7 @@ mod tree_tests {
 
         assert_eq!(node_1.data(), &1);
         assert_eq!(node_1.children().len(), 2);
-        assert_eq!(node_1.parent().unwrap(), root_node_id);
+        assert_eq!(node_1.parent().unwrap(), root_id);
         assert!(tree.get(node_1_id).is_none());
         assert_eq!(tree.get(node_2_id).unwrap().data(), &2);
         assert_eq!(tree.get(node_3_id).unwrap().data(), &3);
