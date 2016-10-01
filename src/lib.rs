@@ -29,14 +29,14 @@ pub use tree::TreeBuilder;
 pub use tree::Tree;
 
 ///
-/// An identifier used to differentiate between Nodes within a Tree.
+/// An identifier used to differentiate between `Node`s within a `Tree`.
 ///
 /// `NodeId`s are not something that you will ever have to worry about generating yourself.  `Tree`s
 /// generate `NodeId`s as you insert `Node`s into them.
 ///
-/// `NodeId`s are also specific to the Tree that generated them.  This means that if you have two `Tree`s
-/// `A` and `B`, there's no worry of trying to access a Node in `A` with an identifier that came
-/// from `B`.
+/// `NodeId`s are also specific to the `Tree` that generated them.  This means that if you have two `Tree`s
+/// `A` and `B`, there's no worry of trying to access a `Node` in `A` with an identifier that came
+/// from `B`.  Doing so will return a `None` value instead of return the wrong `Node`.
 ///
 #[derive(Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
 pub struct NodeId {
