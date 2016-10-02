@@ -38,7 +38,7 @@ pub use tree::Tree;
 ///
 /// `NodeId`s are also specific to the `Tree` that generated them.  This means that if you have two `Tree`s
 /// `A` and `B`, there's no worry of trying to access a `Node` in `A` with an identifier that came
-/// from `B`.  Doing so will return a `None` value instead of return the wrong `Node`.
+/// from `B`.  Doing so will return a `NodeIdError` instead of returning the wrong `Node`.
 ///
 #[derive(Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
 pub struct NodeId {

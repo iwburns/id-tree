@@ -152,6 +152,14 @@ impl<T> TreeBuilder<T> {
 ///
 /// A tree structure consisting of `Node`s.
 ///
+/// # Panics
+/// While it is highly unlikely, any function that takes a `NodeId` _can_ `panic`.  This, however,
+/// should only happen due to improper `NodeId` management within `id_tree` and should have nothing
+/// to do with the library user's code.
+///
+/// **If this ever happens please report the issue.** `Panic`s are not expected behavior for this
+/// library, but they can happen due to bugs.
+///
 pub struct Tree<T> {
     id: ProcessUniqueId,
     root: Option<NodeId>,
@@ -205,7 +213,9 @@ impl<T> Tree<T> {
 
     ///
     /// Add a new `Node` to the tree as the child of a `Node` specified by the given `NodeId`.
-    /// Returns the `NodeId` of the child that was added.
+    ///
+    /// Returns a `Result` containing the `NodeId` of the child that was added or a `NodeIdError` if
+    /// one occurred.
     ///
     /// ```
     /// use id_tree::Tree;
@@ -283,8 +293,9 @@ impl<T> Tree<T> {
     }
 
     ///
-    /// Remove a `Node` from the `Tree` and return it while dropping all of its children
-    /// from the `Tree`.
+    /// Remove a `Node` from the `Tree` and drop all of its children from the `Tree`.
+    ///
+    /// Returns a `Result` containing the removed `Node` or a `NodeIdError` if one occurred.
     ///
     /// The `Node` that is returned will have its children cleared because those `NodeId`s are no
     /// longer valid.
@@ -324,10 +335,11 @@ impl<T> Tree<T> {
     }
 
     ///
-    /// Remove a `Node` from the `Tree` and return it while leaving all of its children in the
-    /// `Tree`.
+    /// Remove a `Node` from the `Tree` and leave of its children in the `Tree`.
     ///
-    /// The `Node` that is returned will maintain its children because those `NodeId`s are still
+    /// Returns a `Result` containing the removed `Node` or a `NodeIdError` if one occurred.
+    ///
+    /// The `Node` that is returned will still have its children because those `NodeId`s are still
     /// valid. These orphaned `Node`s will remain in memory until the `Tree` goes out of scope.
     ///
     /// ```
@@ -455,7 +467,7 @@ impl<T> Tree<T> {
         let optional_node = self.nodes.get(node_id.index);
 
         if optional_node.is_none() {
-            panic!("NodeId: {:?} is out of bounds. This shouldn't ever happen. This is very likely a bug in id_tree.", node_id);
+            panic!("NodeId: {:?} is out of bounds. This shouldn't ever happen. This is very likely a bug in id_tree.  Please report this issue.", node_id);
         }
 
         if optional_node.unwrap().is_none() {

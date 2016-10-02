@@ -18,9 +18,9 @@ fn main() {
 
     let root_id: NodeId = tree.set_root(root_node);
     let child_1_id: NodeId = tree.add_child(root_id, child_1).unwrap();
-    tree.add_child(root_id, child_3);
-    tree.add_child(child_1_id, grandchild_4);
-    tree.add_child(child_1_id, grandchild_5);
+    tree.add_child(root_id, child_3).unwrap();
+    tree.add_child(child_1_id, grandchild_4).unwrap();
+    tree.add_child(child_1_id, grandchild_5).unwrap();
 
     println!("Post-order:");
     print_node_post_order(&tree, root_id);
