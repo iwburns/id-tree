@@ -17,7 +17,7 @@ fn main() {
     let grandchild_5 = Node::new(5);
 
     let root_id: NodeId = tree.set_root(root_node);
-    let child_1_id: NodeId = tree.add_child(root_id, child_1);
+    let child_1_id: NodeId = tree.add_child(root_id, child_1).unwrap();
     tree.add_child(root_id, child_3);
     tree.add_child(child_1_id, grandchild_4);
     tree.add_child(child_1_id, grandchild_5);

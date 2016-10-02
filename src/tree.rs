@@ -2,8 +2,7 @@ use super::snowflake::ProcessUniqueId;
 use super::Node;
 use super::NodeId;
 use super::MutableNode;
-
-//todo: remove panic!()s and replace with custom errors and return Result values instead
+use super::NodeIdError;
 
 //todo: see if we can avoid bounds checks since we are managing the Ids manually here anyway.
 //todo: I believe, theoretically, there should only be bounds checks happening in is_valid_node_id().
@@ -221,17 +220,16 @@ impl<T> Tree<T> {
     /// tree.add_child(root_id, child_node);
     /// ```
     ///
-    pub fn add_child(&mut self, parent_id: NodeId, child: Node<T>) -> NodeId {
-        if !self.is_valid_node_id(parent_id) {
-            //todo: is panic the right tool here?
-            // maybe having this return Result would be better.
-            panic!("Invalid NodeId given for parent_id.");
+    pub fn add_child(&mut self, parent_id: NodeId, child: Node<T>) -> Result<NodeId, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(parent_id);
+        if !is_valid {
+            return Result::Err(error.unwrap());
         }
 
         let new_child_id = self.insert_new_node(child);
         self.set_as_parent_and_child(parent_id, new_child_id);
 
-        new_child_id
+        Result::Ok(new_child_id)
     }
 
     ///
@@ -252,7 +250,8 @@ impl<T> Tree<T> {
     /// ```
     ///
     pub fn get(&self, node_id: NodeId) -> Option<&Node<T>> {
-        if self.is_valid_node_id(node_id) {
+        let (is_valid, _) = self.is_valid_node_id(node_id);
+        if is_valid {
             return (*self.nodes.get(node_id.index).unwrap()).as_ref();
         }
         None
@@ -276,7 +275,8 @@ impl<T> Tree<T> {
     /// ```
     ///
     pub fn get_mut(&mut self, node_id: NodeId) -> Option<&mut Node<T>> {
-        if self.is_valid_node_id(node_id) {
+        let (is_valid, _) = self.is_valid_node_id(node_id);
+        if is_valid {
             return (*self.nodes.get_mut(node_id.index).unwrap()).as_mut();
         }
         None
@@ -304,11 +304,10 @@ impl<T> Tree<T> {
     /// let root_node = tree.remove_node_drop_children(root_id);
     /// ```
     ///
-    pub fn remove_node_drop_children(&mut self, node_id: NodeId) -> Node<T> {
-        if !self.is_valid_node_id(node_id) {
-            //todo: is panic the right tool here?
-            // maybe having this return Result would be better.
-            panic!("Invalid NodeId given for node_id.");
+    pub fn remove_node_drop_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Result::Err(error.unwrap());
         }
 
         if self.is_root_node(node_id) {
@@ -321,7 +320,7 @@ impl<T> Tree<T> {
         //clear children because they're no longer valid
         node.children_mut().clear();
 
-        node
+        Result::Ok(node)
     }
 
     ///
@@ -346,14 +345,13 @@ impl<T> Tree<T> {
     /// let root_node = tree.remove_node_orphan_children(root_id);
     /// ```
     ///
-    pub fn remove_node_orphan_children(&mut self, node_id: NodeId) -> Node<T> {
-        if !self.is_valid_node_id(node_id) {
-            //todo: is panic the right tool here?
-            // maybe having this return Result would be better.
-            panic!("Invalid NodeId given for node_id.");
+    pub fn remove_node_orphan_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Result::Err(error.unwrap());
         }
 
-        self.remove_node(node_id)
+        Result::Ok(self.remove_node(node_id))
     }
 
     ///
@@ -422,7 +420,7 @@ impl<T> Tree<T> {
     }
 
     fn remove_node_dirty(&mut self, node_id: NodeId) -> Node<T> {
-        debug_assert!(self.is_valid_node_id(node_id), "Invalid node_id found in what should be a 'protected' function.");
+        debug_assert!(self.is_valid_node_id(node_id).0, "Invalid node_id found in what should be a 'protected' function.");
 
         self.nodes.push(None);
         let node = self.nodes.swap_remove(node_id.index).expect("node_id refers to a None value even though it is should be valid.");
@@ -449,25 +447,22 @@ impl<T> Tree<T> {
         }
     }
 
-    fn is_valid_node_id(&self, node_id: NodeId) -> bool {
+    fn is_valid_node_id(&self, node_id: NodeId) -> (bool, Option<NodeIdError>) {
         if node_id.tree_id != self.id {
-            //the node_id belongs to a different tree.
-            return false;
+            return (false, Some(NodeIdError::InvalidNodeIdForTree));
         }
 
         let optional_node = self.nodes.get(node_id.index);
 
         if optional_node.is_none() {
-            //the index is out of bounds;
-            return false;
+            panic!("NodeId: {:?} is out of bounds. This shouldn't ever happen. This is very likely a bug in id_tree.", node_id);
         }
 
         if optional_node.unwrap().is_none() {
-            // the node at that index was removed.
-            return false;
+            return (false, Some(NodeIdError::NodeIdNoLongerValid));
         }
 
-        true
+        (true, None)
     }
 
     fn is_root_node(&self, node_id: NodeId) -> bool {
@@ -657,8 +652,8 @@ mod tree_tests {
         let node_b = Node::new(b);
 
         let root_id = tree.root.unwrap();
-        let node_a_id = tree.add_child(root_id, node_a);
-        let node_b_id = tree.add_child(root_id, node_b);
+        let node_a_id = tree.add_child(root_id, node_a).unwrap();
+        let node_b_id = tree.add_child(root_id, node_b).unwrap();
 
         let node_a_ref = tree.get(node_a_id).unwrap();
         let node_b_ref = tree.get(node_b_id).unwrap();
@@ -690,11 +685,11 @@ mod tree_tests {
 
         let root_id = tree.root.unwrap();
 
-        let node_1_id = tree.add_child(root_id, Node::new(1));
-        let node_2_id = tree.add_child(node_1_id, Node::new(2));
-        let node_3_id = tree.add_child(node_1_id, Node::new(3));
+        let node_1_id = tree.add_child(root_id, Node::new(1)).unwrap();
+        let node_2_id = tree.add_child(node_1_id, Node::new(2)).unwrap();
+        let node_3_id = tree.add_child(node_1_id, Node::new(3)).unwrap();
 
-        let node_1 = tree.remove_node_drop_children(node_1_id);
+        let node_1 = tree.remove_node_drop_children(node_1_id).unwrap();
 
         assert_eq!(node_1.data(), &1);
         assert_eq!(node_1.children().len(), 0);
@@ -713,11 +708,11 @@ mod tree_tests {
 
         let root_id = tree.root.unwrap();
 
-        let node_1_id = tree.add_child(root_id, Node::new(1));
-        let node_2_id = tree.add_child(node_1_id, Node::new(2));
-        let node_3_id = tree.add_child(node_1_id, Node::new(3));
+        let node_1_id = tree.add_child(root_id, Node::new(1)).unwrap();
+        let node_2_id = tree.add_child(node_1_id, Node::new(2)).unwrap();
+        let node_3_id = tree.add_child(node_1_id, Node::new(3)).unwrap();
 
-        let node_1 = tree.remove_node_orphan_children(node_1_id);
+        let node_1 = tree.remove_node_orphan_children(node_1_id).unwrap();
 
         assert_eq!(node_1.data(), &1);
         assert_eq!(node_1.children().len(), 2);
