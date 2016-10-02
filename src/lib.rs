@@ -20,9 +20,11 @@
 extern crate snowflake;
 use self::snowflake::ProcessUniqueId;
 
+mod error;
 mod node;
 mod tree;
 
+pub use error::NodeIdError;
 pub use node::NodeBuilder;
 pub use node::Node;
 pub use tree::TreeBuilder;
