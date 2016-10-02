@@ -6,6 +6,7 @@ use super::MutableNode;
 //todo: remove panic!()s and replace with custom errors and return Result values instead
 
 //todo: see if we can avoid bounds checks since we are managing the Ids manually here anyway.
+//todo: I believe, theoretically, there should only be bounds checks happening in is_valid_node_id().
 
 ///
 /// A `Tree` builder that provides more control over how a `Tree` is created.
