@@ -454,13 +454,15 @@ impl<T> Tree<T> {
             return false;
         }
 
-        if self.nodes.get(node_id.index).is_none() {
-            //the index is out of bounds
+        let optional_node = self.nodes.get(node_id.index);
+
+        if optional_node.is_none() {
+            //the index is out of bounds;
             return false;
         }
 
-        if self.nodes.get(node_id.index).unwrap().is_none() {
-            //the node at that index was removed.
+        if optional_node.unwrap().is_none() {
+            // the node at that index was removed.
             return false;
         }
 
