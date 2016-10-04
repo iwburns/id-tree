@@ -170,7 +170,7 @@ pub struct Tree<T> {
 impl<T> Tree<T> {
 
     ///
-    /// Creates a new `Tree` with default settings.
+    /// Creates a new `Tree` with default settings (no root `Node` and no space pre-allocation).
     ///
     /// ```
     /// use id_tree::Tree;
@@ -367,11 +367,8 @@ impl<T> Tree<T> {
     }
 
     ///
-    /// Returns the `NodeId` of the root `Node` if it exists.  Otherwise a None value is returned.
-    ///
-    /// This might be useful if you only ever want to traverse the tree in its entirety.  In that
-    /// situation, you can throw away all of the `NodeId`s after the tree has been constructed since
-    /// you can always find the root `Node`'s `NodeId`.
+    /// Returns a `Some` value containing the `NodeId` of the root `Node` if it exists.  Otherwise a
+    /// `None` value is returned.
     ///
     /// ```
     /// use id_tree::Tree;
