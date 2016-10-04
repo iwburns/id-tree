@@ -1,12 +1,43 @@
 //! A library for creating and modifying Tree structures.
 //!
+//! # Overview
 //! In this implementation, the `Tree` owns all of the `Node`s and all inter-`Node` relationships are
-//! managed with `NodeId`s.  This means that you will need a reference to the `Tree` to get a
-//! reference to any `Node`'s parent or any of its children.
+//! managed with `NodeId`s.
 //!
-//! It is also important to note that this library does not support arbitrary Graph creation.  Any
-//! given Node can have up to **one parent**, an **arbitrary number of children**, and there can be
-//! **no cycles**.
+//! `Tree`s in this library are "just" trees.  They do not allow cycles.  They do not allow
+//! the creation of arbitrary Graph structures.  There is no weight associated with edges between
+//! `Node`s.  In addition, each `Node` can have an arbitrary number of child `Node`s.
+//!
+//! It is important to note that this library does not support comparison-based `Node` insertion.
+//! In other words, this is not a Binary Search Tree (or any other kind of search tree) library.
+//! It is purely a library for storing data in a hierarchical manner.  The caller must know the
+//! structure that they wish to build and then use this library to do so;  this library will not
+//! make those structural decisions for you.
+//!
+//! ### Project Goals
+//! * Allow caller control of as many allocations as possible (through pre-allocation)
+//! * Fast `Node` insertion and removal
+//!
+//! ### Non-Goals
+//! * Arbitrary graph creation and manipulation
+//! * Comparison-based node insertion of any kind
+//!
+//! #### Drawbacks of this Library
+//! Rust's ownership system is sidestepped a bit by this implementation.
+//!
+//! Because `Tree`s give out `NodeId`s to identify `Node`s when they are inserted, those `NodeId`s
+//! will - by their very nature - become invalid when the `Node` they refer to is removed from the
+//! `Tree`.  This is because they are simply identifiers and not real references.  In addition (and
+//! causing even more issues), if another `Node` is inserted, the old `NodeId` will be reused to
+//! save space meaning it now refers to a different `Node` than it did originally.
+//!
+//! This means that some of the burden falls on the caller to make sure that old `NodeId`s aren't
+//! kept around.  This library will return `Result`s where errors are possible, but it has no way of
+//! letting the caller know that they are using a `NodeId` that has been re-purposed.  Sadly this is
+//! a limitation of this type of implementation itself and cannot fully be avoided.
+//!
+//! This really just means that the caller will have to pay a bit more attention to the `NodeId`s
+//! that are maintained throughout the life of their program.
 //!
 //! -----------------------------------------------------------------------------------------------
 //!
