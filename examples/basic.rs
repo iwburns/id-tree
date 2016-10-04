@@ -17,10 +17,10 @@ fn main() {
     let grandchild_5 = Node::new(5);
 
     let root_id: NodeId = tree.set_root(root_node);
-    let child_1_id: NodeId = tree.add_child(root_id, child_1).unwrap();
-    tree.add_child(root_id, child_3).unwrap();
-    tree.add_child(child_1_id, grandchild_4).unwrap();
-    tree.add_child(child_1_id, grandchild_5).unwrap();
+    let child_1_id: NodeId = tree.insert_with_parent(child_1, root_id).unwrap();
+    tree.insert_with_parent(child_3, root_id).unwrap();
+    tree.insert_with_parent(grandchild_4, child_1_id).unwrap();
+    tree.insert_with_parent(grandchild_5, child_1_id).unwrap();
 
     println!("Post-order:");
     print_node_post_order(&tree, root_id);

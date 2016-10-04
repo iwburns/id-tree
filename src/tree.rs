@@ -227,10 +227,10 @@ impl<T> Tree<T> {
     /// let mut tree: Tree<i32> = Tree::new();
     /// let root_id = tree.set_root(root_node);
     ///
-    /// tree.add_child(root_id, child_node);
+    /// tree.insert_with_parent(child_node, root_id);
     /// ```
     ///
-    pub fn add_child(&mut self, parent_id: NodeId, child: Node<T>) -> Result<NodeId, NodeIdError> {
+    pub fn insert_with_parent(&mut self, child: Node<T>, parent_id: NodeId) -> Result<NodeId, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(parent_id);
         if !is_valid {
             return Result::Err(error.unwrap());
@@ -310,7 +310,7 @@ impl<T> Tree<T> {
     /// let mut tree: Tree<i32> = Tree::new();
     /// let root_id = tree.set_root(root_node);
     ///
-    /// tree.add_child(root_id, child_node);
+    /// tree.insert_with_parent(child_node, root_id);
     ///
     /// let root_node = tree.remove_node_drop_children(root_id);
     /// ```
@@ -352,7 +352,7 @@ impl<T> Tree<T> {
     /// let mut tree: Tree<i32> = Tree::new();
     /// let root_id = tree.set_root(root_node);
     ///
-    /// tree.add_child(root_id, child_node);
+    /// tree.insert_with_parent(child_node, root_id);
     ///
     /// let root_node = tree.remove_node_orphan_children(root_id);
     /// ```
@@ -664,8 +664,8 @@ mod tree_tests {
         let node_b = Node::new(b);
 
         let root_id = tree.root.unwrap();
-        let node_a_id = tree.add_child(root_id, node_a).unwrap();
-        let node_b_id = tree.add_child(root_id, node_b).unwrap();
+        let node_a_id = tree.insert_with_parent(node_a, root_id).unwrap();
+        let node_b_id = tree.insert_with_parent(node_b, root_id).unwrap();
 
         let node_a_ref = tree.get(node_a_id).unwrap();
         let node_b_ref = tree.get(node_b_id).unwrap();
@@ -697,9 +697,9 @@ mod tree_tests {
 
         let root_id = tree.root.unwrap();
 
-        let node_1_id = tree.add_child(root_id, Node::new(1)).unwrap();
-        let node_2_id = tree.add_child(node_1_id, Node::new(2)).unwrap();
-        let node_3_id = tree.add_child(node_1_id, Node::new(3)).unwrap();
+        let node_1_id = tree.insert_with_parent(Node::new(1), root_id).unwrap();
+        let node_2_id = tree.insert_with_parent(Node::new(2), node_1_id).unwrap();
+        let node_3_id = tree.insert_with_parent(Node::new(3), node_1_id).unwrap();
 
         let node_1 = tree.remove_node_drop_children(node_1_id).unwrap();
 
@@ -720,9 +720,9 @@ mod tree_tests {
 
         let root_id = tree.root.unwrap();
 
-        let node_1_id = tree.add_child(root_id, Node::new(1)).unwrap();
-        let node_2_id = tree.add_child(node_1_id, Node::new(2)).unwrap();
-        let node_3_id = tree.add_child(node_1_id, Node::new(3)).unwrap();
+        let node_1_id = tree.insert_with_parent(Node::new(1), root_id).unwrap();
+        let node_2_id = tree.insert_with_parent(Node::new(2), node_1_id).unwrap();
+        let node_3_id = tree.insert_with_parent(Node::new(3), node_1_id).unwrap();
 
         let node_1 = tree.remove_node_orphan_children(node_1_id).unwrap();
 
