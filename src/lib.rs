@@ -14,12 +14,13 @@
 //! structure that they wish to build and then use this library to do so;  this library will not
 //! make those structural decisions for you.
 //!
-//! ### Project Goals
+//! ## Project Goals
 //! * Allow caller control of as many allocations as possible (through pre-allocation)
 //! * Fast `Node` insertion and removal
+//! * Arbitrary _Tree_ structure creation and manipulation
 //!
-//! ### Non-Goals
-//! * Arbitrary graph creation and manipulation
+//! ## Non-Goals
+//! * Arbitrary _Graph_ structure creation and manipulation
 //! * Comparison-based node insertion of any kind
 //!
 //! #### Drawbacks of this Library
