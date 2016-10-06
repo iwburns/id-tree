@@ -142,8 +142,8 @@ impl<T> Node<T> {
     /// assert!(five.parent().is_none());
     /// ```
     ///
-    pub fn parent(&self) -> Option<NodeId> {
-        self.parent.clone()
+    pub fn parent(&self) -> Option<&NodeId> {
+        self.parent.as_ref()
     }
 
     ///
@@ -237,7 +237,9 @@ mod node_tests {
         };
 
         node.set_parent(Some(parent_id.clone()));
-        assert_eq!(node.parent(), Some(parent_id));
+        assert!(node.parent().is_some());
+
+        assert_eq!(node.parent().unwrap().clone(), parent_id);
     }
 
     #[test]

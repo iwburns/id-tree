@@ -670,8 +670,8 @@ mod tree_tests {
         assert_eq!(node_a_ref.data(), &a);
         assert_eq!(node_b_ref.data(), &b);
 
-        assert_eq!(node_a_ref.parent().unwrap(), root_id);
-        assert_eq!(node_b_ref.parent().unwrap(), root_id);
+        assert_eq!(node_a_ref.parent().unwrap().clone(), root_id);
+        assert_eq!(node_b_ref.parent().unwrap().clone(), root_id);
 
         let root_node_ref = tree.get(&root_id).unwrap();
         let root_children: &Vec<NodeId> = root_node_ref.children();
@@ -703,7 +703,7 @@ mod tree_tests {
 
         assert_eq!(node_1.data(), &1);
         assert_eq!(node_1.children().len(), 0);
-        assert_eq!(node_1.parent().unwrap(), root_id);
+        assert_eq!(node_1.parent().unwrap().clone(), root_id);
         assert!(tree.get(&node_1_id).is_none());
         assert!(tree.get(&node_2_id).is_none());
         assert!(tree.get(&node_3_id).is_none());
@@ -726,7 +726,7 @@ mod tree_tests {
 
         assert_eq!(node_1.data(), &1);
         assert_eq!(node_1.children().len(), 2);
-        assert_eq!(node_1.parent().unwrap(), root_id);
+        assert_eq!(node_1.parent().unwrap().clone(), root_id);
         assert!(tree.get(&node_1_id).is_none());
         assert_eq!(tree.get(&node_2_id).unwrap().data(), &2);
         assert_eq!(tree.get(&node_3_id).unwrap().data(), &3);
