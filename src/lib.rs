@@ -72,7 +72,7 @@ pub use tree::Tree;
 /// `A` and `B`, there's no worry of trying to access a `Node` in `A` with an identifier that came
 /// from `B`.  Doing so will return a `NodeIdError` instead of returning the wrong `Node`.
 ///
-#[derive(Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
+#[derive(Clone, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
 pub struct NodeId {
     tree_id: ProcessUniqueId,
     index: usize,
