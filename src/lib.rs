@@ -24,21 +24,32 @@
 //! * Comparison-based node insertion of any kind
 //!
 //! #### Drawbacks of this Library
-//! Rust's ownership system is sidestepped a bit by this implementation.
+//! Sadly, Rust's ownership/reference system is sidestepped a bit by this implementation and this
+//! can cause issues if the caller doesn't pay attention to what they are doing with `NodeId`s.
 //!
-//! Because `Tree`s give out `NodeId`s to identify `Node`s when they are inserted, those `NodeId`s
-//! will - by their very nature - become invalid when the `Node` they refer to is removed from the
-//! `Tree`.  This is because they are simply identifiers and not real references.  In addition (and
-//! causing even more issues), if another `Node` is inserted, the old `NodeId` will be reused to
-//! save space meaning it now refers to a different `Node` than it did originally.
+//! Because `Tree`s pass out `NodeId`s as `Node`s are inserted, several issues can occur:
 //!
-//! This means that some of the burden falls on the caller to make sure that old `NodeId`s aren't
-//! kept around.  This library will return `Result`s where errors are possible, but it has no way of
-//! letting the caller know that they are using a `NodeId` that has been re-purposed.  Sadly this is
-//! a limitation of this type of implementation itself and cannot fully be avoided.
+//! 1. If a `Node` is removed, the `NodeId` that previously identified it now points nothing
+//! (technically a `None` value in this case).
+//! 2. If a `Node` is removed and then another is inserted later, the "new" `NodeId` that is
+//! returned can (and will) be the same `NodeId` that was used to identify a different `Node`
+//! previously.
 //!
-//! This really just means that the caller will have to pay a bit more attention to the `NodeId`s
-//! that are maintained throughout the life of their program.
+//! The above issues may seem like deal-breakers, but if this library is used properly they can be
+//! avoided entirely and never cause issues.
+//!
+//! To mitigate the above issues, this library does the following:
+//!
+//! 1. All `Tree` methods that **read** or **insert** data take `&NodeId`s instead of `NodeId`s.
+//! 2. All `Tree` methods that **remove** data take `NodeId`s instead of `&NodeId`s.
+//! 2. `NodeId`s themselves are `Clone`, but not `Copy`.
+//!
+//! This means we have "almost safe references" that you can clone if you choose to.  The resulting
+//! behavior is that unless the caller **explicitly `Clone`s a `NodeId`** they should never be in a
+//! situation where they accidentally hold onto a `NodeId` too long.
+//!
+//! This _does_ transfer some of the burden to the caller, but any errors should be fairly easy to
+//! sort out because an explicit `Clone` is required for such an error to occur.
 //!
 //! -----------------------------------------------------------------------------------------------
 //!
