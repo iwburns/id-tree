@@ -33,7 +33,7 @@ fn test_get_node_from_other_tree() {
     let root_node_id_a = tree_a.set_root(root_node_a);
 
     let root_node_a = tree_a.get(&root_node_id_a);
-    let root_node_b = tree_b.get(&root_node_id_a);
+    let root_node_b = tree_b.get(&root_node_id_a); //note use of wrong tree
 
     assert!(root_node_a.is_some());
     assert!(root_node_b.is_none());
@@ -48,7 +48,7 @@ fn test_get_mut_node_from_other_tree() {
     let root_node_id_a = tree_a.set_root(root_node_a);
 
     let root_node_a = tree_a.get_mut(&root_node_id_a);
-    let root_node_b = tree_b.get_mut(&root_node_id_a);
+    let root_node_b = tree_b.get_mut(&root_node_id_a); //note use of wrong tree
 
     assert!(root_node_a.is_some());
     assert!(root_node_b.is_none());
@@ -61,7 +61,7 @@ fn test_remove_node_drop_children_from_other_tree() {
 
     let root_node_id_a = tree_a.set_root(Node::new(1));
 
-    let root_node_b = tree_b.remove_node_drop_children(root_node_id_a);
+    let root_node_b = tree_b.remove_node_drop_children(root_node_id_a); //note use of wrong tree
     assert!(root_node_b.is_err());
 
     let error = root_node_b.err().unwrap();
@@ -75,7 +75,7 @@ fn test_remove_node_orphan_children_from_other_tree() {
 
     let root_node_id_a = tree_a.set_root(Node::new(1));
 
-    let root_node_b = tree_b.remove_node_orphan_children(root_node_id_a);
+    let root_node_b = tree_b.remove_node_orphan_children(root_node_id_a); //note use of wrong tree
     assert!(root_node_b.is_err());
 
     let error = root_node_b.err().unwrap();
