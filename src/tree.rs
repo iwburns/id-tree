@@ -6,6 +6,7 @@ use super::NodeIdError;
 
 //todo: see if we can avoid bounds checks since we are managing the Ids manually here anyway.
 //todo: I believe, theoretically, there should only be bounds checks happening in is_valid_node_id().
+//todo: add (private) get_unsafe and get_mut_unsafe for situations where we've already confirmed that a NodeId is valid, but we need to get a reference to that node internally.
 
 ///
 /// A `Tree` builder that provides more control over how a `Tree` is created.
@@ -292,55 +293,90 @@ impl<T> Tree<T> {
         None
     }
 
-    ///
-    /// Remove a `Node` from the `Tree` and drop all of its children from the `Tree`.
-    ///
-    /// Returns a `Result` containing the removed `Node` or a `NodeIdError` if one occurred.
-    ///
-    /// The `Node` that is returned will have its children cleared because those `NodeId`s are no
-    /// longer valid.
-    ///
-    /// ```
-    /// use id_tree::Tree;
-    /// use id_tree::Node;
-    ///
-    /// let root_node = Node::new(1);
-    /// let child_node = Node::new(2);
-    ///
-    /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.set_root(root_node);
-    ///
-    /// tree.insert_with_parent(child_node, &root_id);
-    ///
-    /// let root_node = tree.remove_node_drop_children(root_id);
-    /// ```
-    ///
-    pub fn remove_node_drop_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
+//    ///
+//    /// Remove a `Node` from the `Tree` and drop all of its children from the `Tree`.
+//    ///
+//    /// Returns a `Result` containing the removed `Node` or a `NodeIdError` if one occurred.
+//    ///
+//    /// **NOTE:** The `Node` that is returned will have its parent value cleared to avoid
+//    /// providing the caller with an extra copy of that `NodeId` should the corresponding `Node` be
+//    /// removed from the `Tree` at a later time. The `Node` that is returned will also have its
+//    /// child `NodeId`s cleared, but that is because immediately after the call to this method,
+//    /// those `NodId`s are already invalid.
+//    ///
+//    /// If the caller needs a copy of the parent `NodeId`, they must `Clone` it before
+//    /// this `Node` is removed from the `Tree`.  Please see the
+//    /// [Potential `NodeId` Issues](struct.NodeId.html#potential-nodeid-issues) section
+//    /// of the `NodeId` documentation for more information on the implications of calling `Clone` on
+//    /// a `NodeId`.
+//    ///
+//    /// ```
+//    /// use id_tree::Tree;
+//    /// use id_tree::Node;
+//    ///
+//    /// let root_node = Node::new(1);
+//    /// let child_node = Node::new(2);
+//    ///
+//    /// let mut tree: Tree<i32> = Tree::new();
+//    /// let root_id = tree.set_root(root_node);
+//    ///
+//    /// tree.insert_with_parent(child_node, &root_id);
+//    ///
+//    /// let root_node = tree.remove_node_drop_children(root_id);
+//    /// ```
+//    ///
+//    pub fn remove_node_drop_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
+//        let (is_valid, error) = self.is_valid_node_id(&node_id);
+//        if !is_valid {
+//            return Result::Err(error.unwrap());
+//        }
+//
+//        if self.is_root_node(&node_id) {
+//            self.root = None;
+//        }
+//
+//        self.drop_children_recursive(&node_id);
+//
+//        Result::Ok(self.remove_node(node_id))
+//    }
+
+    //todo: document and test this.
+    //todo: then update other documentation for these changes.
+    //should point children to parent of this node if it exists. otherwise orphan them.
+    pub fn remove_node_lift_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(&node_id);
         if !is_valid {
             return Result::Err(error.unwrap());
         }
 
-        if self.is_root_node(&node_id) {
-            self.root = None;
+        if !self.node_has_parent(&node_id) {
+            return self.remove_node_orphan_children(node_id);
         }
 
-        self.drop_children_recursive(&node_id);
+        let parent_id = self.get(&node_id).unwrap().parent().unwrap().clone();
 
-        let mut node = self.remove_node(node_id);
-        //clear children because they're no longer valid
-        node.children_mut().clear();
+        for child_id in self.get(&node_id).unwrap().children().clone() {
+            let child = self.get_mut(&child_id).unwrap();
+            child.set_parent(Some(parent_id.clone()));
+        }
 
-        Result::Ok(node)
+        Result::Ok(self.remove_node(node_id))
     }
 
     ///
-    /// Remove a `Node` from the `Tree` and leave of its children in the `Tree`.
+    /// Remove a `Node` from the `Tree` and leave all of its children in the `Tree`.
     ///
     /// Returns a `Result` containing the removed `Node` or a `NodeIdError` if one occurred.
     ///
-    /// The `Node` that is returned will still have its children because those `NodeId`s are still
-    /// valid. These orphaned `Node`s will remain in memory until the `Tree` goes out of scope.
+    /// **NOTE:** The `Node` that is returned will have its parent and child values cleared to avoid
+    /// providing the caller with extra copies of `NodeId`s should the corresponding `Node`s be
+    /// removed from the `Tree` at a later time.
+    ///
+    /// If the caller needs a copy of the parent or child `NodeId`s, they must `Clone` them before
+    /// this `Node` is removed from the `Tree`.  Please see the
+    /// [Potential `NodeId` Issues](struct.NodeId.html#potential-nodeid-issues) section
+    /// of the `NodeId` documentation for more information on the implications of calling `Clone` on
+    /// a `NodeId`.
     ///
     /// ```
     /// use id_tree::Tree;
@@ -361,6 +397,10 @@ impl<T> Tree<T> {
         let (is_valid, error) = self.is_valid_node_id(&node_id);
         if !is_valid {
             return Result::Err(error.unwrap());
+        }
+
+        for child_id in self.get(&node_id).unwrap().children().clone() {
+            self.clear_parent(&child_id);
         }
 
         Result::Ok(self.remove_node(node_id))
@@ -414,7 +454,7 @@ impl<T> Tree<T> {
 
     fn remove_node(&mut self, node_id: NodeId) -> Node<T> {
 
-        let node = self.remove_node_dirty(node_id.clone());
+        let mut node = self.remove_node_dirty(node_id.clone());
 
         //todo: it seems like I might be missing an edge case here, but I'm not sure what it is
         if let Some(parent_id) = node.parent() {
@@ -424,6 +464,10 @@ impl<T> Tree<T> {
                 panic!("Invalid parent_id for node_id: {:?}", node_id);
             }
         }
+
+        //avoid providing the caller with extra copies NodeIds
+        node.children_mut().clear();
+        node.set_parent(None);
 
         node
     }
@@ -481,6 +525,22 @@ impl<T> Tree<T> {
             },
             None => false
         }
+    }
+
+    fn node_has_parent(&self, node_id: &NodeId) -> bool {
+        self.get(node_id).unwrap().parent().is_some()
+    }
+
+    fn node_has_children(&self, node_id: &NodeId) -> bool {
+        self.get(node_id).unwrap().children().len() > 0
+    }
+
+    fn clear_children(&mut self, node_id: &NodeId) {
+        self.get_mut(node_id).unwrap().children_mut().clear();
+    }
+
+    fn clear_parent(&mut self, node_id: &NodeId) {
+        self.get_mut(node_id).unwrap().set_parent(None);
     }
 }
 
@@ -649,7 +709,7 @@ mod tree_tests {
     }
 
     #[test]
-    fn test_add_child() {
+    fn test_insert_with_parent() {
         let a = 1;
         let b = 2;
         let r = 5;
@@ -686,28 +746,29 @@ mod tree_tests {
         assert_eq!(child_2_ref.data(), &b);
     }
 
-    #[test]
-    fn test_remove_node_drop_children() {
-
-        let mut tree = TreeBuilder::new()
-            .with_root(Node::new(5))
-            .build();
-
-        let root_id = tree.root.clone().unwrap();
-
-        let node_1_id = tree.insert_with_parent(Node::new(1), &root_id).unwrap();
-        let node_2_id = tree.insert_with_parent(Node::new(2), &node_1_id).unwrap();
-        let node_3_id = tree.insert_with_parent(Node::new(3), &node_1_id).unwrap();
-
-        let node_1 = tree.remove_node_drop_children(node_1_id.clone()).unwrap();
-
-        assert_eq!(node_1.data(), &1);
-        assert_eq!(node_1.children().len(), 0);
-        assert_eq!(node_1.parent().unwrap().clone(), root_id);
-        assert!(tree.get(&node_1_id).is_none());
-        assert!(tree.get(&node_2_id).is_none());
-        assert!(tree.get(&node_3_id).is_none());
-    }
+//    #[test]
+//    fn test_remove_node_drop_children() {
+//
+//        let mut tree = TreeBuilder::new()
+//            .with_root(Node::new(5))
+//            .build();
+//
+//        let root_id = tree.root.clone().unwrap();
+//
+//        let node_1_id = tree.insert_with_parent(Node::new(1), &root_id).unwrap();
+//        let node_2_id = tree.insert_with_parent(Node::new(2), &node_1_id).unwrap();
+//        let node_3_id = tree.insert_with_parent(Node::new(3), &node_1_id).unwrap();
+//
+//        let node_1 = tree.remove_node_drop_children(node_1_id.clone()).unwrap();
+//
+//        assert_eq!(node_1.data(), &1);
+//        assert_eq!(node_1.children().len(), 0);
+//        assert!(node_1.parent().is_none());
+//
+//        assert!(tree.get(&node_1_id).is_none());
+//        assert!(tree.get(&node_2_id).is_none());
+//        assert!(tree.get(&node_3_id).is_none());
+//    }
 
     #[test]
     fn test_remove_node_orphan_children() {
@@ -725,8 +786,9 @@ mod tree_tests {
         let node_1 = tree.remove_node_orphan_children(node_1_id.clone()).unwrap();
 
         assert_eq!(node_1.data(), &1);
-        assert_eq!(node_1.children().len(), 2);
-        assert_eq!(node_1.parent().unwrap().clone(), root_id);
+        assert_eq!(node_1.children().len(), 0);
+        assert!(node_1.parent().is_none());
+
         assert!(tree.get(&node_1_id).is_none());
         assert_eq!(tree.get(&node_2_id).unwrap().data(), &2);
         assert_eq!(tree.get(&node_3_id).unwrap().data(), &3);
