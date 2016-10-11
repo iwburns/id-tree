@@ -263,7 +263,7 @@ impl<T> Tree<T> {
     pub fn get(&self, node_id: &NodeId) -> Option<&Node<T>> {
         let (is_valid, _) = self.is_valid_node_id(node_id);
         if is_valid {
-            return (*self.nodes.get(node_id.index).unwrap()).as_ref();
+            return Some(self.get_unsafe(node_id));
         }
         None
     }
@@ -288,7 +288,7 @@ impl<T> Tree<T> {
     pub fn get_mut(&mut self, node_id: &NodeId) -> Option<&mut Node<T>> {
         let (is_valid, _) = self.is_valid_node_id(node_id);
         if is_valid {
-            return (*self.nodes.get_mut(node_id.index).unwrap()).as_mut();
+            return Some(self.get_mut_unsafe(node_id));
         }
         None
     }
@@ -413,13 +413,31 @@ impl<T> Tree<T> {
         self.root.as_ref()
     }
 
+    // Nothing should make it past this function.
+    // If there is a way for a NodeId to be invalid, it should be caught here.
+    fn is_valid_node_id(&self, node_id: &NodeId) -> (bool, Option<NodeIdError>) {
+        if node_id.tree_id != self.id {
+            return (false, Some(NodeIdError::InvalidNodeIdForTree));
+        }
+
+        let optional_node = self.nodes.get(node_id.index);
+
+        if optional_node.is_none() {
+            panic!("NodeId: {:?} is out of bounds. This shouldn't ever happen. This is very likely a bug in id_tree.  Please report this issue.", node_id);
+        }
+
+        if optional_node.unwrap().is_none() {
+            return (false, Some(NodeIdError::NodeIdNoLongerValid));
+        }
+
+        (true, None)
+    }
+
     fn set_as_parent_and_child(&mut self, parent_id: &NodeId, child_id: &NodeId) {
-        self.get_mut(parent_id)
-            .expect("parent_id refers to a None value.")
+        self.get_mut_unsafe(parent_id)
             .add_child(child_id.clone());
 
-        self.get_mut(child_id)
-            .expect("child_id refers to a None value.")
+        self.get_mut_unsafe(child_id)
             .set_parent(Some(parent_id.clone()));
     }
 
@@ -447,11 +465,9 @@ impl<T> Tree<T> {
 
         //todo: it seems like I might be missing an edge case here, but I'm not sure what it is
         if let Some(parent_id) = node.parent() {
-            if let Some(parent_node) = self.get_mut(&parent_id) {
-                parent_node.children_mut().retain(|child_id| child_id.clone() != node_id);
-            } else {
-                panic!("Invalid parent_id for node_id: {:?}", node_id);
-            }
+            self.get_mut_unsafe(&parent_id)
+                .children_mut()
+                .retain(|child_id| child_id.clone() != node_id);
         }
 
         //avoid providing the caller with extra copies NodeIds
@@ -478,30 +494,28 @@ impl<T> Tree<T> {
         }
     }
 
-    fn is_valid_node_id(&self, node_id: &NodeId) -> (bool, Option<NodeIdError>) {
-        if node_id.tree_id != self.id {
-            return (false, Some(NodeIdError::InvalidNodeIdForTree));
-        }
-
-        let optional_node = self.nodes.get(node_id.index);
-
-        if optional_node.is_none() {
-            panic!("NodeId: {:?} is out of bounds. This shouldn't ever happen. This is very likely a bug in id_tree.  Please report this issue.", node_id);
-        }
-
-        if optional_node.unwrap().is_none() {
-            return (false, Some(NodeIdError::NodeIdNoLongerValid));
-        }
-
-        (true, None)
-    }
-
     fn node_has_parent(&self, node_id: &NodeId) -> bool {
-        self.get(node_id).unwrap().parent().is_some()
+        self.get_unsafe(node_id).parent().is_some()
     }
 
     fn clear_parent(&mut self, node_id: &NodeId) {
-        self.get_mut(node_id).unwrap().set_parent(None);
+        self.get_mut_unsafe(node_id).set_parent(None);
+    }
+
+    fn get_unsafe(&self, node_id: &NodeId) -> &Node<T> {
+        unsafe {
+            self.nodes.get_unchecked(node_id.index)
+                .as_ref()
+                .expect("An invalid NodeId made it past id_tree's internal checks.  Please report this issue!")
+        }
+    }
+
+    fn get_mut_unsafe(&mut self, node_id: &NodeId) -> &mut Node<T> {
+        unsafe {
+            self.nodes.get_unchecked_mut(node_id.index)
+                .as_mut()
+                .expect("An invalid NodeId made it past id_tree's internal checks.  Please report this issue!")
+        }
     }
 }
 
