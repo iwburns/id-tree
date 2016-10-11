@@ -292,8 +292,7 @@ impl<T> Tree<T> {
         }
         None
     }
-    
-    //todo: then update other documentation for these changes.
+
     ///
     /// Remove a `Node` from the `Tree` and move its children up one "level" in the `Tree` if
     /// possible.
@@ -472,17 +471,6 @@ impl<T> Tree<T> {
         node
     }
 
-    fn drop_children_recursive(&mut self, node_id: &NodeId) {
-
-        //todo: is there a way to avoid this clone?
-        let children = self.get(node_id).unwrap().children().clone();
-
-        for child_id in children {
-            self.drop_children_recursive(&child_id);
-            self.remove_node_dirty(child_id);
-        }
-    }
-
     fn new_node_id(&self, node_index: usize) -> NodeId {
         NodeId {
             tree_id: self.id,
@@ -508,25 +496,8 @@ impl<T> Tree<T> {
         (true, None)
     }
 
-    fn is_root_node(&self, node_id: &NodeId) -> bool {
-        match self.root.clone() {
-            Some(root_id) => {
-                root_id == *node_id
-            },
-            None => false
-        }
-    }
-
     fn node_has_parent(&self, node_id: &NodeId) -> bool {
         self.get(node_id).unwrap().parent().is_some()
-    }
-
-    fn node_has_children(&self, node_id: &NodeId) -> bool {
-        self.get(node_id).unwrap().children().len() > 0
-    }
-
-    fn clear_children(&mut self, node_id: &NodeId) {
-        self.get_mut(node_id).unwrap().children_mut().clear();
     }
 
     fn clear_parent(&mut self, node_id: &NodeId) {
