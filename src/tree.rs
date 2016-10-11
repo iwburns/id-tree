@@ -292,57 +292,46 @@ impl<T> Tree<T> {
         }
         None
     }
-
-//    ///
-//    /// Remove a `Node` from the `Tree` and drop all of its children from the `Tree`.
-//    ///
-//    /// Returns a `Result` containing the removed `Node` or a `NodeIdError` if one occurred.
-//    ///
-//    /// **NOTE:** The `Node` that is returned will have its parent value cleared to avoid
-//    /// providing the caller with an extra copy of that `NodeId` should the corresponding `Node` be
-//    /// removed from the `Tree` at a later time. The `Node` that is returned will also have its
-//    /// child `NodeId`s cleared, but that is because immediately after the call to this method,
-//    /// those `NodId`s are already invalid.
-//    ///
-//    /// If the caller needs a copy of the parent `NodeId`, they must `Clone` it before
-//    /// this `Node` is removed from the `Tree`.  Please see the
-//    /// [Potential `NodeId` Issues](struct.NodeId.html#potential-nodeid-issues) section
-//    /// of the `NodeId` documentation for more information on the implications of calling `Clone` on
-//    /// a `NodeId`.
-//    ///
-//    /// ```
-//    /// use id_tree::Tree;
-//    /// use id_tree::Node;
-//    ///
-//    /// let root_node = Node::new(1);
-//    /// let child_node = Node::new(2);
-//    ///
-//    /// let mut tree: Tree<i32> = Tree::new();
-//    /// let root_id = tree.set_root(root_node);
-//    ///
-//    /// tree.insert_with_parent(child_node, &root_id);
-//    ///
-//    /// let root_node = tree.remove_node_drop_children(root_id);
-//    /// ```
-//    ///
-//    pub fn remove_node_drop_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
-//        let (is_valid, error) = self.is_valid_node_id(&node_id);
-//        if !is_valid {
-//            return Result::Err(error.unwrap());
-//        }
-//
-//        if self.is_root_node(&node_id) {
-//            self.root = None;
-//        }
-//
-//        self.drop_children_recursive(&node_id);
-//
-//        Result::Ok(self.remove_node(node_id))
-//    }
-
-    //todo: document and test this.
+    
     //todo: then update other documentation for these changes.
-    //should point children to parent of this node if it exists. otherwise orphan them.
+    ///
+    /// Remove a `Node` from the `Tree` and move its children up one "level" in the `Tree` if
+    /// possible.
+    ///
+    /// Returns a `Result` containing the removed `Node` or a `NodeIdError` if one occurred.
+    ///
+    /// In other words, this `Node`'s children will point to its parent as their parent instead of
+    /// this `Node`.  In addition, this `Node`'s parent will have this `Node`'s children added as
+    /// its own children.  If this `Node` has no parent, then calling this function is the
+    /// equivalent of calling `remove_node_orphan_children`.
+    ///
+    /// **NOTE:** The `Node` that is returned will have its parent and child values cleared to avoid
+    /// providing the caller with extra copies of `NodeId`s should the corresponding `Node`s be
+    /// removed from the `Tree` at a later time.
+    ///
+    /// If the caller needs a copy of the parent or child `NodeId`s, they must `Clone` them before
+    /// this `Node` is removed from the `Tree`.  Please see the
+    /// [Potential `NodeId` Issues](struct.NodeId.html#potential-nodeid-issues) section
+    /// of the `NodeId` documentation for more information on the implications of calling `Clone` on
+    /// a `NodeId`.
+    ///
+    /// ```
+    /// use id_tree::Tree;
+    /// use id_tree::Node;
+    ///
+    /// let root_node = Node::new(1);
+    /// let child_node = Node::new(2);
+    /// let grandchild_node = Node::new(3);
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.set_root(root_node);
+    ///
+    /// let child_id = tree.insert_with_parent(child_node, &root_id).ok().unwrap();
+    /// tree.insert_with_parent(grandchild_node, &root_id);
+    ///
+    /// let root_node = tree.remove_node_lift_children(child_id);
+    /// ```
+    ///
     pub fn remove_node_lift_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(&node_id);
         if !is_valid {
@@ -356,8 +345,7 @@ impl<T> Tree<T> {
         let parent_id = self.get(&node_id).unwrap().parent().unwrap().clone();
 
         for child_id in self.get(&node_id).unwrap().children().clone() {
-            let child = self.get_mut(&child_id).unwrap();
-            child.set_parent(Some(parent_id.clone()));
+            self.set_as_parent_and_child(&parent_id, &child_id);
         }
 
         Result::Ok(self.remove_node(node_id))
@@ -384,13 +372,15 @@ impl<T> Tree<T> {
     ///
     /// let root_node = Node::new(1);
     /// let child_node = Node::new(2);
+    /// let grandchild_node = Node::new(3);
     ///
     /// let mut tree: Tree<i32> = Tree::new();
     /// let root_id = tree.set_root(root_node);
     ///
-    /// tree.insert_with_parent(child_node, &root_id);
+    /// let child_id = tree.insert_with_parent(child_node, &root_id).ok().unwrap();
+    /// tree.insert_with_parent(grandchild_node, &root_id);
     ///
-    /// let root_node = tree.remove_node_orphan_children(root_id);
+    /// let root_node = tree.remove_node_orphan_children(child_id);
     /// ```
     ///
     pub fn remove_node_orphan_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
@@ -746,29 +736,39 @@ mod tree_tests {
         assert_eq!(child_2_ref.data(), &b);
     }
 
-//    #[test]
-//    fn test_remove_node_drop_children() {
-//
-//        let mut tree = TreeBuilder::new()
-//            .with_root(Node::new(5))
-//            .build();
-//
-//        let root_id = tree.root.clone().unwrap();
-//
-//        let node_1_id = tree.insert_with_parent(Node::new(1), &root_id).unwrap();
-//        let node_2_id = tree.insert_with_parent(Node::new(2), &node_1_id).unwrap();
-//        let node_3_id = tree.insert_with_parent(Node::new(3), &node_1_id).unwrap();
-//
-//        let node_1 = tree.remove_node_drop_children(node_1_id.clone()).unwrap();
-//
-//        assert_eq!(node_1.data(), &1);
-//        assert_eq!(node_1.children().len(), 0);
-//        assert!(node_1.parent().is_none());
-//
-//        assert!(tree.get(&node_1_id).is_none());
-//        assert!(tree.get(&node_2_id).is_none());
-//        assert!(tree.get(&node_3_id).is_none());
-//    }
+    #[test]
+    fn test_remove_node_lift_children() {
+
+        let mut tree = TreeBuilder::new()
+            .with_root(Node::new(5))
+            .build();
+
+        let root_id = tree.root.clone().unwrap();
+
+        let node_1_id = tree.insert_with_parent(Node::new(1), &root_id).unwrap();
+        let node_2_id = tree.insert_with_parent(Node::new(2), &node_1_id).unwrap();
+        let node_3_id = tree.insert_with_parent(Node::new(3), &node_1_id).unwrap();
+
+        let node_1 = tree.remove_node_lift_children(node_1_id.clone()).unwrap();
+
+        assert_eq!(node_1.data(), &1);
+        assert_eq!(node_1.children().len(), 0);
+        assert!(node_1.parent().is_none());
+        assert!(tree.get(&node_1_id).is_none());
+
+        let root_ref = tree.get(&root_id).unwrap();
+        let node_2_ref = tree.get(&node_2_id).unwrap();
+        let node_3_ref = tree.get(&node_3_id).unwrap();
+
+        assert_eq!(node_2_ref.data(), &2);
+        assert_eq!(node_3_ref.data(), &3);
+
+        assert_eq!(node_2_ref.parent().unwrap(), &root_id);
+        assert_eq!(node_3_ref.parent().unwrap(), &root_id);
+
+        assert!(root_ref.children().contains(&node_2_id));
+        assert!(root_ref.children().contains(&node_3_id));
+    }
 
     #[test]
     fn test_remove_node_orphan_children() {
@@ -788,9 +788,15 @@ mod tree_tests {
         assert_eq!(node_1.data(), &1);
         assert_eq!(node_1.children().len(), 0);
         assert!(node_1.parent().is_none());
-
         assert!(tree.get(&node_1_id).is_none());
-        assert_eq!(tree.get(&node_2_id).unwrap().data(), &2);
-        assert_eq!(tree.get(&node_3_id).unwrap().data(), &3);
+
+        let node_2_ref = tree.get(&node_2_id).unwrap();
+        let node_3_ref = tree.get(&node_3_id).unwrap();
+
+        assert_eq!(node_2_ref.data(), &2);
+        assert_eq!(node_3_ref.data(), &3);
+
+        assert!(node_2_ref.parent().is_none());
+        assert!(node_3_ref.parent().is_none());
     }
 }
