@@ -1,6 +1,6 @@
 [package]
 name = "id_tree"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Ian Burns<iwburns8@gmail.com>"]
 
 [dependencies]
