@@ -142,8 +142,8 @@ impl<T> Node<T> {
     /// assert!(five.parent().is_none());
     /// ```
     ///
-    pub fn parent(&self) -> Option<NodeId> {
-        self.parent
+    pub fn parent(&self) -> Option<&NodeId> {
+        self.parent.as_ref()
     }
 
     ///
@@ -236,8 +236,10 @@ mod node_tests {
             index: 0,
         };
 
-        node.set_parent(Some(parent_id));
-        assert_eq!(node.parent(), Some(parent_id));
+        node.set_parent(Some(parent_id.clone()));
+        assert!(node.parent().is_some());
+
+        assert_eq!(node.parent().unwrap().clone(), parent_id);
     }
 
     #[test]
@@ -249,7 +251,7 @@ mod node_tests {
             tree_id: ProcessUniqueId::new(),
             index: 0,
         };
-        node.add_child(child_id);
+        node.add_child(child_id.clone());
 
         assert_eq!(node.children().len(), 1);
         assert_eq!(node.children().get(0).unwrap(), &child_id);
@@ -261,7 +263,7 @@ mod node_tests {
             tree_id: ProcessUniqueId::new(),
             index: 0,
         };
-        node.children_mut().push(child_id);
+        node.children_mut().push(child_id.clone());
 
         assert_eq!(node.children().len(), 1);
         assert_eq!(node.children().get(0).unwrap(), &child_id);

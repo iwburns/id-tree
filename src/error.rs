@@ -4,7 +4,7 @@ use std::fmt;
 ///
 /// Enum for all of the possible `NodeId` errors that could occur.
 ///
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum NodeIdError {
     /// Occurs when a `NodeId` is used on a `Tree` from which it did not originate.
     InvalidNodeIdForTree,

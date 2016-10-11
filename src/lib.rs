@@ -24,21 +24,15 @@
 //! * Comparison-based node insertion of any kind
 //!
 //! #### Drawbacks of this Library
-//! Rust's ownership system is sidestepped a bit by this implementation.
+//! Sadly, Rust's ownership/reference system is sidestepped a bit by this implementation and this
+//! can cause issues if the caller doesn't pay attention to what they are doing with `NodeId`s.
 //!
-//! Because `Tree`s give out `NodeId`s to identify `Node`s when they are inserted, those `NodeId`s
-//! will - by their very nature - become invalid when the `Node` they refer to is removed from the
-//! `Tree`.  This is because they are simply identifiers and not real references.  In addition (and
-//! causing even more issues), if another `Node` is inserted, the old `NodeId` will be reused to
-//! save space meaning it now refers to a different `Node` than it did originally.
+//! We try to solve these issues with very careful usage of `NodeId`s so that the caller doesn't
+//! have to be bothered (too much) with these concerns.
 //!
-//! This means that some of the burden falls on the caller to make sure that old `NodeId`s aren't
-//! kept around.  This library will return `Result`s where errors are possible, but it has no way of
-//! letting the caller know that they are using a `NodeId` that has been re-purposed.  Sadly this is
-//! a limitation of this type of implementation itself and cannot fully be avoided.
-//!
-//! This really just means that the caller will have to pay a bit more attention to the `NodeId`s
-//! that are maintained throughout the life of their program.
+//! Please see the [Potential `NodeId` Issues](struct.NodeId.html#potential-nodeid-issues) section
+//! of the `NodeId` documentation for more info on what these issues are and how this library
+//! attempts to solve them.
 //!
 //! -----------------------------------------------------------------------------------------------
 //!
@@ -65,14 +59,45 @@ pub use tree::Tree;
 ///
 /// An identifier used to differentiate between `Node`s within a `Tree`.
 ///
-/// `NodeId`s are not something that you will ever have to worry about generating yourself.  `Tree`s
-/// generate `NodeId`s as you insert `Node`s into them.
+/// `NodeId`s are not something that the calling context will ever have to worry about generating.
+/// `Tree`s generate `NodeId`s as `Node`s are inserted into them.
 ///
-/// `NodeId`s are also specific to the `Tree` that generated them.  This means that if you have two `Tree`s
-/// `A` and `B`, there's no worry of trying to access a `Node` in `A` with an identifier that came
-/// from `B`.  Doing so will return a `NodeIdError` instead of returning the wrong `Node`.
+/// In addition, each `NodeId` is specific to the `Tree` that generated it.  This means that if
+/// there are two `Tree`s - `A` and `B` - there's no worry of trying to access a `Node` in `A` with
+/// an identifier that came from `B`.  Doing so will return a `None` value instead of returning the
+/// wrong `Node` and will never result in a panic.
 ///
-#[derive(Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
+/// #### Potential `NodeId` Issues
+///
+/// Because `Tree`s pass out `NodeId`s as `Node`s are inserted, several issues can occur:
+///
+/// 1. If a `Node` is removed, the `NodeId` that previously identified it now points to nothing
+/// (technically a `None` value in this case).
+/// 2. If a `Node` is removed and then another is inserted later, the "new" `NodeId` that is
+/// returned can (and will) be the same `NodeId` that was used to identify a different `Node`
+/// previously.
+///
+/// The above issues may seem like deal-breakers, but our situation isn't as bad as it seems.
+///
+/// To mitigate the above issues, this library ensures the following:
+///
+/// 1. All `Node` methods that provide `NodeId`s will **return** `&NodeId`s instead of `NodeId`s.
+/// 2. All `Tree` methods that **read** or **insert** data accept `&NodeId`s instead of taking
+/// `NodeId`s.
+/// 3. All `Tree` methods that **remove** data take `NodeId`s instead of accepting `&NodeId`s.
+/// 4. All `Node`s that have been removed from a `Tree` will have their parent and child references
+/// cleared (to avoid leaking extra `NodeId` copies).
+/// 5. `NodeId`s themselves are `Clone`, but not `Copy`.
+///
+/// This means we have "almost safe references" that the caller can clone if they choose to.  The
+/// resulting behavior is that unless the caller **explicitly `Clone`s a `NodeId`** they should
+/// never be in a situation where they accidentally hold onto a `NodeId` too long.  This is because
+/// in order to remove a `Node` from a `Tree` the caller **must give up ownership of the `NodeId`**.
+///
+/// This _does_ transfer some of the burden to the caller, but any errors should be fairly easy to
+/// sort out because an explicit `Clone` is required for such an error to occur.
+///
+#[derive(Clone, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
 pub struct NodeId {
     tree_id: ProcessUniqueId,
     index: usize,
