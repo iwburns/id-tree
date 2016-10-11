@@ -64,8 +64,8 @@ pub use tree::Tree;
 ///
 /// In addition, each `NodeId` is specific to the `Tree` that generated it.  This means that if
 /// there are two `Tree`s - `A` and `B` - there's no worry of trying to access a `Node` in `A` with
-/// an identifier that came from `B`.  Doing so will return a `None` value instead of returning the
-/// wrong `Node` and will never result in a panic.
+/// an identifier that came from `B`.  Doing so will return a `Result::Err` value instead of
+/// returning the wrong `Node`.
 ///
 /// #### Potential `NodeId` Issues
 ///
@@ -77,9 +77,12 @@ pub use tree::Tree;
 /// returned can (and will) be the same `NodeId` that was used to identify a different `Node`
 /// previously.
 ///
-/// The above issues may seem like deal-breakers, but our situation isn't as bad as it seems.
+/// The above issues may seem like deal-breakers, but our situation isn't as bad as it seems:
 ///
-/// To mitigate the above issues, this library ensures the following:
+/// The first issue can be easily detected by the library itself.  In this situation, a
+/// `Result::Err` will be returned with the appropriate `NodeIdError`. The second issue, however, is
+/// not something that the library can detect. To mitigate this problem, this library ensures the
+/// following:
 ///
 /// 1. All `Node` methods that provide `NodeId`s will **return** `&NodeId`s instead of `NodeId`s.
 /// 2. All `Tree` methods that **read** or **insert** data accept `&NodeId`s instead of taking
@@ -89,10 +92,12 @@ pub use tree::Tree;
 /// cleared (to avoid leaking extra `NodeId` copies).
 /// 5. `NodeId`s themselves are `Clone`, but not `Copy`.
 ///
-/// This means we have "almost safe references" that the caller can clone if they choose to.  The
-/// resulting behavior is that unless the caller **explicitly `Clone`s a `NodeId`** they should
-/// never be in a situation where they accidentally hold onto a `NodeId` too long.  This is because
-/// in order to remove a `Node` from a `Tree` the caller **must give up ownership of the `NodeId`**.
+/// This means that no methods will ever take ownership of a `NodeId` except for methods that remove
+/// a `Node` from a `Tree`. The resulting behavior is that unless the caller **explicitly `Clone`s a
+/// `NodeId`** they should never be in a situation where they accidentally hold onto a `NodeId` too
+/// long.  This means that we have "almost safe references" that the caller can clone if they choose
+/// to.  Doing so, however, will open up the possibility of confusing which `NodeId`s refer to which
+/// `Node`s in the calling context.
 ///
 /// This _does_ transfer some of the burden to the caller, but any errors should be fairly easy to
 /// sort out because an explicit `Clone` is required for such an error to occur.

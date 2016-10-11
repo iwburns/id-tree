@@ -54,19 +54,19 @@ fn test_get_mut_node_from_other_tree() {
     assert!(root_node_b.is_none());
 }
 
-//#[test]
-//fn test_remove_node_drop_children_from_other_tree() {
-//    let mut tree_a: Tree<i32> = TreeBuilder::new().build();
-//    let mut tree_b: Tree<i32> = TreeBuilder::new().build();
-//
-//    let root_node_id_a = tree_a.set_root(Node::new(1));
-//
-//    let root_node_b = tree_b.remove_node_drop_children(root_node_id_a); //note use of wrong tree
-//    assert!(root_node_b.is_err());
-//
-//    let error = root_node_b.err().unwrap();
-//    assert_eq!(error, NodeIdError::InvalidNodeIdForTree);
-//}
+#[test]
+fn test_remove_node_lift_children_from_other_tree() {
+    let mut tree_a: Tree<i32> = TreeBuilder::new().build();
+    let mut tree_b: Tree<i32> = TreeBuilder::new().build();
+
+    let root_node_id_a = tree_a.set_root(Node::new(1));
+
+    let root_node_b = tree_b.remove_node_lift_children(root_node_id_a); //note use of wrong tree
+    assert!(root_node_b.is_err());
+
+    let error = root_node_b.err().unwrap();
+    assert_eq!(error, NodeIdError::InvalidNodeIdForTree);
+}
 
 #[test]
 fn test_remove_node_orphan_children_from_other_tree() {
