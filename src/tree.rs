@@ -4,6 +4,7 @@ use super::NodeId;
 use super::MutableNode;
 use super::NodeIdError;
 
+//todo: change Tree::get() and Tree::get_mut() to return Result instead of Option
 //todo: see if we can avoid bounds checks since we are managing the Ids manually here anyway.
 //todo: I believe, theoretically, there should only be bounds checks happening in is_valid_node_id().
 //todo: add (private) get_unsafe and get_mut_unsafe for situations where we've already confirmed that a NodeId is valid, but we need to get a reference to that node internally.
@@ -234,7 +235,7 @@ impl<T> Tree<T> {
     pub fn insert_with_parent(&mut self, child: Node<T>, parent_id: &NodeId) -> Result<NodeId, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(parent_id);
         if !is_valid {
-            return Result::Err(error.unwrap());
+            return Result::Err(error.expect("Tree::insert_with_parent: Missing an error value on finding an invalid NodeId."));
         }
 
         let new_child_id = self.insert_new_node(child);
@@ -248,7 +249,7 @@ impl<T> Tree<T> {
     ///
     /// If the `NodeId` provided is invalid (whether the
     /// `Node` in question has already been removed, or the `NodeId` belongs to a different `Tree`),
-    /// this function returns a None value.
+    /// this function returns a `None` value.
     ///
     /// ```
     /// use id_tree::Tree;
@@ -273,7 +274,7 @@ impl<T> Tree<T> {
     ///
     /// If the `NodeId` provided is invalid (whether the
     /// `Node` in question has already been removed, or the `NodeId` belongs to a different `Tree`),
-    /// this function returns a None value.
+    /// this function returns a `None` value.
     ///
     /// ```
     /// use id_tree::Tree;
@@ -331,10 +332,11 @@ impl<T> Tree<T> {
     /// let root_node = tree.remove_node_lift_children(child_id);
     /// ```
     ///
+    //todo: get rid of extra bounds checks here.  We shouldn't ever call self.get() from withing the Tree.
     pub fn remove_node_lift_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(&node_id);
         if !is_valid {
-            return Result::Err(error.unwrap());
+            return Result::Err(error.expect("Tree::remove_node_lift_children: Missing an error value on finding an invalid NodeId."));
         }
 
         if !self.node_has_parent(&node_id) {
@@ -382,10 +384,11 @@ impl<T> Tree<T> {
     /// let root_node = tree.remove_node_orphan_children(child_id);
     /// ```
     ///
+    //todo: get rid of extra bounds checks here.  We shouldn't ever call self.get() from withing the Tree.
     pub fn remove_node_orphan_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(&node_id);
         if !is_valid {
-            return Result::Err(error.unwrap());
+            return Result::Err(error.expect("Tree::remove_node_orphan_children: Missing an error value on finding an invalid NodeId."));
         }
 
         for child_id in self.get(&node_id).unwrap().children().clone() {
