@@ -7,7 +7,6 @@ use super::NodeIdError;
 //todo: change Tree::get() and Tree::get_mut() to return Result instead of Option
 //todo: see if we can avoid bounds checks since we are managing the Ids manually here anyway.
 //todo: I believe, theoretically, there should only be bounds checks happening in is_valid_node_id().
-//todo: add (private) get_unsafe and get_mut_unsafe for situations where we've already confirmed that a NodeId is valid, but we need to get a reference to that node internally.
 
 ///
 /// A `Tree` builder that provides more control over how a `Tree` is created.
@@ -332,7 +331,6 @@ impl<T> Tree<T> {
     /// let root_node = tree.remove_node_lift_children(child_id);
     /// ```
     ///
-    //todo: get rid of extra bounds checks here.  We shouldn't ever call self.get() from withing the Tree.
     pub fn remove_node_lift_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(&node_id);
         if !is_valid {
@@ -340,12 +338,13 @@ impl<T> Tree<T> {
         }
 
         if !self.node_has_parent(&node_id) {
-            return self.remove_node_orphan_children(node_id);
+            self.clear_childrens_parent(&node_id);
+            return Result::Ok(self.remove_node(node_id));
         }
 
-        let parent_id = self.get(&node_id).unwrap().parent().unwrap().clone();
+        let parent_id = self.get_unsafe(&node_id).parent().unwrap().clone();
 
-        for child_id in self.get(&node_id).unwrap().children().clone() {
+        for child_id in self.get_unsafe(&node_id).children().clone() {
             self.set_as_parent_and_child(&parent_id, &child_id);
         }
 
@@ -384,17 +383,13 @@ impl<T> Tree<T> {
     /// let root_node = tree.remove_node_orphan_children(child_id);
     /// ```
     ///
-    //todo: get rid of extra bounds checks here.  We shouldn't ever call self.get() from withing the Tree.
     pub fn remove_node_orphan_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(&node_id);
         if !is_valid {
             return Result::Err(error.expect("Tree::remove_node_orphan_children: Missing an error value on finding an invalid NodeId."));
         }
 
-        for child_id in self.get(&node_id).unwrap().children().clone() {
-            self.clear_parent(&child_id);
-        }
-
+        self.clear_childrens_parent(&node_id);
         Result::Ok(self.remove_node(node_id))
     }
 
@@ -503,6 +498,13 @@ impl<T> Tree<T> {
 
     fn clear_parent(&mut self, node_id: &NodeId) {
         self.get_mut_unsafe(node_id).set_parent(None);
+    }
+
+    //todo: I'd like a better name for this.
+    fn clear_childrens_parent(&mut self, node_id: &NodeId) {
+        for child_id in self.get_unsafe(node_id).children().clone() {
+            self.clear_parent(&child_id);
+        }
     }
 
     fn get_unsafe(&self, node_id: &NodeId) -> &Node<T> {
