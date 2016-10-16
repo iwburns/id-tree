@@ -201,12 +201,9 @@ impl<T> Tree<T> {
     pub fn set_root(&mut self, new_root: Node<T>) -> NodeId {
         let new_root_id = self.insert_new_node(new_root);
 
-        match self.root.clone() {
-            Some(current_root_node_id) => {
-                self.set_as_parent_and_child(&new_root_id, &current_root_node_id);
-            },
-            None => ()
-        };
+        if let Some(current_root_node_id) = self.root.clone() {
+            self.set_as_parent_and_child(&new_root_id, &current_root_node_id);
+        }
 
         self.root = Some(new_root_id.clone());
         new_root_id
@@ -338,15 +335,22 @@ impl<T> Tree<T> {
         }
 
         if !self.node_has_parent(&node_id) {
-            self.clear_childrens_parent(&node_id);
-            return Result::Ok(self.remove_node(node_id));
+            self.clear_parent_of_children(&node_id);
+        } else {
+            let parent_id = self.get_unsafe(&node_id)
+                .parent()
+                .expect("Tree::remove_node_lift_children: node_has_parent() is true, but unwrapping said parent failed.")
+                .clone();
+
+            let children = self.get_unsafe(&node_id)
+                .children()
+                .clone();
+
+            for child_id in children {
+                self.set_as_parent_and_child(&parent_id, &child_id);
+            }
         }
 
-        let parent_id = self.get_unsafe(&node_id).parent().unwrap().clone();
-
-        for child_id in self.get_unsafe(&node_id).children().clone() {
-            self.set_as_parent_and_child(&parent_id, &child_id);
-        }
 
         Result::Ok(self.remove_node(node_id))
     }
@@ -389,7 +393,7 @@ impl<T> Tree<T> {
             return Result::Err(error.expect("Tree::remove_node_orphan_children: Missing an error value on finding an invalid NodeId."));
         }
 
-        self.clear_childrens_parent(&node_id);
+        self.clear_parent_of_children(&node_id);
         Result::Ok(self.remove_node(node_id))
     }
 
@@ -443,7 +447,7 @@ impl<T> Tree<T> {
 
         if self.free_ids.len() > 0 {
             let new_node_id: NodeId = self.free_ids.pop()
-                .expect("insert_new_node: Couldn't pop from Vec with len() > 0.");
+                .expect("Tree::insert_new_node: Couldn't pop from Vec with len() > 0.");
 
             self.nodes.push(Some(new_node));
             self.nodes.swap_remove(new_node_id.index);
@@ -467,7 +471,7 @@ impl<T> Tree<T> {
         if let Some(parent_id) = node.parent() {
             self.get_mut_unsafe(&parent_id)
                 .children_mut()
-                .retain(|child_id| child_id.clone() != node_id);
+                .retain(|child_id| child_id != &node_id);
         }
 
         //avoid providing the caller with extra copies of NodeIds
@@ -480,7 +484,7 @@ impl<T> Tree<T> {
     fn take_node(&mut self, node_id: NodeId) -> Node<T> {
         self.nodes.push(None);
         let node = self.nodes.swap_remove(node_id.index)
-            .expect("take_node: An invalid NodeId made it past id_tree's internal checks.  Please report this issue!");
+            .expect("Tree::take_node: An invalid NodeId made it past id_tree's internal checks.  Please report this issue!");
         self.free_ids.push(node_id);
 
         node
@@ -502,7 +506,7 @@ impl<T> Tree<T> {
     }
 
     //todo: I'd like a better name for this.
-    fn clear_childrens_parent(&mut self, node_id: &NodeId) {
+    fn clear_parent_of_children(&mut self, node_id: &NodeId) {
         for child_id in self.get_unsafe(node_id).children().clone() {
             self.clear_parent(&child_id);
         }
@@ -512,7 +516,7 @@ impl<T> Tree<T> {
         unsafe {
             self.nodes.get_unchecked(node_id.index)
                 .as_ref()
-                .expect("get_unsafe: An invalid NodeId made it past id_tree's internal checks.  Please report this issue!")
+                .expect("Tree::get_unsafe: An invalid NodeId made it past id_tree's internal checks.  Please report this issue!")
         }
     }
 
@@ -520,7 +524,7 @@ impl<T> Tree<T> {
         unsafe {
             self.nodes.get_unchecked_mut(node_id.index)
                 .as_mut()
-                .expect("get_mut_unsafe: An invalid NodeId made it past id_tree's internal checks.  Please report this issue!")
+                .expect("Tree::get_mut_unsafe: An invalid NodeId made it past id_tree's internal checks.  Please report this issue!")
         }
     }
 }
