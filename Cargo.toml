@@ -2,6 +2,9 @@
 name = "id_tree"
 version = "0.2.2"
 authors = ["Ian Burns<iwburns8@gmail.com>"]
+readme = "./README.md"
+keywords = ["tree"]
+license = "MIT"
 
 [dependencies]
 snowflake = "1.2.0"
