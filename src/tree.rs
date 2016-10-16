@@ -5,8 +5,6 @@ use super::MutableNode;
 use super::NodeIdError;
 
 //todo: change Tree::get() and Tree::get_mut() to return Result instead of Option
-//todo: see if we can avoid bounds checks since we are managing the Ids manually here anyway.
-//todo: I believe, theoretically, there should only be bounds checks happening in is_valid_node_id().
 
 ///
 /// A `Tree` builder that provides more control over how a `Tree` is created.
@@ -149,7 +147,6 @@ impl<T> TreeBuilder<T> {
     }
 }
 
-//todo: add more data here.
 ///
 /// A tree structure consisting of `Node`s.
 ///
@@ -505,7 +502,6 @@ impl<T> Tree<T> {
         self.get_mut_unsafe(node_id).set_parent(None);
     }
 
-    //todo: I'd like a better name for this.
     fn clear_parent_of_children(&mut self, node_id: &NodeId) {
         for child_id in self.get_unsafe(node_id).children().clone() {
             self.clear_parent(&child_id);
