@@ -30,6 +30,9 @@ let child_id: NodeId = tree.insert_with_parent(Node::new(2), &root_id).ok().unwr
 {
     let root: &Node<i32> = tree.get(&root_id).unwrap();
     assert_eq!(root.data(), &1);
+    
+    let first_child: &NodeId = root.children().get(0).unwrap();
+    assert_eq!(first_child, &child_id);
 }
 {
     let mut child: &mut Node<i32> = tree.get_mut(&child_id).unwrap();
