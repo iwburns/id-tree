@@ -1,10 +1,13 @@
 [package]
 name = "id_tree"
-version = "0.2.2"
-authors = ["Ian Burns<iwburns8@gmail.com>"]
-readme = "./README.md"
-keywords = ["tree"]
+version = "0.2.3"
+authors = ["Ian Burns <iwburns8@gmail.com>"]
+description = "A library for creating and modifying Tree structures."
+keywords = ["id_tree", "id-tree", "tree"]
 license = "MIT"
+readme = "README.md"
+repository = "https://github.com/iwburns/id-tree"
+documentation = "https://docs.rs/id-tree"
 
 [dependencies]
 snowflake = "1.2.0"
