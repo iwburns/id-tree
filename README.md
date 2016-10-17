@@ -18,6 +18,25 @@ It is purely a library for storing data in a hierarchical manner.  The caller mu
 structure that they wish to build and then use this library to do so;  this library will not
 make those structural decisions for you.
 
+## Example Usage
+```
+use id_tree::*;
+
+let mut tree: Tree<i32> = Tree::new();
+
+let root_id: NodeId = tree.set_root(Node::new(1));
+let child_id: NodeId = tree.insert_with_parent(Node::new(2), &root_id).ok().unwrap();
+
+{
+    let root: &Node<i32> = tree.get(&root_id).unwrap();
+    assert_eq!(root.data(), &1);
+}
+{
+    let mut child: &mut Node<i32> = tree.get_mut(&child_id).unwrap();
+    assert_eq!(child.data_mut(), &mut 2);
+}
+```
+
 ## Project Goals
 * Allow caller control of as many allocations as possible (through pre-allocation)
 * Fast `Node` insertion and removal
