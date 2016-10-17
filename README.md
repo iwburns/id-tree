@@ -1,4 +1,4 @@
-#id-tree
+#id_tree
 
 [![Docs.rs](https://docs.rs/id_tree/badge.svg)](https://docs.rs/id_tree)
 

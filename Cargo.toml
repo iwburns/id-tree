@@ -7,7 +7,7 @@ keywords = ["id_tree", "id-tree", "tree"]
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/iwburns/id-tree"
-documentation = "https://docs.rs/id-tree"
+documentation = "https://docs.rs/id_tree"
 
 [dependencies]
 snowflake = "1.2.0"
