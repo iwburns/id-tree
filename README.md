@@ -1,5 +1,7 @@
 #id-tree
 
+[![Docs.rs](https://docs.rs/id_tree/badge.svg)](https://docs.rs/id_tree)
+
 A library for creating and modifying Tree structures.
 
 # Overview
