@@ -113,4 +113,5 @@ trait MutableNode {
     fn add_child(&mut self, child: NodeId);
     fn children_mut(&mut self) -> &mut Vec<NodeId>;
     fn set_children(&mut self, children: Vec<NodeId>);
+    fn take_children(&mut self) -> Vec<NodeId>;
 }

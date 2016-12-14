@@ -445,7 +445,7 @@ impl<T> Tree<T> {
             return Result::Err(error.expect("Tree::sort_children_by: Missing an error value on finding an invalid NodeId."));
         }
 
-        let mut children = self.get_unsafe(node_id).children().clone();
+        let mut children = self.get_mut_unsafe(node_id).take_children();
         children.sort_by(|a, b| {
             compare(self.get_unsafe(a), self.get_unsafe(b))
         });
@@ -462,7 +462,7 @@ impl<T> Tree<T> {
             return Result::Err(error.expect("Tree::sort_children: Missing an error value on finding an invalid NodeId."));
         }
 
-        let mut children = self.get_unsafe(node_id).children().clone();
+        let mut children = self.get_mut_unsafe(node_id).take_children();
         children.sort_by_key(|a| {
             self.get_unsafe(a).data()
         });
@@ -479,7 +479,7 @@ impl<T> Tree<T> {
             return Result::Err(error.expect("Tree::sort_children_by_key: Missing an error value on finding an invalid NodeId."));
         }
 
-        let mut children = self.get_unsafe(node_id).children().clone();
+        let mut children = self.get_mut_unsafe(node_id).take_children();
         children.sort_by_key(|a| {
             f(self.get_unsafe(a))
         });

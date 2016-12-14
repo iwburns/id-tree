@@ -177,9 +177,16 @@ impl<T> MutableNode for Node<T> {
         &mut self.children
     }
 
-    fn set_children(&mut self, children: Vec<NodeId>)
-    {
+    fn set_children(&mut self, children: Vec<NodeId>) {
         self.children = children;
+    }
+
+    fn take_children(&mut self) -> Vec<NodeId> {
+        use std::mem;
+
+        let mut empty = Vec::with_capacity(0);
+        mem::swap(&mut self.children, &mut empty);
+        empty //not so empty anymore
     }
 }
 
