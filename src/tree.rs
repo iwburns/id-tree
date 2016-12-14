@@ -395,6 +395,56 @@ impl<T> Tree<T> {
     }
 
     ///
+    /// Moves a `Node` inside a `Tree` to a new parent leaving all children in their place.
+    ///
+    /// Returns an empty `Result` containing a `NodeIdError` if one occurred on either provided `Id`.
+    ///
+    /// ```
+    /// use id_tree::Tree;
+    /// use id_tree::Node;
+    ///
+    /// let root_node = Node::new(1);
+    /// let first_child_node = Node::new(2);
+    /// let second_child_node = Node::new(3);
+    /// let grandchild_node = Node::new(4);
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.set_root(root_node);
+    ///
+    /// let first_child_id  = tree.insert_with_parent(first_child_node,  &root_id).ok().unwrap();
+    /// let second_child_id = tree.insert_with_parent(second_child_node, &root_id).ok().unwrap();
+    /// let grandchild_id   = tree.insert_with_parent(grandchild_node, &first_child_id).ok().unwrap();
+    ///
+    /// tree.move_node_to_parent(&grandchild_id, &second_child_id).unwrap();
+    ///
+    /// # assert!(!tree.get(&first_child_id).unwrap().children().contains(&grandchild_id));
+    /// # assert!(tree.get(&second_child_id).unwrap().children().contains(&grandchild_id));
+    /// ```
+    ///
+    pub fn move_node_to_parent(&mut self, node_id: &NodeId, parent_id: &NodeId) -> Result<(), NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Result::Err(error.expect("Tree::move_node_to_parent: Missing an error value on finding an invalid NodeId."));
+        }
+
+        let (is_valid, error) = self.is_valid_node_id(parent_id);
+        if !is_valid {
+            return Result::Err(error.expect("Tree::move_node_to_parent: Missing an error value on finding an invalid NodeId."));
+        }
+
+        // detach from old parent (if necessary)
+        let maybe_old_parent = self.get_unsafe(node_id).parent().cloned();
+        if let Some(old_parent) = maybe_old_parent {
+            self.get_mut_unsafe(&old_parent).children_mut().retain(|id| id != node_id);
+        }
+
+        // attach to new parent
+        self.set_as_parent_and_child(parent_id, node_id);
+
+        Result::Ok(())
+    }
+
+    ///
     /// Returns a `Some` value containing the `NodeId` of the root `Node` if it exists.  Otherwise a
     /// `None` value is returned.
     ///
