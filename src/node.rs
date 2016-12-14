@@ -176,6 +176,11 @@ impl<T> MutableNode for Node<T> {
     fn children_mut(&mut self) -> &mut Vec<NodeId> {
         &mut self.children
     }
+
+    fn set_children(&mut self, children: Vec<NodeId>)
+    {
+        self.children = children;
+    }
 }
 
 #[cfg(test)]

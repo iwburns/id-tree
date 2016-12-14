@@ -112,4 +112,5 @@ trait MutableNode {
     fn set_parent(&mut self, parent: Option<NodeId>);
     fn add_child(&mut self, child: NodeId);
     fn children_mut(&mut self) -> &mut Vec<NodeId>;
+    fn set_children(&mut self, children: Vec<NodeId>);
 }

@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use super::snowflake::ProcessUniqueId;
 use super::Node;
 use super::NodeId;
@@ -431,6 +433,57 @@ impl<T> Tree<T> {
 
         // attach to new parent
         self.set_as_parent_and_child(parent_id, node_id);
+
+        Result::Ok(())
+    }
+
+    pub fn sort_children_by<F>(&mut self, node_id: &NodeId, mut compare: F) -> Result<(), NodeIdError>
+        where F: FnMut(&Node<T>, &Node<T>) -> Ordering
+    {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Result::Err(error.expect("Tree::sort_children_by: Missing an error value on finding an invalid NodeId."));
+        }
+
+        let mut children = self.get_unsafe(node_id).children().clone();
+        children.sort_by(|a, b| {
+            compare(self.get_unsafe(a), self.get_unsafe(b))
+        });
+        self.get_mut_unsafe(node_id).set_children(children);
+
+        Result::Ok(())
+    }
+
+    pub fn sort_children_by_data(&mut self, node_id: &NodeId) -> Result<(), NodeIdError>
+        where T: Ord
+    {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Result::Err(error.expect("Tree::sort_children: Missing an error value on finding an invalid NodeId."));
+        }
+
+        let mut children = self.get_unsafe(node_id).children().clone();
+        children.sort_by_key(|a| {
+            self.get_unsafe(a).data()
+        });
+        self.get_mut_unsafe(node_id).set_children(children);
+
+        Result::Ok(())
+    }
+
+    pub fn sort_children_by_key<B, F>(&mut self, node_id: &NodeId, mut f: F) -> Result<(), NodeIdError>
+        where B: Ord, F: FnMut(&Node<T>) -> B
+    {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Result::Err(error.expect("Tree::sort_children_by_key: Missing an error value on finding an invalid NodeId."));
+        }
+
+        let mut children = self.get_unsafe(node_id).children().clone();
+        children.sort_by_key(|a| {
+            f(self.get_unsafe(a))
+        });
+        self.get_mut_unsafe(node_id).set_children(children);
 
         Result::Ok(())
     }
