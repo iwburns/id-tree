@@ -402,6 +402,23 @@ impl<T> Tree<T> {
     /// of the `NodeId` documentation for more information on the implications of calling `Clone` on
     /// a `NodeId`.
     ///
+    /// ```
+    /// use id_tree::Tree;
+    /// use id_tree::Node;
+    ///
+    /// let root_node = Node::new(1);
+    /// let child_node = Node::new(2);
+    /// let grandchild_node = Node::new(3);
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.set_root(root_node);
+    ///
+    /// let child_id = tree.insert_with_parent(child_node, &root_id).ok().unwrap();
+    /// tree.insert_with_parent(grandchild_node, &root_id);
+    ///
+    /// let root_node = tree.remove_node_remove_children(child_id);
+    /// ```
+    ///
     pub fn remove_node_remove_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(&node_id);
         if !is_valid {
