@@ -437,6 +437,36 @@ impl<T> Tree<T> {
         Result::Ok(())
     }
 
+    ///
+    /// Sorts the children of one node, in-place, using compare to compare the nodes
+    ///
+    /// This sort is stable and O(n log n) worst-case but allocates approximately 2 * n where n is the length of children
+    ///
+    /// Returns an empty `Result` containing a `NodeIdError` if one occurred.
+    ///
+    /// ```
+    /// use id_tree::Tree;
+    /// use id_tree::Node;
+    ///
+    /// let root_node = Node::new(100);
+    /// let first_child = Node::new(1);
+    /// let second_child = Node::new(2);
+    /// let third_child = Node::new(0);
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.set_root(root_node);
+    ///
+    /// tree.insert_with_parent(first_child, &root_id).unwrap();
+    /// tree.insert_with_parent(second_child, &root_id).unwrap();
+    /// tree.insert_with_parent(third_child, &root_id).unwrap();
+    ///
+    /// tree.sort_children_by(&root_id, |a, b| a.data().cmp(b.data()));
+    ///
+    /// # for (i, id) in tree.get(&root_id).unwrap().children().iter().enumerate() {
+    /// #   assert_eq!(*tree.get(&id).unwrap().data(), i as i32);
+    /// # }
+    /// ```
+    ///
     pub fn sort_children_by<F>(&mut self, node_id: &NodeId, mut compare: F) -> Result<(), NodeIdError>
         where F: FnMut(&Node<T>, &Node<T>) -> Ordering
     {
@@ -454,6 +484,36 @@ impl<T> Tree<T> {
         Result::Ok(())
     }
 
+    ///
+    /// Sorts the children of one node, in-place, comparing their data
+    ///
+    /// This sort is stable and O(n log n) worst-case but allocates approximately 2 * n where n is the length of children
+    ///
+    /// Returns an empty `Result` containing a `NodeIdError` if one occurred.
+    ///
+    /// ```
+    /// use id_tree::Tree;
+    /// use id_tree::Node;
+    ///
+    /// let root_node = Node::new(100);
+    /// let first_child = Node::new(1);
+    /// let second_child = Node::new(2);
+    /// let third_child = Node::new(0);
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.set_root(root_node);
+    ///
+    /// tree.insert_with_parent(first_child, &root_id).unwrap();
+    /// tree.insert_with_parent(second_child, &root_id).unwrap();
+    /// tree.insert_with_parent(third_child, &root_id).unwrap();
+    ///
+    /// tree.sort_children_by_data(&root_id);
+    ///
+    /// # for (i, id) in tree.get(&root_id).unwrap().children().iter().enumerate() {
+    /// #   assert_eq!(*tree.get(&id).unwrap().data(), i as i32);
+    /// # }
+    /// ```
+    ///
     pub fn sort_children_by_data(&mut self, node_id: &NodeId) -> Result<(), NodeIdError>
         where T: Ord
     {
@@ -471,6 +531,36 @@ impl<T> Tree<T> {
         Result::Ok(())
     }
 
+    ///
+    /// Sorts the children of one node, in-place, using f to extract a key by which to order the sort by.
+    ///
+    /// This sort is stable and O(n log n) worst-case but allocates approximately 2 * n where n is the length of children
+    ///
+    /// Returns an empty `Result` containing a `NodeIdError` if one occurred.
+    ///
+    /// ```
+    /// use id_tree::Tree;
+    /// use id_tree::Node;
+    ///
+    /// let root_node = Node::new(100);
+    /// let first_child = Node::new(1);
+    /// let second_child = Node::new(2);
+    /// let third_child = Node::new(0);
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.set_root(root_node);
+    ///
+    /// tree.insert_with_parent(first_child, &root_id).unwrap();
+    /// tree.insert_with_parent(second_child, &root_id).unwrap();
+    /// tree.insert_with_parent(third_child, &root_id).unwrap();
+    ///
+    /// tree.sort_children_by_key(&root_id, |x| x.data().clone());
+    ///
+    /// # for (i, id) in tree.get(&root_id).unwrap().children().iter().enumerate() {
+    /// #   assert_eq!(*tree.get(&id).unwrap().data(), i as i32);
+    /// # }
+    /// ```
+    ///
     pub fn sort_children_by_key<B, F>(&mut self, node_id: &NodeId, mut f: F) -> Result<(), NodeIdError>
         where B: Ord, F: FnMut(&Node<T>) -> B
     {
