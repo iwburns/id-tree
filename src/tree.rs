@@ -388,6 +388,34 @@ impl<T> Tree<T> {
     }
 
     ///
+    /// Remove a `Node` from the `Tree` including all its children recursively.
+    ///
+    /// Returns a `Result` containing the removed `Node` or a `NodeIdError` if one occurred.
+    ///
+    /// **NOTE:** The `Node` that is returned will have its parent value cleared to avoid
+    /// providing the caller with extra copies of `NodeId`s should the corresponding `Node`s be
+    /// removed from the `Tree` at a later time.
+    ///
+    /// If the caller needs a copy of the parent `NodeId`s, they must `Clone` them before
+    /// this `Node` is removed from the `Tree`.  Please see the
+    /// [Potential `NodeId` Issues](struct.NodeId.html#potential-nodeid-issues) section
+    /// of the `NodeId` documentation for more information on the implications of calling `Clone` on
+    /// a `NodeId`.
+    ///
+    pub fn remove_node_remove_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(&node_id);
+        if !is_valid {
+            return Result::Err(error.expect("Tree::remove_node_orphan_children: Missing an error value on finding an invalid NodeId."));
+        }
+
+        let children = self.get_unsafe(&node_id).children().clone();
+        for child in children {
+            try!(self.remove_node_remove_children(child.clone()));
+        }
+        Result::Ok(self.remove_node(node_id))
+    }
+
+    ///
     /// Moves a `Node` inside a `Tree` to a new parent leaving all children in their place.
     ///
     /// If the new parent (let's call it `B`) is a descendant of the `Node` being moved (`A`), then
