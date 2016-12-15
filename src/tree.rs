@@ -331,23 +331,14 @@ impl<T> Tree<T> {
             return Result::Err(error.expect("Tree::remove_node_lift_children: Missing an error value on finding an invalid NodeId."));
         }
 
-        if !self.node_has_parent(&node_id) {
-            self.clear_parent_of_children(&node_id);
-        } else {
-            let parent_id = self.get_unsafe(&node_id)
-                .parent()
-                .expect("Tree::remove_node_lift_children: node_has_parent() is true, but unwrapping said parent failed.")
-                .clone();
-
-            let children = self.get_unsafe(&node_id)
-                .children()
-                .clone();
-
-            for child_id in children {
+        if let Some(parent_id) = self.get_unsafe(&node_id).parent().cloned() {
+            //attach children to parent
+            for child_id in self.get_unsafe(&node_id).children().clone() {
                 self.set_as_parent_and_child(&parent_id, &child_id);
             }
+        } else {
+            self.clear_parent_of_children(&node_id);
         }
-
 
         Result::Ok(self.remove_node(node_id))
     }
@@ -510,6 +501,13 @@ impl<T> Tree<T> {
 
     fn remove_node(&mut self, node_id: NodeId) -> Node<T> {
 
+
+        if let Some(root_id) = self.root.clone() {
+            if node_id == root_id {
+                self.root = None;
+            }
+        }
+
         let mut node = self.take_node(node_id.clone());
 
         //The only thing we care about here is dealing with "this" Node's parent's children
@@ -542,10 +540,6 @@ impl<T> Tree<T> {
             tree_id: self.id,
             index: node_index,
         }
-    }
-
-    fn node_has_parent(&self, node_id: &NodeId) -> bool {
-        self.get_unsafe(node_id).parent().is_some()
     }
 
     fn clear_parent(&mut self, node_id: &NodeId) {
@@ -792,6 +786,8 @@ mod tree_tests {
 
         let node_1 = tree.remove_node_lift_children(node_1_id.clone()).unwrap();
 
+        assert_eq!(Some(&root_id), tree.root_node_id());
+
         assert_eq!(node_1.data(), &1);
         assert_eq!(node_1.children().len(), 0);
         assert!(node_1.parent().is_none());
@@ -826,6 +822,8 @@ mod tree_tests {
 
         let node_1 = tree.remove_node_orphan_children(node_1_id.clone()).unwrap();
 
+        assert_eq!(Some(&root_id), tree.root_node_id());
+
         assert_eq!(node_1.data(), &1);
         assert_eq!(node_1.children().len(), 0);
         assert!(node_1.parent().is_none());
@@ -839,5 +837,24 @@ mod tree_tests {
 
         assert!(node_2_ref.parent().is_none());
         assert!(node_3_ref.parent().is_none());
+    }
+
+    #[test]
+    fn test_remove_root() {
+        let mut tree = TreeBuilder::new()
+            .with_root(Node::new(5))
+            .build();
+
+        let root_id = tree.root.clone().unwrap();
+        tree.remove_node_orphan_children(root_id.clone()).unwrap();
+        assert_eq!(None, tree.root_node_id());
+
+        let mut tree = TreeBuilder::new()
+            .with_root(Node::new(5))
+            .build();
+
+        let root_id = tree.root.clone().unwrap();
+        tree.remove_node_lift_children(root_id.clone()).unwrap();
+        assert_eq!(None, tree.root_node_id());
     }
 }
