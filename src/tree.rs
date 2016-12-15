@@ -331,23 +331,14 @@ impl<T> Tree<T> {
             return Result::Err(error.expect("Tree::remove_node_lift_children: Missing an error value on finding an invalid NodeId."));
         }
 
-        if !self.node_has_parent(&node_id) {
-            self.clear_parent_of_children(&node_id);
-        } else {
-            let parent_id = self.get_unsafe(&node_id)
-                .parent()
-                .expect("Tree::remove_node_lift_children: node_has_parent() is true, but unwrapping said parent failed.")
-                .clone();
-
-            let children = self.get_unsafe(&node_id)
-                .children()
-                .clone();
-
-            for child_id in children {
+        if let Some(parent_id) = self.get_unsafe(&node_id).parent().cloned() {
+            //attach children to parent
+            for child_id in self.get_unsafe(&node_id).children().clone() {
                 self.set_as_parent_and_child(&parent_id, &child_id);
             }
+        } else {
+            self.clear_parent_of_children(&node_id);
         }
-
 
         Result::Ok(self.remove_node(node_id))
     }
@@ -549,10 +540,6 @@ impl<T> Tree<T> {
             tree_id: self.id,
             index: node_index,
         }
-    }
-
-    fn node_has_parent(&self, node_id: &NodeId) -> bool {
-        self.get_unsafe(node_id).parent().is_some()
     }
 
     fn clear_parent(&mut self, node_id: &NodeId) {
