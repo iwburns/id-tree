@@ -35,8 +35,9 @@ fn test_get_node_from_other_tree() {
     let root_node_a = tree_a.get(&root_node_id_a);
     let root_node_b = tree_b.get(&root_node_id_a); //note use of wrong tree
 
-    assert!(root_node_a.is_some());
-    assert!(root_node_b.is_none());
+    assert!(root_node_a.is_ok());
+    assert!(root_node_b.is_err());
+    assert_eq!(root_node_b.err().unwrap(), NodeIdError::InvalidNodeIdForTree);
 }
 
 #[test]
@@ -50,8 +51,9 @@ fn test_get_mut_node_from_other_tree() {
     let root_node_a = tree_a.get_mut(&root_node_id_a);
     let root_node_b = tree_b.get_mut(&root_node_id_a); //note use of wrong tree
 
-    assert!(root_node_a.is_some());
-    assert!(root_node_b.is_none());
+    assert!(root_node_a.is_ok());
+    assert!(root_node_b.is_err());
+    assert_eq!(root_node_b.err().unwrap(), NodeIdError::InvalidNodeIdForTree);
 }
 
 #[test]
