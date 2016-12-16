@@ -414,20 +414,25 @@ impl<T> Tree<T> {
     /// let root_id = tree.set_root(root_node);
     ///
     /// let child_id = tree.insert_with_parent(child_node, &root_id).ok().unwrap();
-    /// tree.insert_with_parent(grandchild_node, &root_id);
+    /// # let grandchild_id =
+    /// tree.insert_with_parent(grandchild_node, &child_id).unwrap();
     ///
-    /// let root_node = tree.remove_node_remove_children(child_id);
+    /// # let child_id_copy = child_id.clone();
+    /// let child_node = tree.remove_node_drop_children(child_id);
+    /// # assert!(tree.get(&root_id).is_some());
+    /// # assert!(!tree.get(&child_id_copy).is_some());
+    /// # assert!(!tree.get(&grandchild_id).is_some());
     /// ```
     ///
-    pub fn remove_node_remove_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
+    pub fn remove_node_drop_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(&node_id);
         if !is_valid {
-            return Result::Err(error.expect("Tree::remove_node_orphan_children: Missing an error value on finding an invalid NodeId."));
+            return Result::Err(error.expect("Tree::remove_node_drop_children: Missing an error value on finding an invalid NodeId."));
         }
 
-        let children = self.get_unsafe(&node_id).children().clone();
-        for child in children {
-            try!(self.remove_node_remove_children(child.clone()));
+        let mut children = self.get_mut_unsafe(&node_id).take_children();
+        for child in children.drain(..) {
+            try!(self.remove_node_drop_children(child));
         }
         Result::Ok(self.remove_node(node_id))
     }

@@ -89,7 +89,7 @@ fn test_remove_node_remove_children_from_other_tree() {
 
     let root_node_id_a = tree_a.set_root(Node::new(1));
 
-    let root_node_b = tree_b.remove_node_remove_children(root_node_id_a); //note use of wrong tree
+    let root_node_b = tree_b.remove_node_drop_children(root_node_id_a); //note use of wrong tree
     assert!(root_node_b.is_err());
 
     let error = root_node_b.err().unwrap();
