@@ -242,9 +242,7 @@ impl<T> Tree<T> {
     ///
     /// Get an immutable reference to a `Node`.
     ///
-    /// If the `NodeId` provided is invalid (whether the
-    /// `Node` in question has already been removed, or the `NodeId` belongs to a different `Tree`),
-    /// this function returns a `None` value.
+    /// Returns a `Result` containing the immutable reference or a `NodeIdError` if one occurred.
     ///
     /// ```
     /// use id_tree::Tree;
@@ -256,20 +254,18 @@ impl<T> Tree<T> {
     /// let root_node: &Node<i32> = tree.get(&root_id).unwrap();
     /// ```
     ///
-    pub fn get(&self, node_id: &NodeId) -> Option<&Node<T>> {
-        let (is_valid, _) = self.is_valid_node_id(node_id);
-        if is_valid {
-            return Some(self.get_unsafe(node_id));
+    pub fn get(&self, node_id: &NodeId) -> Result<&Node<T>, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Result::Err(error.expect("Tree::get: Missing an error value on finding an invalid NodeId."));
         }
-        None
+        Ok(self.get_unsafe(node_id))
     }
 
     ///
     /// Get a mutable reference to a `Node`.
     ///
-    /// If the `NodeId` provided is invalid (whether the
-    /// `Node` in question has already been removed, or the `NodeId` belongs to a different `Tree`),
-    /// this function returns a `None` value.
+    /// Returns a `Result` containing the mutable reference or a `NodeIdError` if one occurred.
     ///
     /// ```
     /// use id_tree::Tree;
@@ -281,12 +277,12 @@ impl<T> Tree<T> {
     /// let root_node: &mut Node<i32> = tree.get_mut(&root_id).unwrap();
     /// ```
     ///
-    pub fn get_mut(&mut self, node_id: &NodeId) -> Option<&mut Node<T>> {
-        let (is_valid, _) = self.is_valid_node_id(node_id);
-        if is_valid {
-            return Some(self.get_mut_unsafe(node_id));
+    pub fn get_mut(&mut self, node_id: &NodeId) -> Result<&mut Node<T>, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Result::Err(error.expect("Tree::get_mut: Missing an error value on finding an invalid NodeId."));
         }
-        None
+        Ok(self.get_mut_unsafe(node_id))
     }
 
     ///
@@ -934,7 +930,7 @@ mod tree_tests {
         assert_eq!(node_1.data(), &1);
         assert_eq!(node_1.children().len(), 0);
         assert!(node_1.parent().is_none());
-        assert!(tree.get(&node_1_id).is_none());
+        assert!(tree.get(&node_1_id).is_err());
 
         let root_ref = tree.get(&root_id).unwrap();
         let node_2_ref = tree.get(&node_2_id).unwrap();
@@ -970,7 +966,7 @@ mod tree_tests {
         assert_eq!(node_1.data(), &1);
         assert_eq!(node_1.children().len(), 0);
         assert!(node_1.parent().is_none());
-        assert!(tree.get(&node_1_id).is_none());
+        assert!(tree.get(&node_1_id).is_err());
 
         let node_2_ref = tree.get(&node_2_id).unwrap();
         let node_3_ref = tree.get(&node_3_id).unwrap();
