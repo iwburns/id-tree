@@ -425,14 +425,59 @@ impl<T> Tree<T> {
             return Result::Err(error.expect("Tree::move_node_to_parent: Missing an error value on finding an invalid NodeId."));
         }
 
-        // detach from old parent (if necessary)
-        let maybe_old_parent = self.get_unsafe(node_id).parent().cloned();
-        if let Some(old_parent) = maybe_old_parent {
-            self.get_mut_unsafe(&old_parent).children_mut().retain(|id| id != node_id);
-        }
+        if let Some(_) = self.find_subtree_root_between_ids(node_id, parent_id).cloned() {
+            //node_id is below parent_id, this is a move "up" the tree.
+            //we don't really care about the subtree_root in this scenario.
 
-        // attach to new parent
-        self.set_as_parent_and_child(parent_id, node_id);
+            // detach from old parent
+            if let Some(old_parent) = self.get_unsafe(node_id).parent().cloned() {
+                self.get_mut_unsafe(&old_parent).children_mut().retain(|id| id != node_id);
+            }
+            // attach to new parent
+            self.set_as_parent_and_child(parent_id, node_id);
+
+        } else if let Some(subtree_root_id) = self.find_subtree_root_between_ids(parent_id, node_id).cloned() {
+            //node_id is above parent_id, this is a move "down" the tree.
+
+            let root_ref = self.root.clone();
+
+            if root_ref.as_ref() == Some(node_id) {
+                //we're moving the root down the tree.
+
+                self.get_mut_unsafe(root_ref.as_ref().unwrap())
+                    .children_mut()
+                    .retain(|id| id != &subtree_root_id);
+                self.get_mut_unsafe(&subtree_root_id).set_parent(None);
+
+                self.root = Some(subtree_root_id);
+
+                self.set_as_parent_and_child(parent_id, node_id);
+
+            } else {
+                //we're moving some other node down the tree.
+
+                if let Some(old_parent) = self.get_unsafe(node_id).parent().cloned() {
+                    // detach from old parent
+                    self.get_mut_unsafe(&old_parent).children_mut().retain(|id| id != node_id);
+                    // connect old parent and subtree root
+                    self.set_as_parent_and_child(&old_parent, &subtree_root_id);
+                }
+                // detach subtree_root from "this" node
+                self.get_mut_unsafe(node_id).children_mut().retain(|id| id != &subtree_root_id);
+
+                self.set_as_parent_and_child(parent_id, node_id);
+            }
+
+        } else {
+            //this is a move "across" the tree.
+
+            // detach from old parent
+            if let Some(old_parent) = self.get_unsafe(&node_id).parent().cloned() {
+                self.get_mut_unsafe(&old_parent).children_mut().retain(|id| id != node_id);
+            }
+            // attach to new parent
+            self.set_as_parent_and_child(parent_id, node_id);
+        }
 
         Result::Ok(())
     }
@@ -615,28 +660,6 @@ impl<T> Tree<T> {
 
         (true, None)
     }
-
-//    fn is_node_in_subtree(&self, lower_id: &NodeId, upper_id: &NodeId) -> bool {
-//
-//        let root_ref = self.root.as_ref();
-//
-//        if root_ref == Some(upper_id) {
-//            return true;
-//        } else if root_ref == Some(lower_id) {
-//            return false;
-//        }
-//
-//        if let Some(lower_parent) = self.get_unsafe(lower_id).parent() {
-//            if lower_parent == upper_id {
-//                return true;
-//            } else {
-//                return self.is_node_in_subtree(lower_parent, upper_id);
-//            }
-//        } else {
-//            //lower_id has no parent, it can't be in a sub-tree of upper_id
-//            return false;
-//        }
-//    }
 
     fn find_subtree_root_between_ids<'a>(&'a self, lower_id: &'a NodeId, upper_id: &'a NodeId) -> Option<&'a NodeId> {
 
@@ -1035,6 +1058,38 @@ mod tree_tests {
         let root_id = tree.root.clone().unwrap();
         tree.remove_node_lift_children(root_id.clone()).unwrap();
         assert_eq!(None, tree.root_node_id());
+    }
+
+    #[test]
+    fn test_move_node_to_parent() {
+        let mut tree = Tree::new();
+
+        //linear tree
+        let root_id = tree.set_root(Node::new(0));
+        let node_1_id = tree.insert_with_parent(Node::new(1), &root_id).unwrap();
+        let node_2_id = tree.insert_with_parent(Node::new(2), &node_1_id).unwrap();
+
+        //move "up" tree
+        tree.move_node_to_parent(&node_2_id, &root_id);
+        assert!(tree.get(&root_id).unwrap().children().contains(&node_1_id));
+        assert!(tree.get(&root_id).unwrap().children().contains(&node_2_id));
+
+        //move "across" tree
+        tree.move_node_to_parent(&node_2_id, &node_1_id); // now we're back to the linear tree
+        assert!(tree.get(&root_id).unwrap().children().contains(&node_1_id));
+        assert!(tree.get(&node_1_id).unwrap().children().contains(&node_2_id));
+
+        //move root "down" tree
+        tree.move_node_to_parent(&root_id, &node_2_id); // still linear, but now root is on the bottom.
+        assert!(tree.get(&node_1_id).unwrap().children().contains(&node_2_id));
+        assert!(tree.get(&node_2_id).unwrap().children().contains(&root_id));
+        assert_eq!(tree.root_node_id(), Some(&node_1_id));
+
+        //move "down" tree
+        tree.move_node_to_parent(&node_2_id, &root_id); // still linear, but now two is on the bottom.
+        assert!(tree.get(&node_1_id).unwrap().children().contains(&root_id));
+        assert!(tree.get(&root_id).unwrap().children().contains(&node_2_id));
+        assert_eq!(tree.root_node_id(), Some(&node_1_id));
     }
 
     #[test]
