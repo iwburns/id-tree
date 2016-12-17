@@ -616,26 +616,40 @@ impl<T> Tree<T> {
         (true, None)
     }
 
-    fn is_node_in_subtree(&self, lower_id: &NodeId, upper_id: &NodeId) -> bool {
+//    fn is_node_in_subtree(&self, lower_id: &NodeId, upper_id: &NodeId) -> bool {
+//
+//        let root_ref = self.root.as_ref();
+//
+//        if root_ref == Some(upper_id) {
+//            return true;
+//        } else if root_ref == Some(lower_id) {
+//            return false;
+//        }
+//
+//        if let Some(lower_parent) = self.get_unsafe(lower_id).parent() {
+//            if lower_parent == upper_id {
+//                return true;
+//            } else {
+//                return self.is_node_in_subtree(lower_parent, upper_id);
+//            }
+//        } else {
+//            //lower_id has no parent, it can't be in a sub-tree of upper_id
+//            return false;
+//        }
+//    }
 
-        let root_ref = self.root.as_ref();
-
-        if root_ref == Some(upper_id) {
-            return true;
-        } else if root_ref == Some(lower_id) {
-            return false;
-        }
+    fn find_subtree_root_between_ids<'a>(&'a self, lower_id: &'a NodeId, upper_id: &'a NodeId) -> Option<&'a NodeId> {
 
         if let Some(lower_parent) = self.get_unsafe(lower_id).parent() {
             if lower_parent == upper_id {
-                return true;
+                return Some(lower_id);
             } else {
-                return self.is_node_in_subtree(lower_parent, upper_id);
+                return self.find_subtree_root_between_ids(lower_parent, upper_id);
             }
-        } else {
-            //lower_id has no parent, it can't be in a sub-tree of upper_id
-            return false;
         }
+
+        // lower_id has no parent, it can't be below upper_id
+        None
     }
 
     fn set_as_parent_and_child(&mut self, parent_id: &NodeId, child_id: &NodeId) {
@@ -1024,23 +1038,33 @@ mod tree_tests {
     }
 
     #[test]
-    fn test_is_node_in_subtree() {
+    fn test_find_subtree_root_below_upper_id() {
         let mut tree = Tree::new();
 
         let root_id = tree.set_root(Node::new(0));
         let node_1_id = tree.insert_with_parent(Node::new(1), &root_id).unwrap();
         let node_2_id = tree.insert_with_parent(Node::new(2), &node_1_id).unwrap();
         let node_3_id = tree.insert_with_parent(Node::new(3), &node_1_id).unwrap();
+        let node_4_id = tree.insert_with_parent(Node::new(4), &node_2_id).unwrap();
 
-        assert!(tree.is_node_in_subtree(&node_1_id, &root_id)); // direct child
-        assert!(!tree.is_node_in_subtree(&root_id, &node_1_id)); // invert for false
+        let sub_root = tree.find_subtree_root_between_ids(&node_1_id, &root_id);
+        assert_eq!(sub_root, Some(&node_1_id));
+        let sub_root = tree.find_subtree_root_between_ids(&root_id, &node_1_id); //invert for None
+        assert_eq!(sub_root, None);
 
-        assert!(tree.is_node_in_subtree(&node_2_id, &root_id)); // grandchild
-        assert!(tree.is_node_in_subtree(&node_3_id, &root_id)); // grandchild
-        assert!(!tree.is_node_in_subtree(&root_id, &node_2_id)); // invert for false
-        assert!(!tree.is_node_in_subtree(&root_id, &node_3_id)); // invert for false
+        let sub_root = tree.find_subtree_root_between_ids(&node_2_id, &root_id);
+        assert_eq!(sub_root, Some(&node_1_id));
+        let sub_root = tree.find_subtree_root_between_ids(&root_id, &node_2_id); //invert for None
+        assert_eq!(sub_root, None);
 
-        assert!(!tree.is_node_in_subtree(&node_2_id, &node_3_id)); // across from each other
-        assert!(!tree.is_node_in_subtree(&node_3_id, &node_2_id)); // across from each other (reversed)
+        let sub_root = tree.find_subtree_root_between_ids(&node_3_id, &node_1_id);
+        assert_eq!(sub_root, Some(&node_3_id));
+        let sub_root = tree.find_subtree_root_between_ids(&node_1_id, &node_3_id); //invert for None
+        assert_eq!(sub_root, None);
+
+        let sub_root = tree.find_subtree_root_between_ids(&node_4_id, &root_id);
+        assert_eq!(sub_root, Some(&node_1_id));
+        let sub_root = tree.find_subtree_root_between_ids(&root_id, &node_4_id); //invert for None
+        assert_eq!(sub_root, None);
     }
 }
