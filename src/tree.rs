@@ -1057,32 +1057,56 @@ mod tree_tests {
     fn test_move_node_to_parent() {
         let mut tree = Tree::new();
 
-        //linear tree
         let root_id = tree.set_root(Node::new(0));
         let node_1_id = tree.insert_with_parent(Node::new(1), &root_id).unwrap();
-        let node_2_id = tree.insert_with_parent(Node::new(2), &node_1_id).unwrap();
+        let node_2_id = tree.insert_with_parent(Node::new(2), &root_id).unwrap();
+        let node_3_id = tree.insert_with_parent(Node::new(3), &node_1_id).unwrap();
 
-        //move "up" tree
-        tree.move_node_to_parent(&node_2_id, &root_id).unwrap();
+        //move 3 "across" the tree
+        tree.move_node_to_parent(&node_3_id, &node_2_id).unwrap();
         assert!(tree.get(&root_id).unwrap().children().contains(&node_1_id));
         assert!(tree.get(&root_id).unwrap().children().contains(&node_2_id));
+        assert!(tree.get(&node_2_id).unwrap().children().contains(&node_3_id));
 
-        //move "across" tree
-        tree.move_node_to_parent(&node_2_id, &node_1_id).unwrap(); // now we're back to the linear tree
+        //move 3 "up" the tree
+        tree.move_node_to_parent(&node_3_id, &root_id).unwrap();
         assert!(tree.get(&root_id).unwrap().children().contains(&node_1_id));
-        assert!(tree.get(&node_1_id).unwrap().children().contains(&node_2_id));
+        assert!(tree.get(&root_id).unwrap().children().contains(&node_2_id));
+        assert!(tree.get(&root_id).unwrap().children().contains(&node_3_id));
 
-        //move root "down" tree
-        tree.move_node_to_parent(&root_id, &node_2_id).unwrap(); // still linear, but now root is on the bottom.
-        assert!(tree.get(&node_1_id).unwrap().children().contains(&node_2_id));
+        //move 3 "down" (really this is across though) the tree
+        tree.move_node_to_parent(&node_3_id, &node_1_id).unwrap();
+        assert!(tree.get(&root_id).unwrap().children().contains(&node_1_id));
+        assert!(tree.get(&root_id).unwrap().children().contains(&node_2_id));
+        assert!(tree.get(&node_1_id).unwrap().children().contains(&node_3_id));
+
+        //move 1 "down" the tree
+        tree.move_node_to_parent(&node_1_id, &node_3_id).unwrap();
+        assert!(tree.get(&root_id).unwrap().children().contains(&node_2_id));
+        assert!(tree.get(&root_id).unwrap().children().contains(&node_3_id));
+        assert!(tree.get(&node_3_id).unwrap().children().contains(&node_1_id));
+
+        //note: node_1 is at the lowest point in the tree before these insertions.
+        let node_4_id = tree.insert_with_parent(Node::new(4), &node_1_id).unwrap();
+        let node_5_id = tree.insert_with_parent(Node::new(5), &node_4_id).unwrap();
+
+        //move 3 "down" the tree
+        tree.move_node_to_parent(&node_3_id, &node_5_id).unwrap();
+        assert!(tree.get(&root_id).unwrap().children().contains(&node_2_id));
+        assert!(tree.get(&root_id).unwrap().children().contains(&node_1_id));
+        assert!(tree.get(&node_1_id).unwrap().children().contains(&node_4_id));
+        assert!(tree.get(&node_4_id).unwrap().children().contains(&node_5_id));
+        assert!(tree.get(&node_5_id).unwrap().children().contains(&node_3_id));
+
+        //move root "down" the tree
+        tree.move_node_to_parent(&root_id, &node_2_id).unwrap();
         assert!(tree.get(&node_2_id).unwrap().children().contains(&root_id));
-        assert_eq!(tree.root_node_id(), Some(&node_1_id));
+        assert!(tree.get(&root_id).unwrap().children().contains(&node_1_id));
+        assert!(tree.get(&node_1_id).unwrap().children().contains(&node_4_id));
+        assert!(tree.get(&node_4_id).unwrap().children().contains(&node_5_id));
+        assert!(tree.get(&node_5_id).unwrap().children().contains(&node_3_id));
+        assert_eq!(tree.root_node_id(), Some(&node_2_id));
 
-        //move "down" tree
-        tree.move_node_to_parent(&node_2_id, &root_id).unwrap(); // still linear, but now two is on the bottom.
-        assert!(tree.get(&node_1_id).unwrap().children().contains(&root_id));
-        assert!(tree.get(&root_id).unwrap().children().contains(&node_2_id));
-        assert_eq!(tree.root_node_id(), Some(&node_1_id));
     }
 
     #[test]
