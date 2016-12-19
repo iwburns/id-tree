@@ -26,3 +26,5 @@ make those structural decisions for you.
 ## Non-Goals
 * Arbitrary _Graph_ structure creation and manipulation
 * Comparison-based node insertion of any kind
+
+## Contributors
