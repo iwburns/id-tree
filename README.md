@@ -28,3 +28,4 @@ make those structural decisions for you.
 * Comparison-based node insertion of any kind
 
 ## Contributors
+* [Drakulix](https://github.com/Drakulix)
