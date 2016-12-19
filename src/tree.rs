@@ -391,8 +391,8 @@ impl<T> Tree<T> {
     /// Moves a `Node` inside a `Tree` to a new parent leaving all children in their place.
     ///
     /// If the new parent (let's call it `B`) is a descendant of the `Node` being moved (`A`), then
-    /// the direct child of `A` that is between it and `B` will be shifted upwards to take the place
-    /// of its parent (`A`).  All other children of `A` will be left alone, meaning they will
+    /// the direct child of `A` on the path from `A` to `B` will be shifted upwards to take the
+    /// place of its parent (`A`).  All other children of `A` will be left alone, meaning they will
     /// travel with it down the `Tree`.
     ///
     /// Please note that during the "shift-up" part of the above scenario, the `Node` being shifted
