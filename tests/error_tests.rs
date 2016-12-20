@@ -171,3 +171,21 @@ fn test_sort_by_key_invalid_id() {
     let error = result.err().unwrap();
     assert_eq!(error, NodeIdError::InvalidNodeIdForTree);
 }
+
+#[test]
+fn test_swap_sub_trees_of_different_trees() {
+    let mut tree_a: Tree<i32> = TreeBuilder::new().build();
+    let mut tree_b: Tree<i32> = TreeBuilder::new().build();
+
+    let root_node_a = Node::new(1);
+    let root_node_id_a = tree_a.set_root(root_node_a);
+
+    let root_node_b = Node::new(1);
+    let root_node_id_b = tree_b.set_root(root_node_b);
+
+    let result = tree_a.swap_sub_tree(&root_node_id_b, &root_node_id_a); //note use of invalid child
+    assert!(result.is_err());
+
+    let error = result.err().unwrap();
+    assert_eq!(error, NodeIdError::InvalidNodeIdForTree);
+}
