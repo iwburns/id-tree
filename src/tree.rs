@@ -396,6 +396,11 @@ impl<T> Tree<T> {
     /// providing the caller with extra copies of `NodeId`s should the corresponding `Node`s be
     /// removed from the `Tree` at a later time.
     ///
+    /// **NOTE:** Please keep in mind: Children of this `NodeId` *are removed during this method call*,
+    /// so `NodeId`s that previously pointed to them will no longer be valid after calling this method.
+    /// This means even without using `Clone` you might end up with copies of invalid Id's.
+    /// Use with caution.
+    ///
     /// If the caller needs a copy of the parent `NodeId`s, they must `Clone` them before
     /// this `Node` is removed from the `Tree`.  Please see the
     /// [Potential `NodeId` Issues](struct.NodeId.html#potential-nodeid-issues) section
