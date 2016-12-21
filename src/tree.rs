@@ -629,11 +629,14 @@ impl<T> Tree<T> {
     ///
     /// Swaps two `Node`s including their children given their `NodeId`s.
     ///
-    /// Returns an empty `Result` containing a `NodeIdError` if one occurred on either provided `Id`.
+    /// If one `Node` is a descendant of the other getting swapped, the former *upper* `Node` is attached as the last child of the former *lower* `Node` after the swap. (The *lower* will take the *uppers* original position as usual.)
+    /// The subtree of the former *upper* node is not touched except that the *lower* `Node` is moved including all its children.
     ///
-    /// Notes:
-    ///     - Both `NodeId`s are still valid after this process and are not swapped.
-    ///     - Keeps the positions of the `Node`s in their parents children collection.
+    /// Both `NodeId`s are still valid after this process and are not swapped.
+    ///
+    /// This keeps the positions of the `Node`s in their parents' children collection.
+    ///
+    /// Returns an empty `Result` containing a `NodeIdError` if one occurred on either provided `Id`.
     ///
     /// ```
     /// use id_tree::Tree;
