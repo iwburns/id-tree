@@ -669,18 +669,16 @@ impl<T> Tree<T> {
         }
 
         let lower_upper_test = self.find_subtree_root_between_ids(first_id, second_id)
-        .map(|_| (first_id, second_id))
-        .or(
-            self.find_subtree_root_between_ids(second_id, first_id)
-            .map(|_| (second_id, first_id))
-        );
+            .map(|_| (first_id, second_id))
+            .or(
+                self.find_subtree_root_between_ids(second_id, first_id)
+                .map(|_| (second_id, first_id))
+            );
 
-        if let Some((lower_id, upper_id)) = lower_upper_test
-        {
+        if let Some((lower_id, upper_id)) = lower_upper_test {
             let upper_parent_id = self.get_unsafe(upper_id).parent().cloned();
 
-            let lower_parent_id =
-            {
+            let lower_parent_id = {
                 let lower = self.get_mut_unsafe(&lower_id);
                 let lower_parent_id = lower.parent().unwrap().clone(); //lower is lower, so has a parent for sure
 
