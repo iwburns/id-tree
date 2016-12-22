@@ -130,6 +130,28 @@ impl<T> Node<T> {
     }
 
     ///
+    /// Replaces this `Node`s data with the data provided.
+    ///
+    /// Returns the old value of data.
+    ///
+    /// ```
+    /// use id_tree::Node;
+    ///
+    /// let mut node_four: Node<i32> = Node::new(3);
+    ///
+    /// // ops! lets correct this
+    /// let three = node_four.replace_data(4);
+    ///
+    /// assert_eq!(node_four.data(), &4);
+    /// assert_eq!(three, 3);
+    /// ```
+    ///
+    pub fn replace_data(&mut self, mut data: T) -> T {
+        ::std::mem::swap(&mut data, self.data_mut());
+        data
+    }
+
+    ///
     /// Returns a `Some` value containing the `NodeId` of this `Node`'s parent if it exists; returns `None` if it does not.
     ///
     /// **Note:** A `Node` cannot have a parent until after it has been inserted into a `Tree`.
@@ -171,6 +193,18 @@ impl<T> MutableNode for Node<T> {
 
     fn add_child(&mut self, child: NodeId) {
         self.children.push(child);
+    }
+
+    fn replace_child(&mut self, old: NodeId, new: NodeId) {
+        let index = self.children()
+                        .iter()
+                        .enumerate()
+                        .find(|&(_, id)| id == &old)
+                        .unwrap().0;
+
+        let children = self.children_mut();
+        children.push(new);
+        children.swap_remove(index);
     }
 
     fn children_mut(&mut self) -> &mut Vec<NodeId> {
