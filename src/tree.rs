@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 
+use super::behaviors::RemoveBehavior;
 use super::snowflake::ProcessUniqueId;
 use super::Node;
 use super::NodeId;
@@ -291,6 +292,21 @@ impl<T> Tree<T> {
         None
     }
 
+    //TODO: add documentation here.
+    //TODO: remove all of the extra checks on NodeIds after this method call
+    pub fn remove_node(&mut self, node_id: NodeId, behavior: RemoveBehavior) -> Result<Node<T>, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(&node_id);
+        if !is_valid {
+            return Result::Err(error.expect("Tree::remove_node: Missing an error value on finding an invalid NodeId."));
+        }
+
+        match behavior {
+            RemoveBehavior::DropChildren => self.remove_node_drop_children(node_id),
+            RemoveBehavior::LiftChildren => self.remove_node_lift_children(node_id),
+            RemoveBehavior::OrphanChildren => self.remove_node_orphan_children(node_id),
+        }
+    }
+
     ///
     /// Remove a `Node` from the `Tree` and move its children up one "level" in the `Tree` if
     /// possible.
@@ -312,24 +328,7 @@ impl<T> Tree<T> {
     /// of the `NodeId` documentation for more information on the implications of calling `Clone` on
     /// a `NodeId`.
     ///
-    /// ```
-    /// use id_tree::Tree;
-    /// use id_tree::Node;
-    ///
-    /// let root_node = Node::new(1);
-    /// let child_node = Node::new(2);
-    /// let grandchild_node = Node::new(3);
-    ///
-    /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.set_root(root_node);
-    ///
-    /// let child_id = tree.insert_with_parent(child_node, &root_id).ok().unwrap();
-    /// tree.insert_with_parent(grandchild_node, &root_id);
-    ///
-    /// let root_node = tree.remove_node_lift_children(child_id);
-    /// ```
-    ///
-    pub fn remove_node_lift_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
+    fn remove_node_lift_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(&node_id);
         if !is_valid {
             return Result::Err(error.expect("Tree::remove_node_lift_children: Missing an error value on finding an invalid NodeId."));
@@ -344,7 +343,7 @@ impl<T> Tree<T> {
             self.clear_parent_of_children(&node_id);
         }
 
-        Result::Ok(self.remove_node(node_id))
+        Result::Ok(self.remove_node_internal(node_id))
     }
 
     ///
@@ -362,31 +361,15 @@ impl<T> Tree<T> {
     /// of the `NodeId` documentation for more information on the implications of calling `Clone` on
     /// a `NodeId`.
     ///
-    /// ```
-    /// use id_tree::Tree;
-    /// use id_tree::Node;
     ///
-    /// let root_node = Node::new(1);
-    /// let child_node = Node::new(2);
-    /// let grandchild_node = Node::new(3);
-    ///
-    /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.set_root(root_node);
-    ///
-    /// let child_id = tree.insert_with_parent(child_node, &root_id).ok().unwrap();
-    /// tree.insert_with_parent(grandchild_node, &root_id);
-    ///
-    /// let root_node = tree.remove_node_orphan_children(child_id);
-    /// ```
-    ///
-    pub fn remove_node_orphan_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
+    fn remove_node_orphan_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(&node_id);
         if !is_valid {
             return Result::Err(error.expect("Tree::remove_node_orphan_children: Missing an error value on finding an invalid NodeId."));
         }
 
         self.clear_parent_of_children(&node_id);
-        Result::Ok(self.remove_node(node_id))
+        Result::Ok(self.remove_node_internal(node_id))
     }
 
     ///
@@ -409,29 +392,8 @@ impl<T> Tree<T> {
     /// of the `NodeId` documentation for more information on the implications of calling `Clone` on
     /// a `NodeId`.
     ///
-    /// ```
-    /// use id_tree::Tree;
-    /// use id_tree::Node;
     ///
-    /// let root_node = Node::new(1);
-    /// let child_node = Node::new(2);
-    /// let grandchild_node = Node::new(3);
-    ///
-    /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.set_root(root_node);
-    ///
-    /// let child_id = tree.insert_with_parent(child_node, &root_id).ok().unwrap();
-    /// # let grandchild_id =
-    /// tree.insert_with_parent(grandchild_node, &child_id).unwrap();
-    ///
-    /// # let child_id_copy = child_id.clone();
-    /// let child_node = tree.remove_node_drop_children(child_id);
-    /// # assert!(tree.get(&root_id).is_some());
-    /// # assert!(!tree.get(&child_id_copy).is_some());
-    /// # assert!(!tree.get(&grandchild_id).is_some());
-    /// ```
-    ///
-    pub fn remove_node_drop_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
+    fn remove_node_drop_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(&node_id);
         if !is_valid {
             return Result::Err(error.expect("Tree::remove_node_drop_children: Missing an error value on finding an invalid NodeId."));
@@ -441,7 +403,7 @@ impl<T> Tree<T> {
         for child in children.drain(..) {
             try!(self.remove_node_drop_children(child));
         }
-        Result::Ok(self.remove_node(node_id))
+        Result::Ok(self.remove_node_internal(node_id))
     }
 
     ///
@@ -881,7 +843,7 @@ impl<T> Tree<T> {
         }
     }
 
-    fn remove_node(&mut self, node_id: NodeId) -> Node<T> {
+    fn remove_node_internal(&mut self, node_id: NodeId) -> Node<T> {
 
 
         if let Some(root_id) = self.root.clone() {
