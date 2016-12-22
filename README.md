@@ -3,6 +3,7 @@
 [![Build Status](https://travis-ci.org/iwburns/id-tree.svg?branch=master)](https://travis-ci.org/iwburns/id-tree)
 [![Docs.rs](https://docs.rs/id_tree/badge.svg)](https://docs.rs/id_tree)
 [![Crates.io](https://img.shields.io/crates/v/id_tree.svg)](https://crates.io/crates/id_tree)
+[![](https://tokei.rs/b1/github/iwburns/id-tree)](https://github.com/iwburns/id-tree)
 
 A library for creating and modifying Tree structures.
 
