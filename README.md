@@ -1,6 +1,8 @@
 #id_tree
 
-[![Docs.rs](https://docs.rs/id_tree/badge.svg)](https://docs.rs/id_tree)  [![Crates.io](https://img.shields.io/crates/v/id_tree.svg)](https://crates.io/crates/id_tree)  [![Build Status](https://travis-ci.org/iwburns/id-tree.svg?branch=master)](https://travis-ci.org/iwburns/id-tree)
+[![Build Status](https://travis-ci.org/iwburns/id-tree.svg?branch=master)](https://travis-ci.org/iwburns/id-tree)
+[![Docs.rs](https://docs.rs/id_tree/badge.svg)](https://docs.rs/id_tree)
+[![Crates.io](https://img.shields.io/crates/v/id_tree.svg)](https://crates.io/crates/id_tree)
 
 A library for creating and modifying Tree structures.
 
