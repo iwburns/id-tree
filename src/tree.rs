@@ -422,9 +422,9 @@ impl<T> Tree<T> {
     ///
     /// # let child_id_copy = child_id.clone();
     /// let child_node = tree.remove_node_drop_children(child_id);
-    /// # assert!(tree.get(&root_id).is_some());
-    /// # assert!(!tree.get(&child_id_copy).is_some());
-    /// # assert!(!tree.get(&grandchild_id).is_some());
+    /// # assert!(tree.get(&root_id).is_ok());
+    /// # assert!(!tree.get(&child_id_copy).is_ok());
+    /// # assert!(!tree.get(&grandchild_id).is_ok());
     /// ```
     ///
     pub fn remove_node_drop_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
