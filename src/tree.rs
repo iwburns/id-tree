@@ -292,8 +292,22 @@ impl<T> Tree<T> {
         None
     }
 
-    //TODO: add documentation here.
-    //TODO: remove all of the extra checks on NodeIds after this method call
+    ///
+    /// Remove a `Node` from the `Tree`.  The `RemoveBehavior` provided determines what happens to
+    /// the removed `Node`'s children.
+    ///
+    /// Returns a `Result` containing the removed `Node` or a `NodeIdError` if one occurred.
+    ///
+    /// **NOTE:** The `Node` that is returned will have its parent and child values cleared to avoid
+    /// providing the caller with extra copies of `NodeId`s should the corresponding `Node`s be
+    /// removed from the `Tree` at a later time.
+    ///
+    /// If the caller needs a copy of the parent or child `NodeId`s, they must `Clone` them before
+    /// this `Node` is removed from the `Tree`.  Please see the
+    /// [Potential `NodeId` Issues](struct.NodeId.html#potential-nodeid-issues) section
+    /// of the `NodeId` documentation for more information on the implications of calling `Clone` on
+    /// a `NodeId`.
+    ///
     pub fn remove_node(&mut self, node_id: NodeId, behavior: RemoveBehavior) -> Result<Node<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(&node_id);
         if !is_valid {
@@ -311,29 +325,12 @@ impl<T> Tree<T> {
     /// Remove a `Node` from the `Tree` and move its children up one "level" in the `Tree` if
     /// possible.
     ///
-    /// Returns a `Result` containing the removed `Node` or a `NodeIdError` if one occurred.
-    ///
     /// In other words, this `Node`'s children will point to its parent as their parent instead of
     /// this `Node`.  In addition, this `Node`'s parent will have this `Node`'s children added as
     /// its own children.  If this `Node` has no parent, then calling this function is the
     /// equivalent of calling `remove_node_orphan_children`.
     ///
-    /// **NOTE:** The `Node` that is returned will have its parent and child values cleared to avoid
-    /// providing the caller with extra copies of `NodeId`s should the corresponding `Node`s be
-    /// removed from the `Tree` at a later time.
-    ///
-    /// If the caller needs a copy of the parent or child `NodeId`s, they must `Clone` them before
-    /// this `Node` is removed from the `Tree`.  Please see the
-    /// [Potential `NodeId` Issues](struct.NodeId.html#potential-nodeid-issues) section
-    /// of the `NodeId` documentation for more information on the implications of calling `Clone` on
-    /// a `NodeId`.
-    ///
     fn remove_node_lift_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(&node_id);
-        if !is_valid {
-            return Result::Err(error.expect("Tree::remove_node_lift_children: Missing an error value on finding an invalid NodeId."));
-        }
-
         if let Some(parent_id) = self.get_unsafe(&node_id).parent().cloned() {
             //attach children to parent
             for child_id in self.get_unsafe(&node_id).children().clone() {
@@ -349,25 +346,7 @@ impl<T> Tree<T> {
     ///
     /// Remove a `Node` from the `Tree` and leave all of its children in the `Tree`.
     ///
-    /// Returns a `Result` containing the removed `Node` or a `NodeIdError` if one occurred.
-    ///
-    /// **NOTE:** The `Node` that is returned will have its parent and child values cleared to avoid
-    /// providing the caller with extra copies of `NodeId`s should the corresponding `Node`s be
-    /// removed from the `Tree` at a later time.
-    ///
-    /// If the caller needs a copy of the parent or child `NodeId`s, they must `Clone` them before
-    /// this `Node` is removed from the `Tree`.  Please see the
-    /// [Potential `NodeId` Issues](struct.NodeId.html#potential-nodeid-issues) section
-    /// of the `NodeId` documentation for more information on the implications of calling `Clone` on
-    /// a `NodeId`.
-    ///
-    ///
     fn remove_node_orphan_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(&node_id);
-        if !is_valid {
-            return Result::Err(error.expect("Tree::remove_node_orphan_children: Missing an error value on finding an invalid NodeId."));
-        }
-
         self.clear_parent_of_children(&node_id);
         Result::Ok(self.remove_node_internal(node_id))
     }
@@ -375,30 +354,12 @@ impl<T> Tree<T> {
     ///
     /// Remove a `Node` from the `Tree` including all its children recursively.
     ///
-    /// Returns a `Result` containing the removed `Node` or a `NodeIdError` if one occurred.
-    ///
-    /// **NOTE:** The `Node` that is returned will have its parent value cleared to avoid
-    /// providing the caller with extra copies of `NodeId`s should the corresponding `Node`s be
-    /// removed from the `Tree` at a later time.
-    ///
     /// **NOTE:** Please keep in mind: Children of this `NodeId` *are removed during this method call*,
     /// so `NodeId`s that previously pointed to them will no longer be valid after calling this method.
     /// This means even without using `Clone` you might end up with copies of invalid Id's.
     /// Use with caution.
     ///
-    /// If the caller needs a copy of the parent `NodeId`s, they must `Clone` them before
-    /// this `Node` is removed from the `Tree`.  Please see the
-    /// [Potential `NodeId` Issues](struct.NodeId.html#potential-nodeid-issues) section
-    /// of the `NodeId` documentation for more information on the implications of calling `Clone` on
-    /// a `NodeId`.
-    ///
-    ///
     fn remove_node_drop_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(&node_id);
-        if !is_valid {
-            return Result::Err(error.expect("Tree::remove_node_drop_children: Missing an error value on finding an invalid NodeId."));
-        }
-
         let mut children = self.get_mut_unsafe(&node_id).take_children();
         for child in children.drain(..) {
             try!(self.remove_node_drop_children(child));
