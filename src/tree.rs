@@ -540,6 +540,22 @@ impl<T> Tree<T> {
         Result::Ok(())
     }
 
+    pub fn move_node_to_root(&mut self, node_id: &NodeId) -> Result<(), NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Result::Err(error.expect("Tree::move_node_to_root: Missing an error value on finding an invalid NodeId."));
+        }
+
+        let old_root = self.root.clone();
+        self.root = Some(node_id.clone());
+
+        if let Some(old_root) = old_root {
+            try!(self.move_node_to_parent(&old_root, node_id));
+        }
+
+        Result::Ok(())
+    }
+
     ///
     /// Sorts the children of one node, in-place, using compare to compare the nodes
     ///
