@@ -371,11 +371,6 @@ impl<T> Tree<T> {
     ///
     /// Remove a `Node` from the `Tree` including all its children recursively.
     ///
-    /// **NOTE:** Please keep in mind: Children of this `NodeId` *are removed during this method call*,
-    /// so `NodeId`s that previously pointed to them will no longer be valid after calling this method.
-    /// This means even without using `Clone` you might end up with copies of invalid Id's.
-    /// Use with caution.
-    ///
     fn remove_node_drop_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
         let mut children = self.get_mut_unsafe(&node_id).take_children();
         for child in children.drain(..) {
