@@ -500,10 +500,10 @@ impl<T> Tree<T> {
                 //also we know the root exists
 
                 //detach subtree_root from node
-                self.get_mut_unsafe(node_id).children_mut().retain(|id| id != &subtree_root_id);
+                self.detach_from_parent(node_id, &subtree_root_id);
 
                 //set subtree_root as Tree root.
-                self.get_mut_unsafe(&subtree_root_id).set_parent(None);
+                self.clear_parent(&subtree_root_id);
                 self.root = Some(subtree_root_id);
 
                 self.set_as_parent_and_child(parent_id, node_id);
@@ -513,15 +513,15 @@ impl<T> Tree<T> {
 
                 if let Some(old_parent) = self.get_unsafe(node_id).parent().cloned() {
                     // detach from old parent
-                    self.get_mut_unsafe(&old_parent).children_mut().retain(|id| id != node_id);
+                    self.detach_from_parent(&old_parent, node_id);
                     // connect old parent and subtree root
                     self.set_as_parent_and_child(&old_parent, &subtree_root_id);
                 } else {
                     // node is orphaned, need to set subtree_root's parent to None (same as node's)
-                    self.get_mut_unsafe(&subtree_root_id).set_parent(None);
+                    self.clear_parent(&subtree_root_id);
                 }
                 // detach subtree_root from node
-                self.get_mut_unsafe(node_id).children_mut().retain(|id| id != &subtree_root_id);
+                self.detach_from_parent(node_id, &subtree_root_id);
 
                 self.set_as_parent_and_child(parent_id, node_id);
             }
@@ -531,7 +531,7 @@ impl<T> Tree<T> {
 
             // detach from old parent
             if let Some(old_parent) = self.get_unsafe(node_id).parent().cloned() {
-                self.get_mut_unsafe(&old_parent).children_mut().retain(|id| id != node_id);
+                self.detach_from_parent(&old_parent, node_id);
             }
 
             self.set_as_parent_and_child(parent_id, node_id);
@@ -576,6 +576,11 @@ impl<T> Tree<T> {
         }
 
         let old_root = self.root.clone();
+
+        if let Some(parent_id) = self.get_unsafe(node_id).parent().cloned() {
+            self.detach_from_parent(&parent_id, node_id);
+        }
+        self.clear_parent(node_id);
         self.root = Some(node_id.clone());
 
         if let Some(old_root) = old_root {
@@ -794,7 +799,7 @@ impl<T> Tree<T> {
                 lower_parent_id
             };
 
-            self.get_mut_unsafe(&lower_parent_id).children_mut().retain(|x| x != lower_id);
+            self.detach_from_parent(&lower_parent_id, lower_id);
 
             if upper_parent_id.is_some() {
                 self.get_mut_unsafe(upper_parent_id.as_ref().unwrap()).replace_child(upper_id.clone(), lower_id.clone());
@@ -906,6 +911,12 @@ impl<T> Tree<T> {
 
         self.get_mut_unsafe(child_id)
             .set_parent(Some(parent_id.clone()));
+    }
+
+    fn detach_from_parent(&mut self, parent_id: &NodeId, node_id: &NodeId) {
+        self.get_mut_unsafe(&parent_id)
+            .children_mut()
+            .retain(|child_id| child_id != node_id);
     }
 
     fn insert_new_node(&mut self, new_node: Node<T>) -> NodeId {
