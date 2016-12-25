@@ -133,6 +133,24 @@ fn test_move_node_from_other_tree() {
 }
 
 #[test]
+fn test_move_node_to_root_by_invalid_id() {
+    let mut tree_a: Tree<i32> = TreeBuilder::new().build();
+    let mut tree_b: Tree<i32> = TreeBuilder::new().build();
+
+    let root_node_a = Node::new(1);
+    let _ = tree_a.set_root(root_node_a);
+
+    let root_node_b = Node::new(1);
+    let root_node_id_b = tree_b.set_root(root_node_b);
+
+    let result = tree_a.move_node_to_root(&root_node_id_b);
+    assert!(result.is_err());
+
+    let error = result.err().unwrap();
+    assert_eq!(error, NodeIdError::InvalidNodeIdForTree);
+}
+
+#[test]
 fn test_sort_by_invalid_id() {
     let mut tree_a: Tree<i32> = TreeBuilder::new().build();
     let mut tree_b: Tree<i32> = TreeBuilder::new().build();
