@@ -46,10 +46,12 @@
 extern crate snowflake;
 use self::snowflake::ProcessUniqueId;
 
+mod behaviors;
 mod error;
 mod node;
 mod tree;
 
+pub use behaviors::RemoveBehavior;
 pub use error::NodeIdError;
 pub use node::NodeBuilder;
 pub use node::Node;

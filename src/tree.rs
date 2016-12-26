@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 
+use super::behaviors::RemoveBehavior;
 use super::snowflake::ProcessUniqueId;
 use super::Node;
 use super::NodeId;
@@ -288,15 +289,10 @@ impl<T> Tree<T> {
     }
 
     ///
-    /// Remove a `Node` from the `Tree` and move its children up one "level" in the `Tree` if
-    /// possible.
+    /// Remove a `Node` from the `Tree`.  The `RemoveBehavior` provided determines what happens to
+    /// the removed `Node`'s children.
     ///
     /// Returns a `Result` containing the removed `Node` or a `NodeIdError` if one occurred.
-    ///
-    /// In other words, this `Node`'s children will point to its parent as their parent instead of
-    /// this `Node`.  In addition, this `Node`'s parent will have this `Node`'s children added as
-    /// its own children.  If this `Node` has no parent, then calling this function is the
-    /// equivalent of calling `remove_node_orphan_children`.
     ///
     /// **NOTE:** The `Node` that is returned will have its parent and child values cleared to avoid
     /// providing the caller with extra copies of `NodeId`s should the corresponding `Node`s be
@@ -311,26 +307,43 @@ impl<T> Tree<T> {
     /// ```
     /// use id_tree::Tree;
     /// use id_tree::Node;
-    ///
-    /// let root_node = Node::new(1);
-    /// let child_node = Node::new(2);
-    /// let grandchild_node = Node::new(3);
+    /// use id_tree::RemoveBehavior;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.set_root(root_node);
+    /// let root_id = tree.set_root(Node::new(0));
     ///
-    /// let child_id = tree.insert_with_parent(child_node, &root_id).ok().unwrap();
-    /// tree.insert_with_parent(grandchild_node, &root_id);
+    /// let child_id = tree.insert_with_parent(Node::new(1), &root_id).ok().unwrap();
+    /// let grandchild_id = tree.insert_with_parent(Node::new(2), &child_id).ok().unwrap();
     ///
-    /// let root_node = tree.remove_node_lift_children(child_id);
+    /// let child = tree.remove_node(child_id, RemoveBehavior::DropChildren).ok().unwrap();
+    ///
+    /// # assert!(tree.get(&grandchild_id).is_err());
+    /// # assert_eq!(tree.get(&root_id).unwrap().children().len(), 0);
     /// ```
     ///
-    pub fn remove_node_lift_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
+    pub fn remove_node(&mut self, node_id: NodeId, behavior: RemoveBehavior) -> Result<Node<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(&node_id);
         if !is_valid {
-            return Result::Err(error.expect("Tree::remove_node_lift_children: Missing an error value on finding an invalid NodeId."));
+            return Result::Err(error.expect("Tree::remove_node: Missing an error value on finding an invalid NodeId."));
         }
 
+        match behavior {
+            RemoveBehavior::DropChildren => self.remove_node_drop_children(node_id),
+            RemoveBehavior::LiftChildren => self.remove_node_lift_children(node_id),
+            RemoveBehavior::OrphanChildren => self.remove_node_orphan_children(node_id),
+        }
+    }
+
+    ///
+    /// Remove a `Node` from the `Tree` and move its children up one "level" in the `Tree` if
+    /// possible.
+    ///
+    /// In other words, this `Node`'s children will point to its parent as their parent instead of
+    /// this `Node`.  In addition, this `Node`'s parent will have this `Node`'s children added as
+    /// its own children.  If this `Node` has no parent, then calling this function is the
+    /// equivalent of calling `remove_node_orphan_children`.
+    ///
+    fn remove_node_lift_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
         if let Some(parent_id) = self.get_unsafe(&node_id).parent().cloned() {
             //attach children to parent
             for child_id in self.get_unsafe(&node_id).children().clone() {
@@ -340,104 +353,26 @@ impl<T> Tree<T> {
             self.clear_parent_of_children(&node_id);
         }
 
-        Result::Ok(self.remove_node(node_id))
+        Result::Ok(self.remove_node_internal(node_id))
     }
 
     ///
     /// Remove a `Node` from the `Tree` and leave all of its children in the `Tree`.
     ///
-    /// Returns a `Result` containing the removed `Node` or a `NodeIdError` if one occurred.
-    ///
-    /// **NOTE:** The `Node` that is returned will have its parent and child values cleared to avoid
-    /// providing the caller with extra copies of `NodeId`s should the corresponding `Node`s be
-    /// removed from the `Tree` at a later time.
-    ///
-    /// If the caller needs a copy of the parent or child `NodeId`s, they must `Clone` them before
-    /// this `Node` is removed from the `Tree`.  Please see the
-    /// [Potential `NodeId` Issues](struct.NodeId.html#potential-nodeid-issues) section
-    /// of the `NodeId` documentation for more information on the implications of calling `Clone` on
-    /// a `NodeId`.
-    ///
-    /// ```
-    /// use id_tree::Tree;
-    /// use id_tree::Node;
-    ///
-    /// let root_node = Node::new(1);
-    /// let child_node = Node::new(2);
-    /// let grandchild_node = Node::new(3);
-    ///
-    /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.set_root(root_node);
-    ///
-    /// let child_id = tree.insert_with_parent(child_node, &root_id).ok().unwrap();
-    /// tree.insert_with_parent(grandchild_node, &root_id);
-    ///
-    /// let root_node = tree.remove_node_orphan_children(child_id);
-    /// ```
-    ///
-    pub fn remove_node_orphan_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(&node_id);
-        if !is_valid {
-            return Result::Err(error.expect("Tree::remove_node_orphan_children: Missing an error value on finding an invalid NodeId."));
-        }
-
+    fn remove_node_orphan_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
         self.clear_parent_of_children(&node_id);
-        Result::Ok(self.remove_node(node_id))
+        Result::Ok(self.remove_node_internal(node_id))
     }
 
     ///
     /// Remove a `Node` from the `Tree` including all its children recursively.
     ///
-    /// Returns a `Result` containing the removed `Node` or a `NodeIdError` if one occurred.
-    ///
-    /// **NOTE:** The `Node` that is returned will have its parent value cleared to avoid
-    /// providing the caller with extra copies of `NodeId`s should the corresponding `Node`s be
-    /// removed from the `Tree` at a later time.
-    ///
-    /// **NOTE:** Please keep in mind: Children of this `NodeId` *are removed during this method call*,
-    /// so `NodeId`s that previously pointed to them will no longer be valid after calling this method.
-    /// This means even without using `Clone` you might end up with copies of invalid Id's.
-    /// Use with caution.
-    ///
-    /// If the caller needs a copy of the parent `NodeId`s, they must `Clone` them before
-    /// this `Node` is removed from the `Tree`.  Please see the
-    /// [Potential `NodeId` Issues](struct.NodeId.html#potential-nodeid-issues) section
-    /// of the `NodeId` documentation for more information on the implications of calling `Clone` on
-    /// a `NodeId`.
-    ///
-    /// ```
-    /// use id_tree::Tree;
-    /// use id_tree::Node;
-    ///
-    /// let root_node = Node::new(1);
-    /// let child_node = Node::new(2);
-    /// let grandchild_node = Node::new(3);
-    ///
-    /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.set_root(root_node);
-    ///
-    /// let child_id = tree.insert_with_parent(child_node, &root_id).ok().unwrap();
-    /// # let grandchild_id =
-    /// tree.insert_with_parent(grandchild_node, &child_id).unwrap();
-    ///
-    /// # let child_id_copy = child_id.clone();
-    /// let child_node = tree.remove_node_drop_children(child_id);
-    /// # assert!(tree.get(&root_id).is_ok());
-    /// # assert!(!tree.get(&child_id_copy).is_ok());
-    /// # assert!(!tree.get(&grandchild_id).is_ok());
-    /// ```
-    ///
-    pub fn remove_node_drop_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(&node_id);
-        if !is_valid {
-            return Result::Err(error.expect("Tree::remove_node_drop_children: Missing an error value on finding an invalid NodeId."));
-        }
-
+    fn remove_node_drop_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
         let mut children = self.get_mut_unsafe(&node_id).take_children();
         for child in children.drain(..) {
             try!(self.remove_node_drop_children(child));
         }
-        Result::Ok(self.remove_node(node_id))
+        Result::Ok(self.remove_node_internal(node_id))
     }
 
     ///
@@ -877,7 +812,7 @@ impl<T> Tree<T> {
         }
     }
 
-    fn remove_node(&mut self, node_id: NodeId) -> Node<T> {
+    fn remove_node_internal(&mut self, node_id: NodeId) -> Node<T> {
 
 
         if let Some(root_id) = self.root.clone() {

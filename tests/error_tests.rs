@@ -4,6 +4,7 @@ use id_tree::NodeIdError;
 use id_tree::Node;
 use id_tree::TreeBuilder;
 use id_tree::Tree;
+use id_tree::RemoveBehavior;
 
 #[test]
 fn test_old_node_id() {
@@ -14,10 +15,10 @@ fn test_old_node_id() {
     let root_id = tree.set_root(root_node);
     let root_id_copy = root_id.clone(); // this is essential to getting the Result::Err()
 
-    let root_node = tree.remove_node_orphan_children(root_id);
+    let root_node = tree.remove_node(root_id, RemoveBehavior::OrphanChildren);
     assert!(root_node.is_ok());
 
-    let root_node_again = tree.remove_node_orphan_children(root_id_copy);
+    let root_node_again = tree.remove_node(root_id_copy, RemoveBehavior::OrphanChildren);
     assert!(root_node_again.is_err());
 
     let error = root_node_again.err().unwrap();
@@ -63,7 +64,7 @@ fn test_remove_node_lift_children_from_other_tree() {
 
     let root_node_id_a = tree_a.set_root(Node::new(1));
 
-    let root_node_b = tree_b.remove_node_lift_children(root_node_id_a); //note use of wrong tree
+    let root_node_b = tree_b.remove_node(root_node_id_a, RemoveBehavior::LiftChildren); //note use of wrong tree
     assert!(root_node_b.is_err());
 
     let error = root_node_b.err().unwrap();
@@ -77,7 +78,7 @@ fn test_remove_node_orphan_children_from_other_tree() {
 
     let root_node_id_a = tree_a.set_root(Node::new(1));
 
-    let root_node_b = tree_b.remove_node_orphan_children(root_node_id_a); //note use of wrong tree
+    let root_node_b = tree_b.remove_node(root_node_id_a, RemoveBehavior::OrphanChildren); //note use of wrong tree
     assert!(root_node_b.is_err());
 
     let error = root_node_b.err().unwrap();
@@ -91,7 +92,7 @@ fn test_remove_node_remove_children_from_other_tree() {
 
     let root_node_id_a = tree_a.set_root(Node::new(1));
 
-    let root_node_b = tree_b.remove_node_drop_children(root_node_id_a); //note use of wrong tree
+    let root_node_b = tree_b.remove_node(root_node_id_a, RemoveBehavior::DropChildren); //note use of wrong tree
     assert!(root_node_b.is_err());
 
     let error = root_node_b.err().unwrap();
