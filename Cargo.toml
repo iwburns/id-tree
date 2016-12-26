@@ -1,6 +1,6 @@
 [package]
 name = "id_tree"
-version = "0.2.12"
+version = "0.2.13"
 authors = ["Ian Burns <iwburns8@gmail.com>"]
 description = "A library for creating and modifying Tree structures."
 keywords = ["id_tree", "id-tree", "tree"]
