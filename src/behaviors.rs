@@ -23,7 +23,7 @@ pub enum RemoveBehavior {
     ///
     /// let child = tree.remove_node(child_id, RemoveBehavior::DropChildren).ok().unwrap();
     ///
-    /// assert!(tree.get(&grandchild_id).is_none());
+    /// assert!(tree.get(&grandchild_id).is_err());
     /// assert_eq!(tree.get(&root_id).unwrap().children().len(), 0);
     /// ```
     ///
@@ -49,7 +49,7 @@ pub enum RemoveBehavior {
     ///
     /// let child = tree.remove_node(child_id, RemoveBehavior::LiftChildren).ok().unwrap();
     ///
-    /// assert!(tree.get(&grandchild_id).is_some());
+    /// assert!(tree.get(&grandchild_id).is_ok());
     /// assert!(tree.get(&root_id).unwrap().children().contains(&grandchild_id));
     /// ```
     ///
@@ -73,7 +73,7 @@ pub enum RemoveBehavior {
     ///
     /// let child = tree.remove_node(child_id, RemoveBehavior::OrphanChildren).ok().unwrap();
     ///
-    /// assert!(tree.get(&grandchild_id).is_some());
+    /// assert!(tree.get(&grandchild_id).is_ok());
     /// assert_eq!(tree.get(&root_id).unwrap().children().len(), 0);
     /// ```
     ///

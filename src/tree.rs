@@ -317,7 +317,7 @@ impl<T> Tree<T> {
     ///
     /// let child = tree.remove_node(child_id, RemoveBehavior::DropChildren).ok().unwrap();
     ///
-    /// # assert!(tree.get(&grandchild_id).is_none());
+    /// # assert!(tree.get(&grandchild_id).is_err());
     /// # assert_eq!(tree.get(&root_id).unwrap().children().len(), 0);
     /// ```
     ///
