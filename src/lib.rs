@@ -14,6 +14,40 @@
 //! structure that they wish to build and then use this library to do so;  this library will not
 //! make those structural decisions for you.
 //!
+//! ## Example Usage
+//! ```
+//! use id_tree::NodeId;
+//! use id_tree::Node;
+//! use id_tree::TreeBuilder;
+//! use id_tree::Tree;
+//!
+//! fn main() {
+//!     let mut tree: Tree<i32> = TreeBuilder::new()
+//!         .with_node_capacity(5)
+//!         .build();
+//!
+//!     let root_id: NodeId = tree.set_root(Node::new(0));
+//!     let child_1_id: NodeId = tree.insert_with_parent(Node::new(1), &root_id).ok().unwrap();
+//!     tree.insert_with_parent(Node::new(2), &root_id).ok().unwrap();
+//!     tree.insert_with_parent(Node::new(3), &child_1_id).ok().unwrap();
+//!     tree.insert_with_parent(Node::new(4), &child_1_id).ok().unwrap();
+//!
+//!     println!("Pre-order:");
+//!     print_nodes_pre_order(&tree, &root_id);
+//!     // results in the output "0, 1, 3, 4, 2, "
+//! }
+//!
+//! fn print_nodes_pre_order(tree: &Tree<i32>, node_id: &NodeId) {
+//!     let node_ref: &Node<i32> = tree.get(node_id).unwrap();
+//!
+//!     println!("{}, ", node_ref.data());
+//!
+//!     for child_id in node_ref.children() {
+//!         print_nodes_pre_order(tree, &child_id);
+//!     }
+//! }
+//! ```
+//!
 //! ## Project Goals
 //! * Allow caller control of as many allocations as possible (through pre-allocation)
 //! * Fast `Node` insertion and removal
