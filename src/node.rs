@@ -225,7 +225,7 @@ impl<T> MutableNode for Node<T> {
 }
 
 #[cfg(test)]
-mod node_bulder_tests {
+mod node_builder_tests {
     use super::NodeBuilder;
 
     #[test]
