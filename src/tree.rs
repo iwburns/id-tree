@@ -409,7 +409,13 @@ impl<T> Tree<T> {
 
         match behavior {
             MoveBehavior::ToRoot => self.move_node_to_root(node_id),
-            MoveBehavior::ToParent(parent_id) => self.move_node_to_parent(node_id, parent_id),
+            MoveBehavior::ToParent(parent_id) => {
+                let (is_valid, error) = self.is_valid_node_id(parent_id);
+                if !is_valid {
+                    return Result::Err(error.expect("Tree::move_node: Missing an error value on finding an invalid NodeId."));
+                }
+                self.move_node_to_parent(node_id, parent_id)
+            },
         }
     }
 
@@ -417,16 +423,6 @@ impl<T> Tree<T> {
     /// Moves a `Node` inside a `Tree` to a new parent leaving all children in their place.
     ///
     fn move_node_to_parent(&mut self, node_id: &NodeId, parent_id: &NodeId) -> Result<(), NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
-        if !is_valid {
-            return Result::Err(error.expect("Tree::move_node_to_parent: Missing an error value on finding an invalid NodeId."));
-        }
-
-        let (is_valid, error) = self.is_valid_node_id(parent_id);
-        if !is_valid {
-            return Result::Err(error.expect("Tree::move_node_to_parent: Missing an error value on finding an invalid NodeId."));
-        }
-
         if let Some(subtree_root_id) = self.find_subtree_root_between_ids(parent_id, node_id).cloned() {
             //node_id is above parent_id, this is a move "down" the tree.
 
@@ -481,11 +477,6 @@ impl<T> Tree<T> {
     /// Sets a `Node` inside a `Tree` as the new root `Node`, leaving all children in their place.
     ///
     fn move_node_to_root(&mut self, node_id: &NodeId) -> Result<(), NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
-        if !is_valid {
-            return Result::Err(error.expect("Tree::move_node_to_root: Missing an error value on finding an invalid NodeId."));
-        }
-
         let old_root = self.root.clone();
 
         if let Some(parent_id) = self.get_unsafe(node_id).parent().cloned() {
