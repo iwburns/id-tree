@@ -1,8 +1,8 @@
 //! A library for creating and modifying Tree structures.
 //!
 //! # Overview
-//! In this implementation, the `Tree` owns all of the `Node`s and all inter-`Node` relationships are
-//! managed with `NodeId`s.
+//! In this implementation, the `Tree` owns all of the `Node`s and all inter-`Node` relationships
+//! are managed with `NodeId`s.
 //!
 //! `Tree`s in this library are "just" trees.  They do not allow cycles.  They do not allow
 //! the creation of arbitrary Graph structures.  There is no weight associated with edges between

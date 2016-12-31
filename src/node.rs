@@ -29,10 +29,10 @@ impl<T> NodeBuilder<T> {
     ///
     /// Set the child capacity of the `NodeBuilder`.
     ///
-    /// As `Node`s are added to a `Tree`, parent and child references must be maintained. To do this,
-    /// an allocation must be made every time a child is added to a `Node`.  Using this setting
-    /// allows the `Node` to pre-allocate space for its children so that the allocations aren't made
-    /// as children are added.
+    /// As `Node`s are added to a `Tree`, parent and child references must be maintained. To do
+    /// this, an allocation must be made every time a child is added to a `Node`.  Using this
+    /// setting allows the `Node` to pre-allocate space for its children so that the allocations
+    /// aren't made as children are added.
     ///
     /// _Use of this setting is recommended if you know the **maximum number** of children (not
     /// including grandchildren, great-grandchildren, etc.) that a `Node` will have **at any given
@@ -151,7 +151,8 @@ impl<T> Node<T> {
     }
 
     ///
-    /// Returns a `Some` value containing the `NodeId` of this `Node`'s parent if it exists; returns `None` if it does not.
+    /// Returns a `Some` value containing the `NodeId` of this `Node`'s parent if it exists; returns
+    /// `None` if it does not.
     ///
     /// **Note:** A `Node` cannot have a parent until after it has been inserted into a `Tree`.
     ///
@@ -168,7 +169,8 @@ impl<T> Node<T> {
     }
 
     ///
-    /// Returns an immutable reference to a `Vec` containing the `NodeId`s of this `Node`'s children.
+    /// Returns an immutable reference to a `Vec` containing the `NodeId`s of this `Node`'s
+    /// children.
     ///
     /// **Note:** A `Node` cannot have any children until after it has been inserted into a `Tree`.
     ///
