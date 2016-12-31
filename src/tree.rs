@@ -229,7 +229,7 @@ impl<T> Tree<T> {
     /// ```
     ///
     pub fn insert_with_parent(&mut self, child: Node<T>, parent_id: &NodeId)
-                              -> Result<NodeId, NodeIdError> {
+        -> Result<NodeId, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(parent_id);
         if !is_valid {
             return Err(error.expect(
@@ -482,7 +482,7 @@ impl<T> Tree<T> {
     /// ```
     ///
     pub fn move_node_to_parent(&mut self, node_id: &NodeId, parent_id: &NodeId)
-                               -> Result<(), NodeIdError> {
+        -> Result<(), NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
@@ -630,7 +630,7 @@ impl<T> Tree<T> {
     /// ```
     ///
     pub fn sort_children_by<F>(&mut self, node_id: &NodeId, mut compare: F)
-                               -> Result<(), NodeIdError>
+        -> Result<(), NodeIdError>
         where F: FnMut(&Node<T>, &Node<T>) -> Ordering
     {
         let (is_valid, error) = self.is_valid_node_id(node_id);
@@ -726,7 +726,7 @@ impl<T> Tree<T> {
     /// ```
     ///
     pub fn sort_children_by_key<B, F>(&mut self, node_id: &NodeId, mut f: F)
-                                      -> Result<(), NodeIdError>
+        -> Result<(), NodeIdError>
         where B: Ord, F: FnMut(&Node<T>) -> B
     {
         let (is_valid, error) = self.is_valid_node_id(node_id);
@@ -780,7 +780,7 @@ impl<T> Tree<T> {
     /// ```
     ///
     pub fn swap_sub_tree(&mut self, first_id: &NodeId, second_id: &NodeId)
-                         -> Result<(), NodeIdError> {
+        -> Result<(), NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(first_id);
         if !is_valid {
             return Err(error.expect(
@@ -916,7 +916,7 @@ impl<T> Tree<T> {
     }
 
     fn find_subtree_root_between_ids<'a>(&'a self, lower_id: &'a NodeId, upper_id: &'a NodeId)
-                                         -> Option<&'a NodeId> {
+        -> Option<&'a NodeId> {
         if let Some(lower_parent) = self.get_unsafe(lower_id).parent() {
             if lower_parent == upper_id {
                 return Some(lower_id);
