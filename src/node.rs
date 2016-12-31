@@ -10,7 +10,6 @@ pub struct NodeBuilder<T> {
 }
 
 impl<T> NodeBuilder<T> {
-
     ///
     /// Creates a new `NodeBuilder` with the required data.
     ///
@@ -197,10 +196,11 @@ impl<T> MutableNode for Node<T> {
 
     fn replace_child(&mut self, old: NodeId, new: NodeId) {
         let index = self.children()
-                        .iter()
-                        .enumerate()
-                        .find(|&(_, id)| id == &old)
-                        .unwrap().0;
+            .iter()
+            .enumerate()
+            .find(|&(_, id)| id == &old)
+            .unwrap()
+            .0;
 
         let children = self.children_mut();
         children.push(new);

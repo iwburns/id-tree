@@ -6,7 +6,7 @@ use super::NodeId;
 use super::MutableNode;
 use super::NodeIdError;
 
-//todo: change Tree::get() and Tree::get_mut() to return Result instead of Option
+// todo: change Tree::get() and Tree::get_mut() to return Result instead of Option
 
 ///
 /// A `Tree` builder that provides more control over how a `Tree` is created.
@@ -168,7 +168,6 @@ pub struct Tree<T> {
 }
 
 impl<T> Tree<T> {
-
     ///
     /// Creates a new `Tree` with default settings (no root `Node` and no space pre-allocation).
     ///
@@ -229,7 +228,8 @@ impl<T> Tree<T> {
     /// tree.insert_with_parent(child_node, &root_id);
     /// ```
     ///
-    pub fn insert_with_parent(&mut self, child: Node<T>, parent_id: &NodeId) -> Result<NodeId, NodeIdError> {
+    pub fn insert_with_parent(&mut self, child: Node<T>, parent_id: &NodeId)
+                              -> Result<NodeId, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(parent_id);
         if !is_valid {
             return Result::Err(error.expect("Tree::insert_with_parent: Missing an error value on finding an invalid NodeId."));
@@ -336,7 +336,7 @@ impl<T> Tree<T> {
         }
 
         if let Some(parent_id) = self.get_unsafe(&node_id).parent().cloned() {
-            //attach children to parent
+            // attach children to parent
             for child_id in self.get_unsafe(&node_id).children().clone() {
                 self.set_as_parent_and_child(&parent_id, &child_id);
             }
@@ -479,7 +479,8 @@ impl<T> Tree<T> {
     /// # assert!(tree.get(&second_child_id).unwrap().children().contains(&grandchild_id));
     /// ```
     ///
-    pub fn move_node_to_parent(&mut self, node_id: &NodeId, parent_id: &NodeId) -> Result<(), NodeIdError> {
+    pub fn move_node_to_parent(&mut self, node_id: &NodeId, parent_id: &NodeId)
+                               -> Result<(), NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
             return Result::Err(error.expect("Tree::move_node_to_parent: Missing an error value on finding an invalid NodeId."));
@@ -490,26 +491,27 @@ impl<T> Tree<T> {
             return Result::Err(error.expect("Tree::move_node_to_parent: Missing an error value on finding an invalid NodeId."));
         }
 
-        if let Some(subtree_root_id) = self.find_subtree_root_between_ids(parent_id, node_id).cloned() {
-            //node_id is above parent_id, this is a move "down" the tree.
+        if let Some(subtree_root_id) =
+            self.find_subtree_root_between_ids(parent_id, node_id).cloned() {
+            // node_id is above parent_id, this is a move "down" the tree.
 
             let root = self.root.clone();
 
             if root.as_ref() == Some(node_id) {
-                //we're moving the root down the tree.
-                //also we know the root exists
+                // we're moving the root down the tree.
+                // also we know the root exists
 
-                //detach subtree_root from node
+                // detach subtree_root from node
                 self.detach_from_parent(node_id, &subtree_root_id);
 
-                //set subtree_root as Tree root.
+                // set subtree_root as Tree root.
                 self.clear_parent(&subtree_root_id);
                 self.root = Some(subtree_root_id);
 
                 self.set_as_parent_and_child(parent_id, node_id);
 
             } else {
-                //we're moving some other node down the tree.
+                // we're moving some other node down the tree.
 
                 if let Some(old_parent) = self.get_unsafe(node_id).parent().cloned() {
                     // detach from old parent
@@ -527,7 +529,7 @@ impl<T> Tree<T> {
             }
 
         } else {
-            //this is a move "across" or "up" the tree.
+            // this is a move "across" or "up" the tree.
 
             // detach from old parent
             if let Some(old_parent) = self.get_unsafe(node_id).parent().cloned() {
@@ -593,7 +595,8 @@ impl<T> Tree<T> {
     ///
     /// Sorts the children of one node, in-place, using compare to compare the nodes
     ///
-    /// This sort is stable and O(n log n) worst-case but allocates approximately 2 * n where n is the length of children
+    /// This sort is stable and O(n log n) worst-case but allocates approximately 2 * n where n is
+    /// the length of children
     ///
     /// Returns an empty `Result` containing a `NodeIdError` if one occurred.
     ///
@@ -620,7 +623,8 @@ impl<T> Tree<T> {
     /// # }
     /// ```
     ///
-    pub fn sort_children_by<F>(&mut self, node_id: &NodeId, mut compare: F) -> Result<(), NodeIdError>
+    pub fn sort_children_by<F>(&mut self, node_id: &NodeId, mut compare: F)
+                               -> Result<(), NodeIdError>
         where F: FnMut(&Node<T>, &Node<T>) -> Ordering
     {
         let (is_valid, error) = self.is_valid_node_id(node_id);
@@ -629,9 +633,7 @@ impl<T> Tree<T> {
         }
 
         let mut children = self.get_mut_unsafe(node_id).take_children();
-        children.sort_by(|a, b| {
-            compare(self.get_unsafe(a), self.get_unsafe(b))
-        });
+        children.sort_by(|a, b| compare(self.get_unsafe(a), self.get_unsafe(b)));
         self.get_mut_unsafe(node_id).set_children(children);
 
         Result::Ok(())
@@ -640,7 +642,8 @@ impl<T> Tree<T> {
     ///
     /// Sorts the children of one node, in-place, comparing their data
     ///
-    /// This sort is stable and O(n log n) worst-case but allocates approximately 2 * n where n is the length of children
+    /// This sort is stable and O(n log n) worst-case but allocates approximately 2 * n where n is
+    /// the length of children
     ///
     /// Returns an empty `Result` containing a `NodeIdError` if one occurred.
     ///
@@ -676,18 +679,18 @@ impl<T> Tree<T> {
         }
 
         let mut children = self.get_mut_unsafe(node_id).take_children();
-        children.sort_by_key(|a| {
-            self.get_unsafe(a).data()
-        });
+        children.sort_by_key(|a| self.get_unsafe(a).data());
         self.get_mut_unsafe(node_id).set_children(children);
 
         Result::Ok(())
     }
 
     ///
-    /// Sorts the children of one node, in-place, using f to extract a key by which to order the sort by.
+    /// Sorts the children of one node, in-place, using f to extract a key by which to order the
+    /// sort by.
     ///
-    /// This sort is stable and O(n log n) worst-case but allocates approximately 2 * n where n is the length of children
+    /// This sort is stable and O(n log n) worst-case but allocates approximately 2 * n where n is
+    /// the length of children
     ///
     /// Returns an empty `Result` containing a `NodeIdError` if one occurred.
     ///
@@ -714,7 +717,8 @@ impl<T> Tree<T> {
     /// # }
     /// ```
     ///
-    pub fn sort_children_by_key<B, F>(&mut self, node_id: &NodeId, mut f: F) -> Result<(), NodeIdError>
+    pub fn sort_children_by_key<B, F>(&mut self, node_id: &NodeId, mut f: F)
+                                      -> Result<(), NodeIdError>
         where B: Ord, F: FnMut(&Node<T>) -> B
     {
         let (is_valid, error) = self.is_valid_node_id(node_id);
@@ -723,9 +727,7 @@ impl<T> Tree<T> {
         }
 
         let mut children = self.get_mut_unsafe(node_id).take_children();
-        children.sort_by_key(|a| {
-            f(self.get_unsafe(a))
-        });
+        children.sort_by_key(|a| f(self.get_unsafe(a)));
         self.get_mut_unsafe(node_id).set_children(children);
 
         Result::Ok(())
@@ -734,8 +736,10 @@ impl<T> Tree<T> {
     ///
     /// Swaps two `Node`s including their children given their `NodeId`s.
     ///
-    /// If one `Node` is a descendant of the other getting swapped, the former *upper* `Node` is attached as the last child of the former *lower* `Node` after the swap. (The *lower* will take the *uppers* original position as usual.)
-    /// The subtree of the former *upper* node is not touched except that the *lower* `Node` is moved including all its children.
+    /// If one `Node` is a descendant of the other getting swapped, the former *upper* `Node` is
+    /// attached as the last child of the former *lower* `Node` after the swap. (The *lower* will
+    /// take the *uppers* original position as usual.) The subtree of the former *upper* node is not
+    /// touched except that the *lower* `Node` is moved including all its children.
     ///
     /// Both `NodeId`s are still valid after this process and are not swapped.
     ///
@@ -765,7 +769,8 @@ impl<T> Tree<T> {
     /// assert!(tree.get(&root_id).unwrap().children().contains(&grandchild_id));
     /// ```
     ///
-    pub fn swap_sub_tree(&mut self, first_id: &NodeId, second_id: &NodeId) -> Result<(), NodeIdError> {
+    pub fn swap_sub_tree(&mut self, first_id: &NodeId, second_id: &NodeId)
+                         -> Result<(), NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(first_id);
         if !is_valid {
             return Result::Err(error.expect("Tree::swap_sub_tree: Missing an error value on finding an invalid NodeId."));
@@ -778,10 +783,8 @@ impl<T> Tree<T> {
 
         let lower_upper_test = self.find_subtree_root_between_ids(first_id, second_id)
             .map(|_| (first_id, second_id))
-            .or(
-                self.find_subtree_root_between_ids(second_id, first_id)
-                .map(|_| (second_id, first_id))
-            );
+            .or(self.find_subtree_root_between_ids(second_id, first_id)
+                .map(|_| (second_id, first_id)));
 
         if let Some((lower_id, upper_id)) = lower_upper_test {
             let upper_parent_id = self.get_unsafe(upper_id).parent().cloned();
@@ -802,7 +805,8 @@ impl<T> Tree<T> {
             self.detach_from_parent(&lower_parent_id, lower_id);
 
             if upper_parent_id.is_some() {
-                self.get_mut_unsafe(upper_parent_id.as_ref().unwrap()).replace_child(upper_id.clone(), lower_id.clone());
+                self.get_mut_unsafe(upper_parent_id.as_ref().unwrap())
+                    .replace_child(upper_id.clone(), lower_id.clone());
             } else if self.root.as_ref() == Some(upper_id) {
                 self.root = Some(lower_id.clone());
             }
@@ -814,40 +818,45 @@ impl<T> Tree<T> {
 
             // just across
 
-            let is_same_parent = self.get_unsafe(first_id).parent() == self.get_unsafe(second_id).parent();
+            let is_same_parent = self.get_unsafe(first_id).parent() ==
+                                 self.get_unsafe(second_id).parent();
 
             if is_same_parent {
                 let parent_id = self.get_unsafe(first_id).parent().cloned();
                 if let Some(parent_id) = parent_id {
-                    //same parent
-                    //get indices
+                    // same parent
+                    // get indices
                     let parent = self.get_mut_unsafe(&parent_id);
                     let first_index = parent.children()
-                                    .iter()
-                                    .enumerate()
-                                    .find(|&(_, id)| id == first_id)
-                                    .unwrap().0;
+                        .iter()
+                        .enumerate()
+                        .find(|&(_, id)| id == first_id)
+                        .unwrap()
+                        .0;
                     let second_index = parent.children()
-                                    .iter()
-                                    .enumerate()
-                                    .find(|&(_, id)| id == second_id)
-                                    .unwrap().0;
+                        .iter()
+                        .enumerate()
+                        .find(|&(_, id)| id == second_id)
+                        .unwrap()
+                        .0;
 
                     parent.children_mut().swap(first_index, second_index);
                 } else {
-                    //swapping the root with itself??
+                    // swapping the root with itself??
                 }
             } else {
                 let first_parent_id = self.get_unsafe(first_id).parent().cloned().unwrap();
                 let second_parent_id = self.get_unsafe(second_id).parent().cloned().unwrap();
 
-                //replace parents
+                // replace parents
                 self.get_mut_unsafe(first_id).set_parent(Some(second_parent_id.clone()));
                 self.get_mut_unsafe(second_id).set_parent(Some(first_parent_id.clone()));
 
-                //change children
-                self.get_mut_unsafe(&first_parent_id).replace_child(first_id.clone(), second_id.clone());
-                self.get_mut_unsafe(&second_parent_id).replace_child(second_id.clone(), first_id.clone());
+                // change children
+                self.get_mut_unsafe(&first_parent_id)
+                    .replace_child(first_id.clone(), second_id.clone());
+                self.get_mut_unsafe(&second_parent_id)
+                    .replace_child(second_id.clone(), first_id.clone());
             }
         }
 
@@ -880,7 +889,8 @@ impl<T> Tree<T> {
         }
 
         if node_id.index >= self.nodes.len() {
-            panic!("NodeId: {:?} is out of bounds. This shouldn't ever happen. This is very likely a bug in id_tree.  Please report this issue.", node_id);
+            panic!("NodeId: {:?} is out of bounds. This shouldn't ever happen. This is very likely a bug in id_tree.  Please report this issue.",
+                   node_id);
         }
 
         unsafe {
@@ -892,7 +902,8 @@ impl<T> Tree<T> {
         (true, None)
     }
 
-    fn find_subtree_root_between_ids<'a>(&'a self, lower_id: &'a NodeId, upper_id: &'a NodeId) -> Option<&'a NodeId> {
+    fn find_subtree_root_between_ids<'a>(&'a self, lower_id: &'a NodeId, upper_id: &'a NodeId)
+                                         -> Option<&'a NodeId> {
         if let Some(lower_parent) = self.get_unsafe(lower_id).parent() {
             if lower_parent == upper_id {
                 return Some(lower_id);
@@ -922,7 +933,8 @@ impl<T> Tree<T> {
     fn insert_new_node(&mut self, new_node: Node<T>) -> NodeId {
 
         if self.free_ids.len() > 0 {
-            let new_node_id: NodeId = self.free_ids.pop()
+            let new_node_id: NodeId = self.free_ids
+                .pop()
                 .expect("Tree::insert_new_node: Couldn't pop from Vec with len() > 0.");
 
             self.nodes.push(Some(new_node));
@@ -947,16 +959,16 @@ impl<T> Tree<T> {
 
         let mut node = self.take_node(node_id.clone());
 
-        //The only thing we care about here is dealing with "this" Node's parent's children
-        //This Node's children's parent will be handled in different ways depending upon how this
-        //method is called.
+        // The only thing we care about here is dealing with "this" Node's parent's children
+        // This Node's children's parent will be handled in different ways depending upon how this
+        // method is called.
         if let Some(parent_id) = node.parent() {
             self.get_mut_unsafe(&parent_id)
                 .children_mut()
                 .retain(|child_id| child_id != &node_id);
         }
 
-        //avoid providing the caller with extra copies of NodeIds
+        // avoid providing the caller with extra copies of NodeIds
         node.children_mut().clear();
         node.set_parent(None);
 
@@ -1021,8 +1033,7 @@ mod tree_builder_tests {
 
     #[test]
     fn test_with_root() {
-        let tb: TreeBuilder<i32> = TreeBuilder::new()
-            .with_root(Node::new(5));
+        let tb: TreeBuilder<i32> = TreeBuilder::new().with_root(Node::new(5));
 
         assert_eq!(tb.root.unwrap().data(), &5);
         assert_eq!(tb.node_capacity, 0);
@@ -1031,8 +1042,7 @@ mod tree_builder_tests {
 
     #[test]
     fn test_with_node_capacity() {
-        let tb: TreeBuilder<i32> = TreeBuilder::new()
-            .with_node_capacity(10);
+        let tb: TreeBuilder<i32> = TreeBuilder::new().with_node_capacity(10);
 
         assert!(tb.root.is_none());
         assert_eq!(tb.node_capacity, 10);
@@ -1041,8 +1051,7 @@ mod tree_builder_tests {
 
     #[test]
     fn test_with_swap_capacity() {
-        let tb: TreeBuilder<i32> = TreeBuilder::new()
-            .with_swap_capacity(10);
+        let tb: TreeBuilder<i32> = TreeBuilder::new().with_swap_capacity(10);
 
         assert!(tb.root.is_none());
         assert_eq!(tb.node_capacity, 0);
@@ -1304,35 +1313,35 @@ mod tree_tests {
         let node_2_id = tree.insert_with_parent(Node::new(2), &root_id).unwrap();
         let node_3_id = tree.insert_with_parent(Node::new(3), &node_1_id).unwrap();
 
-        //move 3 "across" the tree
+        // move 3 "across" the tree
         tree.move_node_to_parent(&node_3_id, &node_2_id).unwrap();
         assert!(tree.get(&root_id).unwrap().children().contains(&node_1_id));
         assert!(tree.get(&root_id).unwrap().children().contains(&node_2_id));
         assert!(tree.get(&node_2_id).unwrap().children().contains(&node_3_id));
 
-        //move 3 "up" the tree
+        // move 3 "up" the tree
         tree.move_node_to_parent(&node_3_id, &root_id).unwrap();
         assert!(tree.get(&root_id).unwrap().children().contains(&node_1_id));
         assert!(tree.get(&root_id).unwrap().children().contains(&node_2_id));
         assert!(tree.get(&root_id).unwrap().children().contains(&node_3_id));
 
-        //move 3 "down" (really this is across though) the tree
+        // move 3 "down" (really this is across though) the tree
         tree.move_node_to_parent(&node_3_id, &node_1_id).unwrap();
         assert!(tree.get(&root_id).unwrap().children().contains(&node_1_id));
         assert!(tree.get(&root_id).unwrap().children().contains(&node_2_id));
         assert!(tree.get(&node_1_id).unwrap().children().contains(&node_3_id));
 
-        //move 1 "down" the tree
+        // move 1 "down" the tree
         tree.move_node_to_parent(&node_1_id, &node_3_id).unwrap();
         assert!(tree.get(&root_id).unwrap().children().contains(&node_2_id));
         assert!(tree.get(&root_id).unwrap().children().contains(&node_3_id));
         assert!(tree.get(&node_3_id).unwrap().children().contains(&node_1_id));
 
-        //note: node_1 is at the lowest point in the tree before these insertions.
+        // note: node_1 is at the lowest point in the tree before these insertions.
         let node_4_id = tree.insert_with_parent(Node::new(4), &node_1_id).unwrap();
         let node_5_id = tree.insert_with_parent(Node::new(5), &node_4_id).unwrap();
 
-        //move 3 "down" the tree
+        // move 3 "down" the tree
         tree.move_node_to_parent(&node_3_id, &node_5_id).unwrap();
         assert!(tree.get(&root_id).unwrap().children().contains(&node_2_id));
         assert!(tree.get(&root_id).unwrap().children().contains(&node_1_id));
@@ -1340,7 +1349,7 @@ mod tree_tests {
         assert!(tree.get(&node_4_id).unwrap().children().contains(&node_5_id));
         assert!(tree.get(&node_5_id).unwrap().children().contains(&node_3_id));
 
-        //move root "down" the tree
+        // move root "down" the tree
         tree.move_node_to_parent(&root_id, &node_2_id).unwrap();
         assert!(tree.get(&node_2_id).unwrap().children().contains(&root_id));
         assert!(tree.get(&root_id).unwrap().children().contains(&node_1_id));
