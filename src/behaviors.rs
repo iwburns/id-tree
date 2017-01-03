@@ -88,7 +88,7 @@ pub enum MoveBehavior<'a> {
     /// other words, they will travel with the `Node` being moved).
     ///
     /// If there is already a root `Node` in place, it will be attached as the last child of the new
-    /// root.
+    /// root. 
     ///
     /// ```
     /// # use id_tree::Tree;
