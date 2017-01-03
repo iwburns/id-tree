@@ -13,10 +13,9 @@ pub enum RemoveBehavior {
     /// Use this behavior with caution.
     ///
     /// ```
-    /// use id_tree::Tree;
-    /// use id_tree::Node;
-    /// use id_tree::RemoveBehavior;
-    ///
+    /// # use id_tree::Tree;
+    /// # use id_tree::Node;
+    /// # use id_tree::RemoveBehavior;
     /// let mut tree: Tree<i32> = Tree::new();
     /// let root_id = tree.set_root(Node::new(0));
     ///
@@ -39,10 +38,9 @@ pub enum RemoveBehavior {
     /// `RemoveBehavior::OrphanChildren`.
     ///
     /// ```
-    /// use id_tree::Tree;
-    /// use id_tree::Node;
-    /// use id_tree::RemoveBehavior;
-    ///
+    /// # use id_tree::Tree;
+    /// # use id_tree::Node;
+    /// # use id_tree::RemoveBehavior;
     /// let mut tree: Tree<i32> = Tree::new();
     /// let root_id = tree.set_root(Node::new(0));
     ///
@@ -63,10 +61,9 @@ pub enum RemoveBehavior {
     /// that you have the `NodeId` that points to them.
     ///
     /// ```
-    /// use id_tree::Tree;
-    /// use id_tree::Node;
-    /// use id_tree::RemoveBehavior;
-    ///
+    /// # use id_tree::Tree;
+    /// # use id_tree::Node;
+    /// # use id_tree::RemoveBehavior;
     /// let mut tree: Tree<i32> = Tree::new();
     /// let root_id = tree.set_root(Node::new(0));
     ///
@@ -94,10 +91,9 @@ pub enum MoveBehavior<'a> {
     /// root.
     ///
     /// ```
-    /// use id_tree::Tree;
-    /// use id_tree::Node;
-    /// use id_tree::MoveBehavior;
-    ///
+    /// # use id_tree::Tree;
+    /// # use id_tree::Node;
+    /// # use id_tree::MoveBehavior;
     /// let root_node = Node::new(1);
     /// let child_node = Node::new(2);
     /// let grandchild_node = Node::new(3);
@@ -105,14 +101,14 @@ pub enum MoveBehavior<'a> {
     /// let mut tree: Tree<i32> = Tree::new();
     /// let root_id = tree.set_root(root_node);
     ///
-    /// let child_id  = tree.insert_with_parent(child_node,  &root_id).ok().unwrap();
-    /// let grandchild_id   = tree.insert_with_parent(grandchild_node, &child_id).ok().unwrap();
+    /// let child_id = tree.insert_with_parent(child_node,  &root_id).ok().unwrap();
+    /// let grandchild_id = tree.insert_with_parent(grandchild_node, &child_id).ok().unwrap();
     ///
     /// tree.move_node(&grandchild_id, MoveBehavior::ToRoot).unwrap();
     ///
-    /// # assert_eq!(tree.root_node_id(), Some(&grandchild_id));
-    /// # assert!(tree.get(&grandchild_id).unwrap().children().contains(&root_id));
-    /// # assert!(!tree.get(&child_id).unwrap().children().contains(&grandchild_id));
+    /// assert_eq!(tree.root_node_id(), Some(&grandchild_id));
+    /// assert!(tree.get(&grandchild_id).unwrap().children().contains(&root_id));
+    /// assert!(!tree.get(&child_id).unwrap().children().contains(&grandchild_id));
     /// ```
     ///
     ToRoot,
@@ -129,10 +125,9 @@ pub enum MoveBehavior<'a> {
     /// up will always be added as the last child of its new parent.
     ///
     /// ```
-    /// use id_tree::Tree;
-    /// use id_tree::Node;
-    /// use id_tree::MoveBehavior;
-    ///
+    /// # use id_tree::Tree;
+    /// # use id_tree::Node;
+    /// # use id_tree::MoveBehavior;
     /// let root_node = Node::new(1);
     /// let first_child_node = Node::new(2);
     /// let second_child_node = Node::new(3);
@@ -141,14 +136,14 @@ pub enum MoveBehavior<'a> {
     /// let mut tree: Tree<i32> = Tree::new();
     /// let root_id = tree.set_root(root_node);
     ///
-    /// let first_child_id  = tree.insert_with_parent(first_child_node,  &root_id).ok().unwrap();
+    /// let first_child_id = tree.insert_with_parent(first_child_node,  &root_id).ok().unwrap();
     /// let second_child_id = tree.insert_with_parent(second_child_node, &root_id).ok().unwrap();
-    /// let grandchild_id   = tree.insert_with_parent(grandchild_node, &first_child_id).ok().unwrap();
+    /// let grandchild_id = tree.insert_with_parent(grandchild_node, &first_child_id).ok().unwrap();
     ///
     /// tree.move_node(&grandchild_id, MoveBehavior::ToParent(&second_child_id)).unwrap();
     ///
-    /// # assert!(!tree.get(&first_child_id).unwrap().children().contains(&grandchild_id));
-    /// # assert!(tree.get(&second_child_id).unwrap().children().contains(&grandchild_id));
+    /// assert!(!tree.get(&first_child_id).unwrap().children().contains(&grandchild_id));
+    /// assert!(tree.get(&second_child_id).unwrap().children().contains(&grandchild_id));
     /// ```
     ///
     ToParent(&'a NodeId),

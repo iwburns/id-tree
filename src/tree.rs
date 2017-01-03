@@ -396,7 +396,7 @@ impl<T> Tree<T> {
     ///
     /// tree.move_node(&grandchild_id, MoveBehavior::ToRoot).unwrap();
     ///
-    /// # assert_eq!(tree.root_node_id(), Some(&grandchild_id));
+    /// assert_eq!(tree.root_node_id(), Some(&grandchild_id));
     /// # assert!(tree.get(&grandchild_id).unwrap().children().contains(&root_id));
     /// # assert!(!tree.get(&child_id).unwrap().children().contains(&grandchild_id));
     /// ```
