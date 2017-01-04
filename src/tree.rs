@@ -335,7 +335,8 @@ impl<T> Tree<T> {
     pub fn remove_node_lift_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(&node_id);
         if !is_valid {
-            return Err(error.expect("Tree::remove_node_lift_children: Missing an error value but found an invalid NodeId."));
+            return Err(error.expect("Tree::remove_node_lift_children: Missing an error value but \
+                found an invalid NodeId."));
         }
 
         if let Some(parent_id) = self.get_unsafe(&node_id).parent().cloned() {
@@ -385,7 +386,8 @@ impl<T> Tree<T> {
     pub fn remove_node_orphan_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(&node_id);
         if !is_valid {
-            return Err(error.expect("Tree::remove_node_orphan_children: Missing an error value but found an invalid NodeId."));
+            return Err(error.expect("Tree::remove_node_orphan_children: Missing an error value but \
+                found an invalid NodeId."));
         }
 
         self.clear_parent_of_children(&node_id);
@@ -437,7 +439,8 @@ impl<T> Tree<T> {
     pub fn remove_node_drop_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(&node_id);
         if !is_valid {
-            return Err(error.expect("Tree::remove_node_drop_children: Missing an error value but found an invalid NodeId."));
+            return Err(error.expect("Tree::remove_node_drop_children: Missing an error value but \
+                found an invalid NodeId."));
         }
 
         let mut children = self.get_mut_unsafe(&node_id).take_children();
@@ -908,7 +911,8 @@ impl<T> Tree<T> {
         }
 
         if node_id.index >= self.nodes.len() {
-            panic!("NodeId: {:?} is out of bounds. This is most likely a bug in id_tree. Please report this issue!",
+            panic!("NodeId: {:?} is out of bounds. This is most likely a bug in id_tree. Please \
+                report this issue!",
                    node_id);
         }
 
@@ -999,8 +1003,10 @@ impl<T> Tree<T> {
 
     fn take_node(&mut self, node_id: NodeId) -> Node<T> {
         self.nodes.push(None);
-        let node = self.nodes.swap_remove(node_id.index)
-            .expect("Tree::take_node: An invalid NodeId made it past id_tree's internal checks.  Please report this issue!");
+        let node = self.nodes
+            .swap_remove(node_id.index)
+            .expect("Tree::take_node: An invalid NodeId made it past id_tree's internal checks. \
+                Please report this issue!");
         self.free_ids.push(node_id);
 
         node
@@ -1025,17 +1031,21 @@ impl<T> Tree<T> {
 
     fn get_unsafe(&self, node_id: &NodeId) -> &Node<T> {
         unsafe {
-            self.nodes.get_unchecked(node_id.index)
+            self.nodes
+                .get_unchecked(node_id.index)
                 .as_ref()
-                .expect("Tree::get_unsafe: An invalid NodeId made it past id_tree's internal checks.  Please report this issue!")
+                .expect("Tree::get_unsafe: An invalid NodeId made it past id_tree's internal \
+                    checks.  Please report this issue!")
         }
     }
 
     fn get_mut_unsafe(&mut self, node_id: &NodeId) -> &mut Node<T> {
         unsafe {
-            self.nodes.get_unchecked_mut(node_id.index)
+            self.nodes
+                .get_unchecked_mut(node_id.index)
                 .as_mut()
-                .expect("Tree::get_mut_unsafe: An invalid NodeId made it past id_tree's internal checks.  Please report this issue!")
+                .expect("Tree::get_mut_unsafe: An invalid NodeId made it past id_tree's internal \
+                    checks.  Please report this issue!")
         }
     }
 }
