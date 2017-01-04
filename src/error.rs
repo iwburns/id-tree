@@ -16,7 +16,10 @@ impl NodeIdError {
     fn to_string(&self) -> &str {
         match *self {
             NodeIdError::InvalidNodeIdForTree => "The given NodeId belongs to a different Tree.",
-            NodeIdError::NodeIdNoLongerValid => "The given NodeId is no longer valid. The Node in question has been removed.",
+            NodeIdError::NodeIdNoLongerValid => {
+                "The given NodeId is no longer valid. The Node in question has been \
+                removed."
+            }
         }
     }
 }

@@ -75,7 +75,8 @@ fn test_remove_node_orphan_children_from_other_tree() {
 
     let root_node_id_a = tree_a.set_root(Node::new(1));
 
-    let root_node_b = tree_b.remove_node_orphan_children(root_node_id_a); //note use of wrong tree
+    // note use of wrong tree
+    let root_node_b = tree_b.remove_node_orphan_children(root_node_id_a);
     assert!(root_node_b.is_err());
 
     let error = root_node_b.err().unwrap();
@@ -89,7 +90,8 @@ fn test_remove_node_remove_children_from_other_tree() {
 
     let root_node_id_a = tree_a.set_root(Node::new(1));
 
-    let root_node_b = tree_b.remove_node_drop_children(root_node_id_a); //note use of wrong tree
+    // note use of wrong tree
+    let root_node_b = tree_b.remove_node_drop_children(root_node_id_a);
     assert!(root_node_b.is_err());
 
     let error = root_node_b.err().unwrap();
@@ -107,7 +109,8 @@ fn test_move_node_into_other_tree() {
     let root_node_b = Node::new(1);
     let root_node_id_b = tree_b.set_root(root_node_b);
 
-    let result = tree_a.move_node_to_parent(&root_node_id_a, &root_node_id_b); //note use of invalid parent
+    // note use of invalid parent
+    let result = tree_a.move_node_to_parent(&root_node_id_a, &root_node_id_b);
     assert!(result.is_err());
 
     let error = result.err().unwrap();
@@ -125,7 +128,8 @@ fn test_move_node_from_other_tree() {
     let root_node_b = Node::new(1);
     let root_node_id_b = tree_b.set_root(root_node_b);
 
-    let result = tree_a.move_node_to_parent(&root_node_id_b, &root_node_id_a); //note use of invalid child
+    // note use of invalid child
+    let result = tree_a.move_node_to_parent(&root_node_id_b, &root_node_id_a);
     assert!(result.is_err());
 
     let error = result.err().unwrap();
@@ -215,7 +219,8 @@ fn test_swap_sub_trees_of_different_trees() {
     let root_node_b = Node::new(1);
     let root_node_id_b = tree_b.set_root(root_node_b);
 
-    let result = tree_a.swap_sub_tree(&root_node_id_b, &root_node_id_a); //note use of invalid child
+    // note use of invalid child
+    let result = tree_a.swap_sub_tree(&root_node_id_b, &root_node_id_a);
     assert!(result.is_err());
 
     let error = result.err().unwrap();

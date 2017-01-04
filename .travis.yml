@@ -7,3 +7,14 @@ rust:
 matrix:
   allow_failures:
     - rust: nightly
+
+before_script:
+- |
+  (cargo install rustfmt || true) &&
+  export PATH=$HOME/.cargo/bin:$PATH
+
+script:
+- |
+  cargo fmt -- --write-mode=diff &&
+  cargo build &&
+  cargo test
