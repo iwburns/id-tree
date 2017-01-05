@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
 
 use super::behaviors::RemoveBehavior;
+use super::behaviors::MoveBehavior;
 use super::snowflake::ProcessUniqueId;
 use super::Node;
 use super::NodeId;
@@ -376,51 +377,52 @@ impl<T> Tree<T> {
     }
 
     ///
-    /// Moves a `Node` inside a `Tree` to a new parent leaving all children in their place.
-    ///
-    /// If the new parent (let's call it `B`) is a descendant of the `Node` being moved (`A`), then
-    /// the direct child of `A` on the path from `A` to `B` will be shifted upwards to take the
-    /// place of its parent (`A`).  All other children of `A` will be left alone, meaning they will
-    /// travel with it down the `Tree`.
-    ///
-    /// Please note that during the "shift-up" part of the above scenario, the `Node` being shifted
-    /// up will always be added as the last child of its new parent.
-    ///
-    /// Returns an empty `Result` containing a `NodeIdError` if one occurred on either provided `Id`.
+    /// Moves a `Node` in the `Tree` to a new location based upon the `MoveBehavior` provided.
     ///
     /// ```
     /// use id_tree::Tree;
     /// use id_tree::Node;
+    /// use id_tree::MoveBehavior;
     ///
     /// let root_node = Node::new(1);
-    /// let first_child_node = Node::new(2);
-    /// let second_child_node = Node::new(3);
-    /// let grandchild_node = Node::new(4);
+    /// let child_node = Node::new(2);
+    /// let grandchild_node = Node::new(3);
     ///
     /// let mut tree: Tree<i32> = Tree::new();
     /// let root_id = tree.set_root(root_node);
     ///
-    /// let first_child_id  = tree.insert_with_parent(first_child_node,  &root_id).ok().unwrap();
-    /// let second_child_id = tree.insert_with_parent(second_child_node, &root_id).ok().unwrap();
-    /// let grandchild_id   = tree.insert_with_parent(grandchild_node, &first_child_id).ok().unwrap();
+    /// let child_id  = tree.insert_with_parent(child_node,  &root_id).ok().unwrap();
+    /// let grandchild_id   = tree.insert_with_parent(grandchild_node, &child_id).ok().unwrap();
     ///
-    /// tree.move_node_to_parent(&grandchild_id, &second_child_id).unwrap();
+    /// tree.move_node(&grandchild_id, MoveBehavior::ToRoot).unwrap();
     ///
-    /// # assert!(!tree.get(&first_child_id).unwrap().children().contains(&grandchild_id));
-    /// # assert!(tree.get(&second_child_id).unwrap().children().contains(&grandchild_id));
+    /// assert_eq!(tree.root_node_id(), Some(&grandchild_id));
+    /// # assert!(tree.get(&grandchild_id).unwrap().children().contains(&root_id));
+    /// # assert!(!tree.get(&child_id).unwrap().children().contains(&grandchild_id));
     /// ```
     ///
-    pub fn move_node_to_parent(&mut self, node_id: &NodeId, parent_id: &NodeId) -> Result<(), NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
+    pub fn move_node(&mut self, node_id: &NodeId, behavior: MoveBehavior) -> Result<(), NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(&node_id);
         if !is_valid {
-            return Result::Err(error.expect("Tree::move_node_to_parent: Missing an error value on finding an invalid NodeId."));
+            return Err(error.expect("Tree::move_node: Missing an error value on finding an invalid NodeId."));
         }
 
-        let (is_valid, error) = self.is_valid_node_id(parent_id);
-        if !is_valid {
-            return Result::Err(error.expect("Tree::move_node_to_parent: Missing an error value on finding an invalid NodeId."));
+        match behavior {
+            MoveBehavior::ToRoot => self.move_node_to_root(node_id),
+            MoveBehavior::ToParent(parent_id) => {
+                let (is_valid, error) = self.is_valid_node_id(parent_id);
+                if !is_valid {
+                    return Err(error.expect("Tree::move_node: Missing an error value on finding an invalid NodeId."));
+                }
+                self.move_node_to_parent(node_id, parent_id)
+            },
         }
+    }
 
+    ///
+    /// Moves a `Node` inside a `Tree` to a new parent leaving all children in their place.
+    ///
+    fn move_node_to_parent(&mut self, node_id: &NodeId, parent_id: &NodeId) -> Result<(), NodeIdError> {
         if let Some(subtree_root_id) = self.find_subtree_root_between_ids(parent_id, node_id).cloned() {
             //node_id is above parent_id, this is a move "down" the tree.
 
@@ -468,44 +470,13 @@ impl<T> Tree<T> {
             self.set_as_parent_and_child(parent_id, node_id);
         }
 
-        Result::Ok(())
+        Ok(())
     }
 
     ///
     /// Sets a `Node` inside a `Tree` as the new root `Node`, leaving all children in their place.
     ///
-    /// If a root is already set, it is attached to the new root.
-    /// This new child will always be added as the last child of its new parent.
-    ///
-    /// Returns an empty `Result` containing a `NodeIdError` if one occurred on either provided `Id`.
-    ///
-    /// ```
-    /// use id_tree::Tree;
-    /// use id_tree::Node;
-    ///
-    /// let root_node = Node::new(1);
-    /// let child_node = Node::new(2);
-    /// let grandchild_node = Node::new(3);
-    ///
-    /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.set_root(root_node);
-    ///
-    /// let child_id  = tree.insert_with_parent(child_node,  &root_id).ok().unwrap();
-    /// let grandchild_id   = tree.insert_with_parent(grandchild_node, &child_id).ok().unwrap();
-    ///
-    /// tree.move_node_to_root(&grandchild_id).unwrap();
-    ///
-    /// # assert_eq!(tree.root_node_id(), Some(&grandchild_id));
-    /// # assert!(tree.get(&grandchild_id).unwrap().children().contains(&root_id));
-    /// # assert!(!tree.get(&child_id).unwrap().children().contains(&grandchild_id));
-    /// ```
-    ///
-    pub fn move_node_to_root(&mut self, node_id: &NodeId) -> Result<(), NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
-        if !is_valid {
-            return Result::Err(error.expect("Tree::move_node_to_root: Missing an error value on finding an invalid NodeId."));
-        }
-
+    fn move_node_to_root(&mut self, node_id: &NodeId) -> Result<(), NodeIdError> {
         let old_root = self.root.clone();
 
         if let Some(parent_id) = self.get_unsafe(node_id).parent().cloned() {
@@ -518,7 +489,7 @@ impl<T> Tree<T> {
             try!(self.move_node_to_parent(&old_root, node_id));
         }
 
-        Result::Ok(())
+        Ok(())
     }
 
     ///
