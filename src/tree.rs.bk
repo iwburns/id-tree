@@ -8,6 +8,8 @@ use super::NodeId;
 use super::MutableNode;
 use super::NodeIdError;
 
+// todo: change Tree::get() and Tree::get_mut() to return Result instead of Option
+
 ///
 /// A `Tree` builder that provides more control over how a `Tree` is created.
 ///
@@ -292,6 +294,7 @@ impl<T> Tree<T> {
         }
     }
 
+    ///
     /// Remove a `Node` from the `Tree`.  The `RemoveBehavior` provided determines what happens to
     /// the removed `Node`'s children.
     ///
@@ -384,6 +387,7 @@ impl<T> Tree<T> {
         Ok(self.remove_node_internal(node_id))
     }
 
+    ///
     /// Moves a `Node` in the `Tree` to a new location based upon the `MoveBehavior` provided.
     ///
     /// ```
@@ -415,8 +419,7 @@ impl<T> Tree<T> {
     {
         let (is_valid, error) = self.is_valid_node_id(&node_id);
         if !is_valid {
-            return Err(error.expect("Tree::move_node: Missing an error value on finding an invalid \
-                NodeId."));
+            return Err(error.expect("Tree::move_node: Missing an error value on finding an invalid NodeId."));
         }
 
         match behavior {
@@ -424,14 +427,14 @@ impl<T> Tree<T> {
             MoveBehavior::ToParent(parent_id) => {
                 let (is_valid, error) = self.is_valid_node_id(parent_id);
                 if !is_valid {
-                    return Err(error.expect("Tree::move_node: Missing an error value on finding an \
-                        invalid NodeId."));
+                    return Err(error.expect("Tree::move_node: Missing an error value on finding an invalid NodeId."));
                 }
                 self.move_node_to_parent(node_id, parent_id)
             }
         }
     }
 
+    ///
     /// Moves a `Node` inside a `Tree` to a new parent leaving all children in their place.
     ///
     #[cfg_attr(rustfmt, rustfmt_skip)]

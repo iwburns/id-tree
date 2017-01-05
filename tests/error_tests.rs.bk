@@ -67,7 +67,7 @@ fn test_remove_node_lift_children_from_other_tree() {
 
     let root_node_id_a = tree_a.set_root(Node::new(1));
 
-    // note use of wrong tree
+    //note use of wrong tree
     let root_node_b = tree_b.remove_node(root_node_id_a, RemoveBehavior::LiftChildren);
     assert!(root_node_b.is_err());
 
