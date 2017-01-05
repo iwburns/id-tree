@@ -134,3 +134,11 @@ pub enum MoveBehavior<'a> {
     ///
     ToParent(&'a NodeId),
 }
+
+///
+/// Describes the possible behaviors of the `Tree::insert` method.
+///
+pub enum InsertBehavior<'a> {
+    AsRoot,
+    UnderNode(&'a NodeId),
+}
