@@ -79,7 +79,7 @@ pub enum RemoveBehavior {
 ///
 /// Describes the possible behaviors of the `Tree::move_node` method.
 ///
-pub enum LocationBehavior<'a> {
+pub enum MoveBehavior<'a> {
     ///
     /// Sets the `Node` in question as the new root `Node`, leaving all children in their place (in
     /// other words, they will travel with the `Node` being moved).
@@ -96,14 +96,14 @@ pub enum LocationBehavior<'a> {
     /// let child_id = tree.insert_with_parent(Node::new(2),  &root_id).ok().unwrap();
     /// let grandchild_id = tree.insert_with_parent(Node::new(3), &child_id).ok().unwrap();
     ///
-    /// tree.move_node(&grandchild_id, LocationBehavior::Root).unwrap();
+    /// tree.move_node(&grandchild_id, MoveBehavior::ToRoot).unwrap();
     ///
     /// assert_eq!(tree.root_node_id(), Some(&grandchild_id));
     /// assert!(tree.get(&grandchild_id).unwrap().children().contains(&root_id));
     /// assert!(!tree.get(&child_id).unwrap().children().contains(&grandchild_id));
     /// ```
     ///
-    Root,
+    ToRoot,
 
     ///
     /// Moves a `Node` inside the `Tree` to a new parent leaving all children in their place.
@@ -126,12 +126,12 @@ pub enum LocationBehavior<'a> {
     /// let second_child_id = tree.insert_with_parent(Node::new(3), &root_id).ok().unwrap();
     /// let grandchild_id = tree.insert_with_parent(Node::new(4), &first_child_id).ok().unwrap();
     ///
-    /// tree.move_node(&grandchild_id, LocationBehavior::UnderParent(&second_child_id)).unwrap();
+    /// tree.move_node(&grandchild_id, MoveBehavior::ToParent(&second_child_id)).unwrap();
     ///
     /// assert!(!tree.get(&first_child_id).unwrap().children().contains(&grandchild_id));
     /// assert!(tree.get(&second_child_id).unwrap().children().contains(&grandchild_id));
     /// ```
     ///
-    UnderParent(&'a NodeId),
+    ToParent(&'a NodeId),
 }
 

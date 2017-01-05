@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 
 use super::behaviors::RemoveBehavior;
-use super::behaviors::LocationBehavior;
+use super::behaviors::MoveBehavior;
 use super::snowflake::ProcessUniqueId;
 use super::Node;
 use super::NodeId;
@@ -377,12 +377,12 @@ impl<T> Tree<T> {
     }
 
     ///
-    /// Moves a `Node` in the `Tree` to a new location based upon the `LocationBehavior` provided.
+    /// Moves a `Node` in the `Tree` to a new location based upon the `MoveBehavior` provided.
     ///
     /// ```
     /// use id_tree::Tree;
     /// use id_tree::Node;
-    /// use id_tree::LocationBehavior;
+    /// use id_tree::MoveBehavior;
     ///
     /// let root_node = Node::new(1);
     /// let child_node = Node::new(2);
@@ -394,25 +394,25 @@ impl<T> Tree<T> {
     /// let child_id  = tree.insert_with_parent(child_node,  &root_id).ok().unwrap();
     /// let grandchild_id   = tree.insert_with_parent(grandchild_node, &child_id).ok().unwrap();
     ///
-    /// tree.move_node(&grandchild_id, LocationBehavior::Root).unwrap();
+    /// tree.move_node(&grandchild_id, MoveBehavior::ToRoot).unwrap();
     ///
     /// assert_eq!(tree.root_node_id(), Some(&grandchild_id));
     /// # assert!(tree.get(&grandchild_id).unwrap().children().contains(&root_id));
     /// # assert!(!tree.get(&child_id).unwrap().children().contains(&grandchild_id));
     /// ```
     ///
-    pub fn move_node(&mut self, node_id: &NodeId, behavior: LocationBehavior) -> Result<(), NodeIdError> {
+    pub fn move_node(&mut self, node_id: &NodeId, behavior: MoveBehavior) -> Result<(), NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(&node_id);
         if !is_valid {
-            return Result::Err(error.expect("Tree::move_node: Missing an error value on finding an invalid NodeId."));
+            return Err(error.expect("Tree::move_node: Missing an error value on finding an invalid NodeId."));
         }
 
         match behavior {
-            LocationBehavior::Root => self.move_node_to_root(node_id),
-            LocationBehavior::UnderParent(parent_id) => {
+            MoveBehavior::ToRoot => self.move_node_to_root(node_id),
+            MoveBehavior::ToParent(parent_id) => {
                 let (is_valid, error) = self.is_valid_node_id(parent_id);
                 if !is_valid {
-                    return Result::Err(error.expect("Tree::move_node: Missing an error value on finding an invalid NodeId."));
+                    return Err(error.expect("Tree::move_node: Missing an error value on finding an invalid NodeId."));
                 }
                 self.move_node_to_parent(node_id, parent_id)
             },
@@ -470,7 +470,7 @@ impl<T> Tree<T> {
             self.set_as_parent_and_child(parent_id, node_id);
         }
 
-        Result::Ok(())
+        Ok(())
     }
 
     ///
@@ -489,7 +489,7 @@ impl<T> Tree<T> {
             try!(self.move_node_to_parent(&old_root, node_id));
         }
 
-        Result::Ok(())
+        Ok(())
     }
 
     ///

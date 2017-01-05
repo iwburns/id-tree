@@ -5,7 +5,7 @@ use id_tree::Node;
 use id_tree::TreeBuilder;
 use id_tree::Tree;
 use id_tree::RemoveBehavior;
-use id_tree::LocationBehavior;
+use id_tree::MoveBehavior;
 
 #[test]
 fn test_old_node_id() {
@@ -111,7 +111,7 @@ fn test_move_node_into_other_tree() {
     let root_node_b = Node::new(1);
     let root_node_id_b = tree_b.set_root(root_node_b);
 
-    let result = tree_a.move_node(&root_node_id_a, LocationBehavior::UnderParent(&root_node_id_b)); //note use of invalid parent
+    let result = tree_a.move_node(&root_node_id_a, MoveBehavior::ToParent(&root_node_id_b)); //note use of invalid parent
     assert!(result.is_err());
 
     let error = result.err().unwrap();
@@ -129,7 +129,7 @@ fn test_move_node_from_other_tree() {
     let root_node_b = Node::new(1);
     let root_node_id_b = tree_b.set_root(root_node_b);
 
-    let result = tree_a.move_node(&root_node_id_b, LocationBehavior::UnderParent(&root_node_id_a)); //note use of invalid child
+    let result = tree_a.move_node(&root_node_id_b, MoveBehavior::ToParent(&root_node_id_a)); //note use of invalid child
     assert!(result.is_err());
 
     let error = result.err().unwrap();
@@ -147,7 +147,7 @@ fn test_move_node_to_root_by_invalid_id() {
     let root_node_b = Node::new(1);
     let root_node_id_b = tree_b.set_root(root_node_b);
 
-    let result = tree_a.move_node(&root_node_id_b, LocationBehavior::Root);
+    let result = tree_a.move_node(&root_node_id_b, MoveBehavior::ToRoot);
     assert!(result.is_err());
 
     let error = result.err().unwrap();
