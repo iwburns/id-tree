@@ -33,7 +33,6 @@ fn main() {
 
     let root_id: NodeId = tree.insert(Node::new(0), InsertBehavior::AsRoot).unwrap();
     let child_id: NodeId = tree.insert(Node::new(1), InsertBehavior::UnderNode(&root_id))
-        .ok()
         .unwrap();
     tree.insert(Node::new(2), InsertBehavior::UnderNode(&root_id)).unwrap();
     tree.insert(Node::new(3), InsertBehavior::UnderNode(&child_id)).unwrap();
