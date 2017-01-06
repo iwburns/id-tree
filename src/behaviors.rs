@@ -19,7 +19,8 @@ pub enum RemoveBehavior {
     /// let root_id = tree.insert(Node::new(0), InsertBehavior::AsRoot).unwrap();
     ///
     /// let child_id = tree.insert(Node::new(1), InsertBehavior::UnderNode(&root_id)).unwrap();
-    /// let grandchild_id = tree.insert(Node::new(2), InsertBehavior::UnderNode(&child_id)).unwrap();
+    /// let grandchild_id = tree.insert(Node::new(2), InsertBehavior::UnderNode(&child_id))
+    ///     .unwrap();
     ///
     /// let child = tree.remove_node(child_id, RemoveBehavior::DropChildren).ok().unwrap();
     ///
@@ -43,7 +44,8 @@ pub enum RemoveBehavior {
     /// let root_id = tree.insert(Node::new(0), InsertBehavior::AsRoot).unwrap();
     ///
     /// let child_id = tree.insert(Node::new(1), InsertBehavior::UnderNode(&root_id)).unwrap();
-    /// let grandchild_id = tree.insert(Node::new(2), InsertBehavior::UnderNode(&child_id)).unwrap();
+    /// let grandchild_id = tree.insert(Node::new(2), InsertBehavior::UnderNode(&child_id))
+    ///     .unwrap();
     ///
     /// let child = tree.remove_node(child_id, RemoveBehavior::LiftChildren).ok().unwrap();
     ///
@@ -65,7 +67,8 @@ pub enum RemoveBehavior {
     /// let root_id = tree.insert(Node::new(0), InsertBehavior::AsRoot).unwrap();
     ///
     /// let child_id = tree.insert(Node::new(1), InsertBehavior::UnderNode(&root_id)).unwrap();
-    /// let grandchild_id = tree.insert(Node::new(2), InsertBehavior::UnderNode(&child_id)).unwrap();
+    /// let grandchild_id = tree.insert(Node::new(2), InsertBehavior::UnderNode(&child_id))
+    ///     .unwrap();
     ///
     /// let child = tree.remove_node(child_id, RemoveBehavior::OrphanChildren).ok().unwrap();
     ///
@@ -94,7 +97,8 @@ pub enum MoveBehavior<'a> {
     /// let root_id = tree.insert(Node::new(1), InsertBehavior::AsRoot).unwrap();
     ///
     /// let child_id = tree.insert(Node::new(2),  InsertBehavior::UnderNode(&root_id)).unwrap();
-    /// let grandchild_id = tree.insert(Node::new(3), InsertBehavior::UnderNode(&child_id)).unwrap();
+    /// let grandchild_id = tree.insert(Node::new(3), InsertBehavior::UnderNode(&child_id))
+    ///     .unwrap();
     ///
     /// tree.move_node(&grandchild_id, MoveBehavior::ToRoot).unwrap();
     ///
@@ -122,9 +126,12 @@ pub enum MoveBehavior<'a> {
     /// let mut tree: Tree<i32> = Tree::new();
     /// let root_id = tree.insert(Node::new(1), InsertBehavior::AsRoot).ok().unwrap();
     ///
-    /// let first_child_id = tree.insert(Node::new(2),  InsertBehavior::UnderNode(&root_id)).unwrap();
-    /// let second_child_id = tree.insert(Node::new(3), InsertBehavior::UnderNode(&root_id)).unwrap();
-    /// let grandchild_id = tree.insert(Node::new(4), InsertBehavior::UnderNode(&first_child_id)).unwrap();
+    /// let first_child_id = tree.insert(Node::new(2),  InsertBehavior::UnderNode(&root_id))
+    ///     .unwrap();
+    /// let second_child_id = tree.insert(Node::new(3), InsertBehavior::UnderNode(&root_id))
+    ///     .unwrap();
+    /// let grandchild_id = tree.insert(Node::new(4), InsertBehavior::UnderNode(&first_child_id))
+    ///     .unwrap();
     ///
     /// tree.move_node(&grandchild_id, MoveBehavior::ToParent(&second_child_id)).unwrap();
     ///
