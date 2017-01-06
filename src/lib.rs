@@ -16,21 +16,20 @@
 //!
 //! ## Example Usage
 //! ```
-//! use id_tree::NodeId;
-//! use id_tree::Node;
-//! use id_tree::TreeBuilder;
-//! use id_tree::Tree;
+//! use id_tree::*;
 //!
 //! fn main() {
 //!     let mut tree: Tree<i32> = TreeBuilder::new()
 //!         .with_node_capacity(5)
 //!         .build();
 //!
-//!     let root_id: NodeId = tree.set_root(Node::new(0));
-//!     let child_1_id: NodeId = tree.insert_with_parent(Node::new(1), &root_id).ok().unwrap();
-//!     tree.insert_with_parent(Node::new(2), &root_id).ok().unwrap();
-//!     tree.insert_with_parent(Node::new(3), &child_1_id).ok().unwrap();
-//!     tree.insert_with_parent(Node::new(4), &child_1_id).ok().unwrap();
+//!     let root_id: NodeId = tree.insert(Node::new(0), InsertBehavior::AsRoot).unwrap();
+//!     let child_id: NodeId = tree.insert(Node::new(1), InsertBehavior::UnderNode(&root_id))
+//!         .ok()
+//!         .unwrap();
+//!     tree.insert(Node::new(2), InsertBehavior::UnderNode(&root_id)).unwrap();
+//!     tree.insert(Node::new(3), InsertBehavior::UnderNode(&child_id)).unwrap();
+//!     tree.insert(Node::new(4), InsertBehavior::UnderNode(&child_id)).unwrap();
 //!
 //!     println!("Pre-order:");
 //!     print_nodes_pre_order(&tree, &root_id);
@@ -87,6 +86,7 @@ mod tree;
 
 pub use behaviors::RemoveBehavior;
 pub use behaviors::MoveBehavior;
+pub use behaviors::InsertBehavior;
 pub use error::NodeIdError;
 pub use node::NodeBuilder;
 pub use node::Node;

@@ -6,6 +6,7 @@ use id_tree::TreeBuilder;
 use id_tree::Tree;
 use id_tree::RemoveBehavior;
 use id_tree::MoveBehavior;
+use id_tree::InsertBehavior;
 
 #[test]
 fn test_old_node_id() {
@@ -13,7 +14,7 @@ fn test_old_node_id() {
 
     let root_node = Node::new(1);
 
-    let root_id = tree.set_root(root_node);
+    let root_id = tree.insert(root_node, InsertBehavior::AsRoot).ok().unwrap();
     let root_id_copy = root_id.clone(); // this is essential to getting the Result::Err()
 
     let root_node = tree.remove_node(root_id, RemoveBehavior::OrphanChildren);
@@ -32,7 +33,7 @@ fn test_get_node_from_other_tree() {
     let tree_b: Tree<i32> = TreeBuilder::new().build();
 
     let root_node_a = Node::new(1);
-    let root_node_id_a = tree_a.set_root(root_node_a);
+    let root_node_id_a = tree_a.insert(root_node_a, InsertBehavior::AsRoot).unwrap();
 
     let root_node_a = tree_a.get(&root_node_id_a);
     let root_node_b = tree_b.get(&root_node_id_a); //note use of wrong tree
@@ -49,7 +50,7 @@ fn test_get_mut_node_from_other_tree() {
     let mut tree_b: Tree<i32> = TreeBuilder::new().build();
 
     let root_node_a = Node::new(1);
-    let root_node_id_a = tree_a.set_root(root_node_a);
+    let root_node_id_a = tree_a.insert(root_node_a, InsertBehavior::AsRoot).unwrap();
 
     let root_node_a = tree_a.get_mut(&root_node_id_a);
     let root_node_b = tree_b.get_mut(&root_node_id_a); //note use of wrong tree
@@ -65,7 +66,7 @@ fn test_remove_node_lift_children_from_other_tree() {
     let mut tree_a: Tree<i32> = TreeBuilder::new().build();
     let mut tree_b: Tree<i32> = TreeBuilder::new().build();
 
-    let root_node_id_a = tree_a.set_root(Node::new(1));
+    let root_node_id_a = tree_a.insert(Node::new(1), InsertBehavior::AsRoot).unwrap();
 
     // note use of wrong tree
     let root_node_b = tree_b.remove_node(root_node_id_a, RemoveBehavior::LiftChildren);
@@ -80,7 +81,7 @@ fn test_remove_node_orphan_children_from_other_tree() {
     let mut tree_a: Tree<i32> = TreeBuilder::new().build();
     let mut tree_b: Tree<i32> = TreeBuilder::new().build();
 
-    let root_node_id_a = tree_a.set_root(Node::new(1));
+    let root_node_id_a = tree_a.insert(Node::new(1), InsertBehavior::AsRoot).unwrap();
 
     // note use of wrong tree
     let root_node_b = tree_b.remove_node(root_node_id_a, RemoveBehavior::OrphanChildren);
@@ -95,7 +96,7 @@ fn test_remove_node_remove_children_from_other_tree() {
     let mut tree_a: Tree<i32> = TreeBuilder::new().build();
     let mut tree_b: Tree<i32> = TreeBuilder::new().build();
 
-    let root_node_id_a = tree_a.set_root(Node::new(1));
+    let root_node_id_a = tree_a.insert(Node::new(1), InsertBehavior::AsRoot).unwrap();
 
     // note use of wrong tree
     let root_node_b = tree_b.remove_node(root_node_id_a, RemoveBehavior::DropChildren);
@@ -111,10 +112,10 @@ fn test_move_node_into_other_tree() {
     let mut tree_b: Tree<i32> = TreeBuilder::new().build();
 
     let root_node_a = Node::new(1);
-    let root_node_id_a = tree_a.set_root(root_node_a);
+    let root_node_id_a = tree_a.insert(root_node_a, InsertBehavior::AsRoot).unwrap();
 
     let root_node_b = Node::new(1);
-    let root_node_id_b = tree_b.set_root(root_node_b);
+    let root_node_id_b = tree_b.insert(root_node_b, InsertBehavior::AsRoot).unwrap();
 
     // note use of invalid parent
     let result = tree_a.move_node(&root_node_id_a, MoveBehavior::ToParent(&root_node_id_b));
@@ -130,10 +131,10 @@ fn test_move_node_from_other_tree() {
     let mut tree_b: Tree<i32> = TreeBuilder::new().build();
 
     let root_node_a = Node::new(1);
-    let root_node_id_a = tree_a.set_root(root_node_a);
+    let root_node_id_a = tree_a.insert(root_node_a, InsertBehavior::AsRoot).unwrap();
 
     let root_node_b = Node::new(1);
-    let root_node_id_b = tree_b.set_root(root_node_b);
+    let root_node_id_b = tree_b.insert(root_node_b, InsertBehavior::AsRoot).unwrap();
 
     // note use of invalid child
     let result = tree_a.move_node(&root_node_id_b, MoveBehavior::ToParent(&root_node_id_a));
@@ -149,10 +150,10 @@ fn test_move_node_to_root_by_invalid_id() {
     let mut tree_b: Tree<i32> = TreeBuilder::new().build();
 
     let root_node_a = Node::new(1);
-    let _ = tree_a.set_root(root_node_a);
+    let _ = tree_a.insert(root_node_a, InsertBehavior::AsRoot).unwrap();
 
     let root_node_b = Node::new(1);
-    let root_node_id_b = tree_b.set_root(root_node_b);
+    let root_node_id_b = tree_b.insert(root_node_b, InsertBehavior::AsRoot).unwrap();
 
     let result = tree_a.move_node(&root_node_id_b, MoveBehavior::ToRoot);
     assert!(result.is_err());
@@ -167,10 +168,10 @@ fn test_sort_by_invalid_id() {
     let mut tree_b: Tree<i32> = TreeBuilder::new().build();
 
     let root_node_a = Node::new(1);
-    let _ = tree_a.set_root(root_node_a);
+    let _ = tree_a.insert(root_node_a, InsertBehavior::AsRoot).unwrap();
 
     let root_node_b = Node::new(1);
-    let root_node_id_b = tree_b.set_root(root_node_b);
+    let root_node_id_b = tree_b.insert(root_node_b, InsertBehavior::AsRoot).unwrap();
 
     let result = tree_a.sort_children_by(&root_node_id_b, |a, b| a.data().cmp(b.data()));
     assert!(result.is_err());
@@ -185,10 +186,10 @@ fn test_sort_by_data_invalid_id() {
     let mut tree_b: Tree<i32> = TreeBuilder::new().build();
 
     let root_node_a = Node::new(1);
-    let _ = tree_a.set_root(root_node_a);
+    let _ = tree_a.insert(root_node_a, InsertBehavior::AsRoot).unwrap();
 
     let root_node_b = Node::new(1);
-    let root_node_id_b = tree_b.set_root(root_node_b);
+    let root_node_id_b = tree_b.insert(root_node_b, InsertBehavior::AsRoot).unwrap();
 
     let result = tree_a.sort_children_by_data(&root_node_id_b);
     assert!(result.is_err());
@@ -203,10 +204,10 @@ fn test_sort_by_key_invalid_id() {
     let mut tree_b: Tree<i32> = TreeBuilder::new().build();
 
     let root_node_a = Node::new(1);
-    let _ = tree_a.set_root(root_node_a);
+    let _ = tree_a.insert(root_node_a, InsertBehavior::AsRoot).unwrap();
 
     let root_node_b = Node::new(1);
-    let root_node_id_b = tree_b.set_root(root_node_b);
+    let root_node_id_b = tree_b.insert(root_node_b, InsertBehavior::AsRoot).unwrap();
 
     let result = tree_a.sort_children_by_key(&root_node_id_b, |x| x.data().clone());
     assert!(result.is_err());
@@ -221,10 +222,10 @@ fn test_swap_sub_trees_of_different_trees() {
     let mut tree_b: Tree<i32> = TreeBuilder::new().build();
 
     let root_node_a = Node::new(1);
-    let root_node_id_a = tree_a.set_root(root_node_a);
+    let root_node_id_a = tree_a.insert(root_node_a, InsertBehavior::AsRoot).unwrap();
 
     let root_node_b = Node::new(1);
-    let root_node_id_b = tree_b.set_root(root_node_b);
+    let root_node_id_b = tree_b.insert(root_node_b, InsertBehavior::AsRoot).unwrap();
 
     // note use of invalid child
     let result = tree_a.swap_sub_tree(&root_node_id_b, &root_node_id_a);
