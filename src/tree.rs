@@ -409,8 +409,8 @@ impl<T> Tree<T> {
     {
         let (is_valid, error) = self.is_valid_node_id(&node_id);
         if !is_valid {
-            return Err(error.expect("Tree::move_node: Missing an error value on finding an invalid \
-                NodeId."));
+            return Err(error.expect("Tree::move_node: Missing an error value on finding an \
+                invalid NodeId."));
         }
 
         match behavior {
@@ -418,8 +418,8 @@ impl<T> Tree<T> {
             MoveBehavior::ToParent(parent_id) => {
                 let (is_valid, error) = self.is_valid_node_id(parent_id);
                 if !is_valid {
-                    return Err(error.expect("Tree::move_node: Missing an error value on finding an \
-                        invalid NodeId."));
+                    return Err(error.expect("Tree::move_node: Missing an error value on finding \
+                        an invalid NodeId."));
                 }
                 self.move_node_to_parent(node_id, parent_id)
             }
