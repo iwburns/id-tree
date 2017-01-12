@@ -16,10 +16,11 @@ pub enum RemoveBehavior {
     /// use id_tree::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.set_root(Node::new(0));
+    /// let root_id = tree.insert(Node::new(0), InsertBehavior::AsRoot).unwrap();
     ///
-    /// let child_id = tree.insert_with_parent(Node::new(1), &root_id).ok().unwrap();
-    /// let grandchild_id = tree.insert_with_parent(Node::new(2), &child_id).ok().unwrap();
+    /// let child_id = tree.insert(Node::new(1), InsertBehavior::UnderNode(&root_id)).unwrap();
+    /// let grandchild_id = tree.insert(Node::new(2), InsertBehavior::UnderNode(&child_id))
+    ///     .unwrap();
     ///
     /// let child = tree.remove_node(child_id, RemoveBehavior::DropChildren).ok().unwrap();
     ///
@@ -40,10 +41,11 @@ pub enum RemoveBehavior {
     /// use id_tree::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.set_root(Node::new(0));
+    /// let root_id = tree.insert(Node::new(0), InsertBehavior::AsRoot).unwrap();
     ///
-    /// let child_id = tree.insert_with_parent(Node::new(1), &root_id).ok().unwrap();
-    /// let grandchild_id = tree.insert_with_parent(Node::new(2), &child_id).ok().unwrap();
+    /// let child_id = tree.insert(Node::new(1), InsertBehavior::UnderNode(&root_id)).unwrap();
+    /// let grandchild_id = tree.insert(Node::new(2), InsertBehavior::UnderNode(&child_id))
+    ///     .unwrap();
     ///
     /// let child = tree.remove_node(child_id, RemoveBehavior::LiftChildren).ok().unwrap();
     ///
@@ -62,10 +64,11 @@ pub enum RemoveBehavior {
     /// use id_tree::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.set_root(Node::new(0));
+    /// let root_id = tree.insert(Node::new(0), InsertBehavior::AsRoot).unwrap();
     ///
-    /// let child_id = tree.insert_with_parent(Node::new(1), &root_id).ok().unwrap();
-    /// let grandchild_id = tree.insert_with_parent(Node::new(2), &child_id).ok().unwrap();
+    /// let child_id = tree.insert(Node::new(1), InsertBehavior::UnderNode(&root_id)).unwrap();
+    /// let grandchild_id = tree.insert(Node::new(2), InsertBehavior::UnderNode(&child_id))
+    ///     .unwrap();
     ///
     /// let child = tree.remove_node(child_id, RemoveBehavior::OrphanChildren).ok().unwrap();
     ///
@@ -91,10 +94,11 @@ pub enum MoveBehavior<'a> {
     /// use id_tree::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.set_root(Node::new(1));
+    /// let root_id = tree.insert(Node::new(1), InsertBehavior::AsRoot).unwrap();
     ///
-    /// let child_id = tree.insert_with_parent(Node::new(2),  &root_id).ok().unwrap();
-    /// let grandchild_id = tree.insert_with_parent(Node::new(3), &child_id).ok().unwrap();
+    /// let child_id = tree.insert(Node::new(2),  InsertBehavior::UnderNode(&root_id)).unwrap();
+    /// let grandchild_id = tree.insert(Node::new(3), InsertBehavior::UnderNode(&child_id))
+    ///     .unwrap();
     ///
     /// tree.move_node(&grandchild_id, MoveBehavior::ToRoot).unwrap();
     ///
@@ -120,11 +124,14 @@ pub enum MoveBehavior<'a> {
     /// use id_tree::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.set_root(Node::new(1));
+    /// let root_id = tree.insert(Node::new(1), InsertBehavior::AsRoot).ok().unwrap();
     ///
-    /// let first_child_id = tree.insert_with_parent(Node::new(2),  &root_id).ok().unwrap();
-    /// let second_child_id = tree.insert_with_parent(Node::new(3), &root_id).ok().unwrap();
-    /// let grandchild_id = tree.insert_with_parent(Node::new(4), &first_child_id).ok().unwrap();
+    /// let first_child_id = tree.insert(Node::new(2),  InsertBehavior::UnderNode(&root_id))
+    ///     .unwrap();
+    /// let second_child_id = tree.insert(Node::new(3), InsertBehavior::UnderNode(&root_id))
+    ///     .unwrap();
+    /// let grandchild_id = tree.insert(Node::new(4), InsertBehavior::UnderNode(&first_child_id))
+    ///     .unwrap();
     ///
     /// tree.move_node(&grandchild_id, MoveBehavior::ToParent(&second_child_id)).unwrap();
     ///
@@ -133,4 +140,43 @@ pub enum MoveBehavior<'a> {
     /// ```
     ///
     ToParent(&'a NodeId),
+}
+
+///
+/// Describes the possible behaviors of the `Tree::insert` method.
+///
+pub enum InsertBehavior<'a> {
+    ///
+    /// Sets the root of the `Tree`.
+    ///
+    /// If there is already a root `Node` present in the tree, that `Node` is set as the first child
+    /// of the new root.
+    ///
+    /// ```
+    /// use id_tree::*;
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    ///
+    /// tree.insert(Node::new(5), InsertBehavior::AsRoot);
+    /// ```
+    AsRoot,
+
+    ///
+    /// Returns a `Result` containing the `NodeId` of the child that was added or a `NodeIdError` if
+    /// one occurred.
+    ///
+    /// Note: Adds the new Node to the end of its children.
+    ///
+    /// ```
+    /// use id_tree::*;
+    ///
+    /// let root_node = Node::new(1);
+    /// let child_node = Node::new(2);
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.insert(root_node, InsertBehavior::AsRoot).unwrap();
+    ///
+    /// tree.insert(child_node, InsertBehavior::UnderNode(&root_id));
+    /// ```
+    UnderNode(&'a NodeId),
 }
