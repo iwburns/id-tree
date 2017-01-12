@@ -182,7 +182,6 @@ impl<T> Tree<T> {
         TreeBuilder::new().build()
     }
 
-    ///
     /// Inserts a new `Node` into the `Tree`.  The `InsertBehavior` provided will determine where
     /// the `Node` is inserted.
     ///
@@ -201,8 +200,11 @@ impl<T> Tree<T> {
     /// tree.insert(child_node, InsertBehavior::UnderNode(&root_id));
     /// ```
     ///
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
     pub fn insert(&mut self, node: Node<T>, behavior: InsertBehavior)
-        -> Result<NodeId, NodeIdError> {
+        -> Result<NodeId, NodeIdError>
+    {
         match behavior {
             InsertBehavior::UnderNode(parent_id) => {
                 let (is_valid, error) = self.is_valid_node_id(parent_id);
