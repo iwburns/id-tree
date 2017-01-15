@@ -794,14 +794,22 @@ impl<T> Tree<T> {
         Ok(())
     }
 
-    fn swap_nodes_leave_children(&mut self, first_id: &NodeId, second_id: &NodeId) -> Result<(), NodeIdError> {
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
+    fn swap_nodes_leave_children(&mut self, first_id: &NodeId, second_id: &NodeId)
+        -> Result<(), NodeIdError>
+    {
 //        self.set_parent_of_children(first_id, Some(second_id.clone()));
 //        self.set_parent_of_children(second_id, Some(first_id.clone()));
 
         Ok(())
     }
 
-    fn swap_nodes_children_only(&mut self, first_id: &NodeId, second_id: &NodeId) -> Result<(), NodeIdError> {
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
+    fn swap_nodes_children_only(&mut self, first_id: &NodeId, second_id: &NodeId)
+        -> Result<(), NodeIdError>
+    {
         Ok(())
     }
 
