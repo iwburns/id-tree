@@ -180,3 +180,69 @@ pub enum InsertBehavior<'a> {
     /// ```
     UnderNode(&'a NodeId),
 }
+
+///
+/// Describes the possible behaviors of the `Tree::swap_nodes` method.
+///
+pub enum SwapBehavior {
+    ///
+    /// Take the children of the `Node`s being swapped with them.  In other words, this swaps the
+    /// `Node`s in question along with their entire sub-tree.  This *does not* affect the
+    /// relationship between the `Node`s being swapped and their children.
+    ///
+    /// If one `Node` is a descendant of the other getting swapped, the former *upper* `Node` is
+    /// attached as the last child of the former *lower* `Node` after the swap. (The *lower* will
+    /// take the *uppers* original position as usual.) The subtree of the former *upper* node is not
+    /// touched except that the *lower* `Node` is moved including all its children.
+    ///
+    /// ```
+    /// use id_tree::*;
+    /// use id_tree::InsertBehavior::*;
+    /// use id_tree::SwapBehavior::*;
+    ///
+    /// let root_node = Node::new(1);
+    /// let first_child_node = Node::new(2);
+    /// let second_child_node = Node::new(3);
+    /// let grandchild_node = Node::new(4);
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.insert(root_node, AsRoot).unwrap();
+    ///
+    /// let first_child_id = tree.insert(first_child_node, UnderNode(&root_id)).unwrap();
+    /// let second_child_id = tree.insert(second_child_node, UnderNode(&root_id)).unwrap();
+    /// let grandchild_id = tree.insert(grandchild_node, UnderNode(&second_child_id)).unwrap();
+    ///
+    /// tree.swap_nodes(&first_child_id, &grandchild_id, TakeChildren).unwrap();
+    ///
+    /// assert!(tree.get(&second_child_id).unwrap().children().contains(&first_child_id));
+    /// assert!(tree.get(&root_id).unwrap().children().contains(&grandchild_id));
+    /// ```
+    ///
+    TakeChildren,
+
+    ///
+    /// Leave the children of the `Node`s being swapped where they are.  In other words, this only
+    /// swaps the `Node`s themselves.  This *does* affect the relationship between the `Node`s
+    /// being swapped and their children.
+    ///
+    /// Please Note: Because this behavior alters the relationship between the `Node`s being
+    /// swapped and their children, any calls to `children()` that have been cloned will no longer
+    /// point to the children of the `Node` that you think they do.
+    ///
+    LeaveChildren,
+
+    ///
+    /// Swap the children of the `Node`s in question only.  This does not swap the `Node`s that are
+    /// specified when calling this method.  This *does* affect the relationship between the
+    /// `Node`s that are specified and their children.
+    ///
+    /// If one `Node` is a descendant of the other getting swapped, the child swapping step will
+    /// take place and then the *lower* `Node` in the swap will be added as the last child of the
+    /// *upper* `Node` in the swap.
+    ///
+    /// Please Note: Because this behavior alters the relationship between the `Node`s being
+    /// swapped and their children, any calls to `children()` that have been cloned will no longer
+    /// point to the children of the `Node` that you think they do.
+    ///
+    ChildrenOnly,
+}
