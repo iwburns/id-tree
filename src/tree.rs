@@ -1633,4 +1633,189 @@ mod tree_tests {
             assert_eq!(tree.get(&root_id).unwrap().children().len(), 0);
         }
     }
+
+    #[test]
+    fn test_swap_nodes_children_only() {
+        use InsertBehavior::*;
+        use SwapBehavior::*;
+
+        // test across swap
+        // swap(1,2)
+        // from:
+        //        0
+        //       / \
+        //      1   2
+        //     / \   \
+        //    3   4   5
+        // to:
+        //        0
+        //       / \
+        //      1   2
+        //     /   / \
+        //    5   3   4
+        {
+            let mut tree = Tree::new();
+            let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+            let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
+            let node_4_id = tree.insert(Node::new(4), UnderNode(&node_1_id)).unwrap();
+            let node_5_id = tree.insert(Node::new(5), UnderNode(&node_2_id)).unwrap();
+
+            tree.swap_nodes(&node_1_id, &node_2_id, ChildrenOnly).unwrap();
+
+            let root_children = tree.get(&root_id).unwrap().children();
+            assert_eq!(root_children[0], node_1_id);
+            assert_eq!(root_children[1], node_2_id);
+
+            assert_eq!(tree.get(&node_3_id).unwrap().parent(), Some(&node_2_id));
+            assert_eq!(tree.get(&node_4_id).unwrap().parent(), Some(&node_2_id));
+            assert_eq!(tree.get(&node_5_id).unwrap().parent(), Some(&node_1_id));
+
+            assert!(tree.get(&node_1_id).unwrap().children().contains(&node_5_id));
+            assert!(tree.get(&node_2_id).unwrap().children().contains(&node_3_id));
+            assert!(tree.get(&node_2_id).unwrap().children().contains(&node_4_id));
+        }
+
+        // test down swap (with no space between nodes)
+        // swap(1,3)
+        // from:
+        //        0
+        //       / \
+        //      1   2
+        //     / \   \
+        //    3   4   5
+        //    |   |
+        //    6   7
+        // to:
+        //        0
+        //       / \
+        //      1   2
+        //     / \   \
+        //    3   6   5
+        //    |
+        //    4
+        //    |
+        //    7
+        {
+            let mut tree = Tree::new();
+            let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+            let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
+            let node_4_id = tree.insert(Node::new(4), UnderNode(&node_1_id)).unwrap();
+            let node_5_id = tree.insert(Node::new(5), UnderNode(&node_2_id)).unwrap();
+            let node_6_id = tree.insert(Node::new(6), UnderNode(&node_3_id)).unwrap();
+            let node_7_id = tree.insert(Node::new(7), UnderNode(&node_4_id)).unwrap();
+
+            tree.swap_nodes(&node_1_id, &node_3_id, ChildrenOnly).unwrap();
+
+            let root_children = tree.get(&root_id).unwrap().children();
+            assert_eq!(root_children[0], node_1_id);
+            assert_eq!(root_children[1], node_2_id);
+
+            assert_eq!(tree.get(&node_3_id).unwrap().parent(), Some(&node_1_id));
+            assert_eq!(tree.get(&node_1_id).unwrap().parent(), Some(&root_id));
+            assert_eq!(tree.get(&node_4_id).unwrap().parent(), Some(&node_3_id));
+            assert_eq!(tree.get(&node_6_id).unwrap().parent(), Some(&node_1_id));
+
+            let node_1_children = tree.get(&node_1_id).unwrap().children();
+            assert_eq!(node_1_children[0], node_3_id);
+            assert_eq!(node_1_children[1], node_6_id);
+            assert!(tree.get(&node_3_id).unwrap().children().contains(&node_4_id));
+        }
+
+        // test down swap (with space between nodes)
+        // swap(1, 6)
+        // from:
+        //        0
+        //       / \
+        //      1   2
+        //     / \   \
+        //    3   4   5
+        //    |   |
+        //    6   7
+        // to:
+        //        0
+        //       / \
+        //      1   2
+        //     /     \
+        //    6       5
+        //   / \
+        //  3   4
+        //      |
+        //      7
+        {
+            let mut tree = Tree::new();
+            let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+            let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
+            let node_4_id = tree.insert(Node::new(4), UnderNode(&node_1_id)).unwrap();
+            let node_5_id = tree.insert(Node::new(5), UnderNode(&node_2_id)).unwrap();
+            let node_6_id = tree.insert(Node::new(6), UnderNode(&node_3_id)).unwrap();
+            let node_7_id = tree.insert(Node::new(7), UnderNode(&node_4_id)).unwrap();
+
+            tree.swap_nodes(&node_1_id, &node_6_id, ChildrenOnly).unwrap();
+
+            let root_children = tree.get(&root_id).unwrap().children();
+            assert_eq!(root_children[0], node_1_id);
+            assert_eq!(root_children[1], node_2_id);
+
+            assert_eq!(tree.get(&node_3_id).unwrap().parent(), Some(&node_6_id));
+            assert_eq!(tree.get(&node_4_id).unwrap().parent(), Some(&node_6_id));
+            assert_eq!(tree.get(&node_6_id).unwrap().parent(), Some(&node_1_id));
+
+            assert!(tree.get(&node_1_id).unwrap().children().contains(&node_6_id));
+            assert!(!tree.get(&node_1_id).unwrap().children().contains(&node_3_id));
+            assert!(!tree.get(&node_1_id).unwrap().children().contains(&node_4_id));
+            assert!(tree.get(&node_6_id).unwrap().children().contains(&node_3_id));
+            assert!(tree.get(&node_6_id).unwrap().children().contains(&node_4_id));
+        }
+
+        // test down swap (with root)
+        // swap(0,1)
+        // from:
+        //        0
+        //       / \
+        //      1   2
+        //     / \   \
+        //    3   4   5
+        //    |   |
+        //    6   7
+        // to:
+        //        0
+        //       /|\
+        //      1 3 4
+        //     /  | |
+        //    2   6 7
+        //    |
+        //    5
+        {
+            let mut tree = Tree::new();
+            let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+            let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
+            let node_4_id = tree.insert(Node::new(4), UnderNode(&node_1_id)).unwrap();
+            let node_5_id = tree.insert(Node::new(5), UnderNode(&node_2_id)).unwrap();
+            let node_6_id = tree.insert(Node::new(6), UnderNode(&node_3_id)).unwrap();
+            let node_7_id = tree.insert(Node::new(7), UnderNode(&node_4_id)).unwrap();
+
+            tree.swap_nodes(&root_id, &node_1_id, ChildrenOnly).unwrap();
+
+            let root_children = tree.get(&root_id).unwrap().children();
+            assert_eq!(root_children[0], node_1_id);
+            assert_eq!(root_children[1], node_3_id);
+            assert_eq!(root_children[2], node_4_id);
+
+            assert_eq!(tree.get(&node_1_id).unwrap().parent(), Some(&root_id));
+            assert_eq!(tree.get(&node_3_id).unwrap().parent(), Some(&root_id));
+            assert_eq!(tree.get(&node_4_id).unwrap().parent(), Some(&root_id));
+            assert_eq!(tree.get(&node_2_id).unwrap().parent(), Some(&node_1_id));
+
+            let node_1_children = tree.get(&node_1_id).unwrap().children();
+            assert_eq!(node_1_children[0], node_2_id);
+        }
+    }
 }
