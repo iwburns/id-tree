@@ -908,6 +908,82 @@ impl<T> Tree<T> {
     fn swap_nodes_children_only(&mut self, first_id: &NodeId, second_id: &NodeId)
         -> Result<(), NodeIdError>
     {
+        let lower_upper_test = self.find_subtree_root_between_ids(first_id, second_id)
+            .map(|_| (first_id, second_id))
+            .or(self.find_subtree_root_between_ids(second_id, first_id)
+                .map(|_| (second_id, first_id)));
+
+        if let Some((lower_id, upper_id)) = lower_upper_test {
+
+            if upper_id == self.get_unsafe(lower_id).parent().unwrap() {
+                // direct child
+
+                //take care of these nodes' children's parent values
+                let upper_children = self.get_unsafe(upper_id).children().clone();
+                let lower_children = self.get_unsafe(lower_id).children().clone();
+
+                for child in upper_children.iter() {
+                    if child != lower_id {
+                        self.get_mut_unsafe(child).set_parent(Some(lower_id.clone()));
+                    }
+                }
+                for child in lower_children.iter() {
+                    self.get_mut_unsafe(child).set_parent(Some(upper_id.clone()));
+                }
+
+                //take out the lower_id and set as the lower's children
+                let mut upper_children = upper_children;
+                upper_children.retain(|id| id != lower_id);
+                let upper_children = upper_children;
+                self.get_mut_unsafe(lower_id).set_children(upper_children);
+
+                //make lower the first child of upper and add all of lower's children to upper
+                let mut new_lower_children = Vec::with_capacity(lower_children.len() + 1);
+                new_lower_children.push(lower_id.clone());
+                let mut lower_children = lower_children;
+                new_lower_children.append(&mut lower_children);
+                self.get_mut_unsafe(upper_id).set_children(new_lower_children);
+            } else {
+                // indirect child
+
+                //take care of these nodes' children's parent values
+                let first_children = self.get_unsafe(first_id).children().clone();
+                let second_children = self.get_unsafe(second_id).children().clone();
+
+                for child in first_children.iter() {
+                    self.get_mut_unsafe(child).set_parent(Some(second_id.clone()));
+                }
+                for child in second_children.iter() {
+                    self.get_mut_unsafe(child).set_parent(Some(first_id.clone()));
+                }
+
+                //swap children of these nodes
+                self.get_mut_unsafe(first_id).set_children(second_children);
+                self.get_mut_unsafe(second_id).set_children(first_children);
+
+                //add lower to upper
+                self.set_as_parent_and_child(upper_id, lower_id);
+            }
+
+        } else {
+            //just across
+
+            //take care of these nodes' children's parent values
+            let first_children = self.get_unsafe(first_id).children().clone();
+            let second_children = self.get_unsafe(second_id).children().clone();
+
+            for child in first_children.iter() {
+                self.get_mut_unsafe(child).set_parent(Some(second_id.clone()));
+            }
+            for child in second_children.iter() {
+                self.get_mut_unsafe(child).set_parent(Some(first_id.clone()));
+            }
+
+            //swap children of these nodes
+            self.get_mut_unsafe(first_id).set_children(second_children);
+            self.get_mut_unsafe(second_id).set_children(first_children);
+        }
+
         Ok(())
     }
 
@@ -976,7 +1052,7 @@ impl<T> Tree<T> {
     }
 
     fn detach_from_parent(&mut self, parent_id: &NodeId, node_id: &NodeId) {
-        self.get_mut_unsafe(&parent_id)
+        self.get_mut_unsafe(parent_id)
             .children_mut()
             .retain(|child_id| child_id != node_id);
     }
