@@ -799,8 +799,106 @@ impl<T> Tree<T> {
     fn swap_nodes_leave_children(&mut self, first_id: &NodeId, second_id: &NodeId)
         -> Result<(), NodeIdError>
     {
-//        self.set_parent_of_children(first_id, Some(second_id.clone()));
-//        self.set_parent_of_children(second_id, Some(first_id.clone()));
+        //take care of these nodes' children's parent values
+        self.set_parent_of_children(first_id, Some(second_id.clone()));
+        self.set_parent_of_children(second_id, Some(first_id.clone()));
+
+        //swap children of these nodes
+        let first_children = self.get_unsafe(first_id).children().clone();
+        let second_children = self.get_unsafe(second_id).children().clone();
+        self.get_mut_unsafe(first_id).set_children(second_children);
+        self.get_mut_unsafe(second_id).set_children(first_children);
+
+        let first_parent = self.get_unsafe(first_id).parent().cloned();
+        let second_parent = self.get_unsafe(second_id).parent().cloned();
+
+        //todo: some of this could probably be abstracted out into a method or two
+        match (first_parent, second_parent) {
+            (Some(ref first_parent_id), Some(ref second_parent_id)) => {
+                let first_index = self.get_unsafe(first_parent_id)
+                    .children()
+                    .iter()
+                    .position(|id| id == first_id)
+                    .unwrap();
+                let second_index = self.get_unsafe(second_parent_id)
+                    .children()
+                    .iter()
+                    .position(|id| id == second_id)
+                    .unwrap();
+
+                unsafe {
+                    let temp = self.get_mut_unsafe(first_parent_id)
+                        .children_mut()
+                        .get_unchecked_mut(first_index);
+                    *temp = second_id.clone();
+                }
+                unsafe {
+                    let temp = self.get_mut_unsafe(second_parent_id)
+                        .children_mut()
+                        .get_unchecked_mut(second_index);
+                    *temp = first_id.clone();
+                }
+
+                self.get_mut_unsafe(first_id).set_parent(Some(second_parent_id.clone()));
+                self.get_mut_unsafe(second_id).set_parent(Some(first_parent_id.clone()));
+            },
+            (Some(ref first_parent_id), None) => {
+                let first_index = self.get_unsafe(first_parent_id)
+                    .children()
+                    .iter()
+                    .position(|id| id == first_id)
+                    .unwrap();
+
+                unsafe {
+                    let temp = self.get_mut_unsafe(first_parent_id)
+                        .children_mut()
+                        .get_unchecked_mut(first_index);
+                    *temp = second_id.clone();
+                }
+
+                self.get_mut_unsafe(first_id).set_parent(None);
+                self.get_mut_unsafe(second_id).set_parent(Some(first_parent_id.clone()));
+
+                if let Some(root_id) = self.root_node_id().cloned() {
+                    if root_id == second_id.clone() {
+                        self.root = Some(first_id.clone());
+                    }
+                }
+            },
+            (None, Some(ref second_parent_id)) => {
+                let second_index = self.get_unsafe(second_parent_id)
+                    .children()
+                    .iter()
+                    .position(|id| id == second_id)
+                    .unwrap();
+
+                unsafe {
+                    let temp = self.get_mut_unsafe(second_parent_id)
+                        .children_mut()
+                        .get_unchecked_mut(second_index);
+                    *temp = first_id.clone();
+                }
+
+                self.get_mut_unsafe(first_id).set_parent(Some(second_parent_id.clone()));
+                self.get_mut_unsafe(second_id).set_parent(None);
+
+                if let Some(root_id) = self.root_node_id().cloned() {
+                    if root_id == first_id.clone() {
+                        self.root = Some(second_id.clone());
+                    }
+                }
+            },
+            (None, None) => {
+                if let Some(root_id) = self.root_node_id().cloned() {
+
+                    if root_id == first_id.clone() {
+                        self.root = Some(second_id.clone());
+                    } else if root_id == second_id.clone() {
+                        self.root = Some(first_id.clone());
+                    }
+                }
+            }
+        }
 
         Ok(())
     }
@@ -1486,6 +1584,8 @@ mod tree_tests {
     fn test_swap_nodes_leave_children() {
         use InsertBehavior::*;
         use SwapBehavior::*;
+        use MoveBehavior::*;
+        use RemoveBehavior::*;
 
         // test across swap
         // from:
@@ -1631,6 +1731,65 @@ mod tree_tests {
 
             assert!(tree.get(&node_2_id).unwrap().children().contains(&root_id));
             assert_eq!(tree.get(&root_id).unwrap().children().len(), 0);
+        }
+
+        // test orphaned swap (no root)
+        // from:
+        //      1   2
+        //      |   |
+        //      3   4
+        // to:
+        //      2   1
+        //      |   |
+        //      3   4
+        {
+            let mut tree = Tree::new();
+            let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+            let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
+            let node_4_id = tree.insert(Node::new(4), UnderNode(&node_2_id)).unwrap();
+            tree.remove_node(root_id, OrphanChildren);
+
+            tree.swap_nodes(&node_1_id, &node_2_id, LeaveChildren).unwrap();
+
+            assert_eq!(tree.root_node_id(), None);
+
+            assert_eq!(tree.get(&node_3_id).unwrap().parent(), Some(&node_2_id));
+            assert_eq!(tree.get(&node_4_id).unwrap().parent(), Some(&node_1_id));
+
+            assert!(tree.get(&node_2_id).unwrap().children().contains(&node_3_id));
+            assert!(tree.get(&node_1_id).unwrap().children().contains(&node_4_id));
+        }
+
+        // test orphaned swap (1 is root)
+        // from:
+        //      1   2
+        //      |   |
+        //      3   4
+        // to:
+        //      2   1
+        //      |   |
+        //      3   4
+        {
+            let mut tree = Tree::new();
+            let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+            let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
+            let node_4_id = tree.insert(Node::new(4), UnderNode(&node_2_id)).unwrap();
+            tree.remove_node(root_id, OrphanChildren);
+            tree.move_node(&node_1_id, ToRoot);
+
+            tree.swap_nodes(&node_1_id, &node_2_id, LeaveChildren).unwrap();
+
+            assert_eq!(tree.root_node_id(), Some(&node_2_id));
+
+            assert_eq!(tree.get(&node_3_id).unwrap().parent(), Some(&node_2_id));
+            assert_eq!(tree.get(&node_4_id).unwrap().parent(), Some(&node_1_id));
+
+            assert!(tree.get(&node_2_id).unwrap().children().contains(&node_3_id));
+            assert!(tree.get(&node_1_id).unwrap().children().contains(&node_4_id));
         }
     }
 
