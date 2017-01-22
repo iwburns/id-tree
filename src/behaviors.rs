@@ -227,7 +227,30 @@ pub enum SwapBehavior {
     ///
     /// Please Note: Because this behavior alters the relationship between the `Node`s being
     /// swapped and their children, any calls to `children()` that have been cloned will no longer
-    /// point to the children of the `Node` that you think they do.
+    /// point to the children of the `Node` that you might think they do.
+    ///
+    /// ```
+    /// use id_tree::*;
+    /// use id_tree::InsertBehavior::*;
+    /// use id_tree::SwapBehavior::*;
+    ///
+    /// let root_node = Node::new(1);
+    /// let first_child_node = Node::new(2);
+    /// let second_child_node = Node::new(3);
+    /// let grandchild_node = Node::new(4);
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.insert(root_node, AsRoot).unwrap();
+    ///
+    /// let first_child_id = tree.insert(first_child_node, UnderNode(&root_id)).unwrap();
+    /// let second_child_id = tree.insert(second_child_node, UnderNode(&root_id)).unwrap();
+    /// let grandchild_id = tree.insert(grandchild_node, UnderNode(&second_child_id)).unwrap();
+    ///
+    /// tree.swap_nodes(&first_child_id, &second_child_id, LeaveChildren).unwrap();
+    ///
+    /// assert!(tree.get(&first_child_id).unwrap().children().contains(&grandchild_id));
+    /// assert_eq!(tree.get(&second_child_id).unwrap().children().len(), 0);
+    /// ```
     ///
     LeaveChildren,
 
@@ -243,6 +266,31 @@ pub enum SwapBehavior {
     /// Please Note: Because this behavior alters the relationship between the `Node`s being
     /// swapped and their children, any calls to `children()` that have been cloned will no longer
     /// point to the children of the `Node` that you think they do.
+    ///
+    /// ```
+    /// use id_tree::*;
+    /// use id_tree::InsertBehavior::*;
+    /// use id_tree::SwapBehavior::*;
+    ///
+    /// let root_node = Node::new(1);
+    /// let first_child_node = Node::new(2);
+    /// let second_child_node = Node::new(3);
+    /// let grandchild_node = Node::new(4);
+    /// let grandchild_node_2 = Node::new(5);
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.insert(root_node, AsRoot).unwrap();
+    ///
+    /// let first_child_id = tree.insert(first_child_node, UnderNode(&root_id)).unwrap();
+    /// let second_child_id = tree.insert(second_child_node, UnderNode(&root_id)).unwrap();
+    /// let grandchild_id = tree.insert(grandchild_node, UnderNode(&second_child_id)).unwrap();
+    /// let grandchild_id_2 = tree.insert(grandchild_node_2, UnderNode(&first_child_id)).unwrap();
+    ///
+    /// tree.swap_nodes(&first_child_id, &second_child_id, ChildrenOnly).unwrap();
+    ///
+    /// assert!(tree.get(&first_child_id).unwrap().children().contains(&grandchild_id));
+    /// assert!(tree.get(&second_child_id).unwrap().children().contains(&grandchild_id_2));
+    /// ```
     ///
     ChildrenOnly,
 }

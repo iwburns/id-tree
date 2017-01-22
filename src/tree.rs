@@ -913,65 +913,48 @@ impl<T> Tree<T> {
             .or(self.find_subtree_root_between_ids(second_id, first_id)
                 .map(|_| (second_id, first_id)));
 
+        // todo: lots of repetition in here
+
+        let first_children = self.get_unsafe(first_id).children().clone();
+        let second_children = self.get_unsafe(second_id).children().clone();
+
         if let Some((lower_id, upper_id)) = lower_upper_test {
 
-            if upper_id == self.get_unsafe(lower_id).parent().unwrap() {
-                // direct child
+            let lower_parent = self.get_unsafe(lower_id).parent().cloned().unwrap();
 
-                //take care of these nodes' children's parent values
-                let upper_children = self.get_unsafe(upper_id).children().clone();
-                let lower_children = self.get_unsafe(lower_id).children().clone();
-
-                for child in upper_children.iter() {
-                    if child != lower_id {
-                        self.get_mut_unsafe(child).set_parent(Some(lower_id.clone()));
-                    }
-                }
-                for child in lower_children.iter() {
-                    self.get_mut_unsafe(child).set_parent(Some(upper_id.clone()));
-                }
-
-                //take out the lower_id and set as the lower's children
-                let mut upper_children = upper_children;
-                upper_children.retain(|id| id != lower_id);
-                let upper_children = upper_children;
-                self.get_mut_unsafe(lower_id).set_children(upper_children);
-
-                //make lower the first child of upper and add all of lower's children to upper
-                let mut new_lower_children = Vec::with_capacity(lower_children.len() + 1);
-                new_lower_children.push(lower_id.clone());
-                let mut lower_children = lower_children;
-                new_lower_children.append(&mut lower_children);
-                self.get_mut_unsafe(upper_id).set_children(new_lower_children);
+            let mut upper_children;
+            let lower_children;
+            if upper_id == first_id {
+                upper_children = first_children;
+                lower_children = second_children;
             } else {
-                // indirect child
-
-                //take care of these nodes' children's parent values
-                let first_children = self.get_unsafe(first_id).children().clone();
-                let second_children = self.get_unsafe(second_id).children().clone();
-
-                for child in first_children.iter() {
-                    self.get_mut_unsafe(child).set_parent(Some(second_id.clone()));
-                }
-                for child in second_children.iter() {
-                    self.get_mut_unsafe(child).set_parent(Some(first_id.clone()));
-                }
-
-                //swap children of these nodes
-                self.get_mut_unsafe(first_id).set_children(second_children);
-                self.get_mut_unsafe(second_id).set_children(first_children);
-
-                //add lower to upper
-                self.set_as_parent_and_child(upper_id, lower_id);
+                upper_children = second_children;
+                lower_children = first_children;
             }
+
+            for child in upper_children.iter() {
+                self.get_mut_unsafe(child).set_parent(Some(lower_id.clone()));
+            }
+            for child in lower_children.iter() {
+                self.get_mut_unsafe(child).set_parent(Some(upper_id.clone()));
+            }
+
+            if upper_id == &lower_parent {
+                // direct child
+                upper_children.retain(|id| id != lower_id);
+            }
+
+            //swap children of these nodes
+            self.get_mut_unsafe(upper_id).set_children(lower_children);
+            self.get_mut_unsafe(lower_id).set_children(upper_children);
+
+            //add lower to upper
+            self.set_as_parent_and_child(upper_id, lower_id);
 
         } else {
             //just across
 
             //take care of these nodes' children's parent values
-            let first_children = self.get_unsafe(first_id).children().clone();
-            let second_children = self.get_unsafe(second_id).children().clone();
-
             for child in first_children.iter() {
                 self.get_mut_unsafe(child).set_parent(Some(second_id.clone()));
             }
@@ -1927,11 +1910,11 @@ mod tree_tests {
         //       / \
         //      1   2
         //     / \   \
-        //    3   6   5
-        //    |
-        //    4
-        //    |
-        //    7
+        //    6   3   5
+        //        |
+        //        4
+        //        |
+        //        7
         {
             let mut tree = Tree::new();
             let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
@@ -1955,8 +1938,8 @@ mod tree_tests {
             assert_eq!(tree.get(&node_6_id).unwrap().parent(), Some(&node_1_id));
 
             let node_1_children = tree.get(&node_1_id).unwrap().children();
-            assert_eq!(node_1_children[0], node_3_id);
-            assert_eq!(node_1_children[1], node_6_id);
+            assert_eq!(node_1_children[0], node_6_id);
+            assert_eq!(node_1_children[1], node_3_id);
             assert!(tree.get(&node_3_id).unwrap().children().contains(&node_4_id));
         }
 
@@ -2021,11 +2004,11 @@ mod tree_tests {
         // to:
         //        0
         //       /|\
-        //      1 3 4
-        //     /  | |
-        //    2   6 7
-        //    |
-        //    5
+        //      3 4 1
+        //      | | |
+        //      6 7 2
+        //          |
+        //          5
         {
             let mut tree = Tree::new();
             let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
@@ -2040,9 +2023,9 @@ mod tree_tests {
             tree.swap_nodes(&root_id, &node_1_id, ChildrenOnly).unwrap();
 
             let root_children = tree.get(&root_id).unwrap().children();
-            assert_eq!(root_children[0], node_1_id);
-            assert_eq!(root_children[1], node_3_id);
-            assert_eq!(root_children[2], node_4_id);
+            assert_eq!(root_children[0], node_3_id);
+            assert_eq!(root_children[1], node_4_id);
+            assert_eq!(root_children[2], node_1_id);
 
             assert_eq!(tree.get(&node_1_id).unwrap().parent(), Some(&root_id));
             assert_eq!(tree.get(&node_3_id).unwrap().parent(), Some(&root_id));
