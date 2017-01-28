@@ -66,14 +66,6 @@
 //! of the `NodeId` documentation for more info on what these issues are and how this library
 //! attempts to solve them.
 //!
-//! -----------------------------------------------------------------------------------------------
-//!
-//! _**Disclaimer:** This library should be considered a Work-in-Progress until it reaches v1.0.0.
-//! Breaking changes will be avoided at all costs, but until v1.0.0 hits, they are a definite
-//! possibility. With that in mind, it would be wise to find a version number that works for you
-//! (preferably whatever the current version is when you read this) and stick with it until you are
-//! ready to upgrade to the next version._
-//!
 
 extern crate snowflake;
 use self::snowflake::ProcessUniqueId;
