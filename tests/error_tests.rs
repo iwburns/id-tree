@@ -7,6 +7,7 @@ use id_tree::Tree;
 use id_tree::RemoveBehavior;
 use id_tree::MoveBehavior;
 use id_tree::InsertBehavior;
+use id_tree::SwapBehavior;
 
 #[test]
 fn test_old_node_id() {
@@ -228,7 +229,7 @@ fn test_swap_sub_trees_of_different_trees() {
     let root_node_id_b = tree_b.insert(root_node_b, InsertBehavior::AsRoot).unwrap();
 
     // note use of invalid child
-    let result = tree_a.swap_sub_tree(&root_node_id_b, &root_node_id_a);
+    let result = tree_a.swap_nodes(&root_node_id_b, &root_node_id_a, SwapBehavior::TakeChildren);
     assert!(result.is_err());
 
     let error = result.err().unwrap();

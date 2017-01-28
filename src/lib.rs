@@ -86,6 +86,7 @@ mod tree;
 pub use behaviors::RemoveBehavior;
 pub use behaviors::MoveBehavior;
 pub use behaviors::InsertBehavior;
+pub use behaviors::SwapBehavior;
 pub use error::NodeIdError;
 pub use node::NodeBuilder;
 pub use node::Node;
