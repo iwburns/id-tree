@@ -3,11 +3,16 @@ name = "id_tree"
 version = "0.2.13"
 authors = ["Ian Burns <iwburns8@gmail.com>"]
 description = "A library for creating and modifying Tree structures."
-keywords = ["id_tree", "id-tree", "tree"]
-license = "MIT"
-readme = "README.md"
-repository = "https://github.com/iwburns/id-tree"
 documentation = "https://docs.rs/id_tree"
+repository = "https://github.com/iwburns/id-tree"
+readme = "README.md"
+keywords = ["id_tree", "id-tree", "tree"]
+categories = ["data-structures"]
+license = "MIT"
+
+[badges]
+travis-ci = { repository = "https://github.com/iwburns/id-tree", branch = "master" }
+appveyor = { repository = "https://github.com/iwburns/id-tree", branch = "master", service = "github" }
 
 [dependencies]
 snowflake = "1.2.0"

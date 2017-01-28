@@ -1,12 +1,14 @@
 use std::cmp::Ordering;
 
+use super::behaviors::RemoveBehavior;
+use super::behaviors::MoveBehavior;
+use super::behaviors::InsertBehavior;
+use super::behaviors::SwapBehavior;
 use super::snowflake::ProcessUniqueId;
 use super::Node;
 use super::NodeId;
 use super::MutableNode;
 use super::NodeIdError;
-
-// todo: change Tree::get() and Tree::get_mut() to return Result instead of Option
 
 ///
 /// A `Tree` builder that provides more control over how a `Tree` is created.
@@ -181,22 +183,46 @@ impl<T> Tree<T> {
         TreeBuilder::new().build()
     }
 
+    /// Inserts a new `Node` into the `Tree`.  The `InsertBehavior` provided will determine where
+    /// the `Node` is inserted.
+    ///
+    /// Returns a `Result` containing the `NodeId` of the `Node` that was inserted or a
+    /// `NodeIdError` if one occurred.
+    ///
+    /// ```
+    /// use id_tree::*;
+    ///
+    /// let root_node = Node::new(1);
+    /// let child_node = Node::new(2);
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.insert(root_node, InsertBehavior::AsRoot).unwrap();
+    ///
+    /// tree.insert(child_node, InsertBehavior::UnderNode(&root_id));
+    /// ```
+    ///
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
+    pub fn insert(&mut self, node: Node<T>, behavior: InsertBehavior)
+        -> Result<NodeId, NodeIdError>
+    {
+        match behavior {
+            InsertBehavior::UnderNode(parent_id) => {
+                let (is_valid, error) = self.is_valid_node_id(parent_id);
+                if !is_valid {
+                    return Err(error.expect("Tree::insert: Missing an error value but found an \
+                        invalid NodeId."));
+                }
+                self.insert_with_parent(node, parent_id)
+            }
+            InsertBehavior::AsRoot => Ok(self.set_root(node)),
+        }
+    }
+
     ///
     /// Sets the root of the `Tree`.
     ///
-    /// If there is already a root `Node` present in the tree, that `Node` is set as the first child
-    /// of the new root.
-    ///
-    /// ```
-    /// use id_tree::Tree;
-    /// use id_tree::Node;
-    ///
-    /// let mut tree: Tree<i32> = Tree::new();
-    ///
-    /// tree.set_root(Node::new(5));
-    /// ```
-    ///
-    pub fn set_root(&mut self, new_root: Node<T>) -> NodeId {
+    fn set_root(&mut self, new_root: Node<T>) -> NodeId {
         let new_root_id = self.insert_new_node(new_root);
 
         if let Some(current_root_node_id) = self.root.clone() {
@@ -209,101 +235,66 @@ impl<T> Tree<T> {
 
     /// Add a new `Node` to the tree as the child of a `Node` specified by the given `NodeId`.
     ///
-    /// Returns a `Result` containing the `NodeId` of the child that was added or a `NodeIdError` if
-    /// one occurred.
-    ///
-    /// Note: Adds the new Node to the end of its children.
-    ///
-    /// ```
-    /// use id_tree::Tree;
-    /// use id_tree::Node;
-    ///
-    /// let root_node = Node::new(1);
-    /// let child_node = Node::new(2);
-    ///
-    /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.set_root(root_node);
-    ///
-    /// tree.insert_with_parent(child_node, &root_id);
-    /// ```
-    ///
     #[cfg_attr(rustfmt, rustfmt_skip)]
     // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
-    pub fn insert_with_parent(&mut self, child: Node<T>, parent_id: &NodeId)
+    fn insert_with_parent(&mut self, child: Node<T>, parent_id: &NodeId)
         -> Result<NodeId, NodeIdError>
     {
-        let (is_valid, error) = self.is_valid_node_id(parent_id);
-        if !is_valid {
-            return Err(error.expect(
-                "Tree::insert_with_parent: Missing an error value but found an invalid NodeId."));
-        }
-
         let new_child_id = self.insert_new_node(child);
         self.set_as_parent_and_child(parent_id, &new_child_id);
-
         Ok(new_child_id)
     }
 
     ///
     /// Get an immutable reference to a `Node`.
     ///
-    /// If the `NodeId` provided is invalid (whether the
-    /// `Node` in question has already been removed, or the `NodeId` belongs to a different `Tree`),
-    /// this function returns a `None` value.
+    /// Returns a `Result` containing the immutable reference or a `NodeIdError` if one occurred.
     ///
     /// ```
-    /// use id_tree::Tree;
-    /// use id_tree::Node;
+    /// use id_tree::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.set_root(Node::new(5));
+    /// let root_id = tree.insert(Node::new(5), InsertBehavior::AsRoot).unwrap();
     ///
     /// let root_node: &Node<i32> = tree.get(&root_id).unwrap();
     /// ```
     ///
-    pub fn get(&self, node_id: &NodeId) -> Option<&Node<T>> {
-        let (is_valid, _) = self.is_valid_node_id(node_id);
-        if is_valid {
-            return Some(self.get_unsafe(node_id));
+    pub fn get(&self, node_id: &NodeId) -> Result<&Node<T>, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            Err(error.expect("Tree::get: Missing an error value on finding an invalid NodeId."))
+        } else {
+            Ok(self.get_unsafe(node_id))
         }
-        None
     }
 
     ///
     /// Get a mutable reference to a `Node`.
     ///
-    /// If the `NodeId` provided is invalid (whether the
-    /// `Node` in question has already been removed, or the `NodeId` belongs to a different `Tree`),
-    /// this function returns a `None` value.
+    /// Returns a `Result` containing the mutable reference or a `NodeIdError` if one occurred.
     ///
     /// ```
-    /// use id_tree::Tree;
-    /// use id_tree::Node;
+    /// use id_tree::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.set_root(Node::new(5));
+    /// let root_id = tree.insert(Node::new(5), InsertBehavior::AsRoot).unwrap();
     ///
     /// let root_node: &mut Node<i32> = tree.get_mut(&root_id).unwrap();
     /// ```
     ///
-    pub fn get_mut(&mut self, node_id: &NodeId) -> Option<&mut Node<T>> {
-        let (is_valid, _) = self.is_valid_node_id(node_id);
-        if is_valid {
-            return Some(self.get_mut_unsafe(node_id));
+    pub fn get_mut(&mut self, node_id: &NodeId) -> Result<&mut Node<T>, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            Err(error.expect("Tree::get_mut: Missing an error value on finding an invalid NodeId."))
+        } else {
+            Ok(self.get_mut_unsafe(node_id))
         }
-        None
     }
 
-    ///
-    /// Remove a `Node` from the `Tree` and move its children up one "level" in the `Tree` if
-    /// possible.
+    /// Remove a `Node` from the `Tree`.  The `RemoveBehavior` provided determines what happens to
+    /// the removed `Node`'s children.
     ///
     /// Returns a `Result` containing the removed `Node` or a `NodeIdError` if one occurred.
-    ///
-    /// In other words, this `Node`'s children will point to its parent as their parent instead of
-    /// this `Node`.  In addition, this `Node`'s parent will have this `Node`'s children added as
-    /// its own children.  If this `Node` has no parent, then calling this function is the
-    /// equivalent of calling `remove_node_orphan_children`.
     ///
     /// **NOTE:** The `Node` that is returned will have its parent and child values cleared to avoid
     /// providing the caller with extra copies of `NodeId`s should the corresponding `Node`s be
@@ -316,29 +307,49 @@ impl<T> Tree<T> {
     /// a `NodeId`.
     ///
     /// ```
-    /// use id_tree::Tree;
-    /// use id_tree::Node;
-    ///
-    /// let root_node = Node::new(1);
-    /// let child_node = Node::new(2);
-    /// let grandchild_node = Node::new(3);
+    /// use id_tree::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.set_root(root_node);
+    /// let root_id = tree.insert(Node::new(0), InsertBehavior::AsRoot).unwrap();
     ///
-    /// let child_id = tree.insert_with_parent(child_node, &root_id).ok().unwrap();
-    /// tree.insert_with_parent(grandchild_node, &root_id);
+    /// let child_id = tree.insert(Node::new(1), InsertBehavior::UnderNode(&root_id)).unwrap();
+    /// let grandchild_id = tree.insert(Node::new(2), InsertBehavior::UnderNode(&child_id))
+    ///     .unwrap();
     ///
-    /// let root_node = tree.remove_node_lift_children(child_id);
+    /// let child = tree.remove_node(child_id, RemoveBehavior::DropChildren).unwrap();
+    ///
+    /// # assert!(tree.get(&grandchild_id).is_err());
+    /// # assert_eq!(tree.get(&root_id).unwrap().children().len(), 0);
     /// ```
     ///
-    pub fn remove_node_lift_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
+    pub fn remove_node(&mut self, node_id: NodeId, behavior: RemoveBehavior)
+        -> Result<Node<T>, NodeIdError>
+    {
         let (is_valid, error) = self.is_valid_node_id(&node_id);
         if !is_valid {
-            return Err(error.expect("Tree::remove_node_lift_children: Missing an error value but \
-                found an invalid NodeId."));
+            return Err(error.expect("Tree::remove_node: Missing an error value but found an \
+                invalid NodeId."));
         }
 
+        match behavior {
+            RemoveBehavior::DropChildren => self.remove_node_drop_children(node_id),
+            RemoveBehavior::LiftChildren => self.remove_node_lift_children(node_id),
+            RemoveBehavior::OrphanChildren => self.remove_node_orphan_children(node_id),
+        }
+    }
+
+    ///
+    /// Remove a `Node` from the `Tree` and move its children up one "level" in the `Tree` if
+    /// possible.
+    ///
+    /// In other words, this `Node`'s children will point to its parent as their parent instead of
+    /// this `Node`.  In addition, this `Node`'s parent will have this `Node`'s children added as
+    /// its own children.  If this `Node` has no parent, then calling this function is the
+    /// equivalent of calling `remove_node_orphan_children`.
+    ///
+    fn remove_node_lift_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
         if let Some(parent_id) = self.get_unsafe(&node_id).parent().cloned() {
             // attach children to parent
             for child_id in self.get_unsafe(&node_id).children().clone() {
@@ -348,160 +359,83 @@ impl<T> Tree<T> {
             self.clear_parent_of_children(&node_id);
         }
 
-        Ok(self.remove_node(node_id))
+
+        Ok(self.remove_node_internal(node_id))
     }
 
     ///
     /// Remove a `Node` from the `Tree` and leave all of its children in the `Tree`.
     ///
-    /// Returns a `Result` containing the removed `Node` or a `NodeIdError` if one occurred.
-    ///
-    /// **NOTE:** The `Node` that is returned will have its parent and child values cleared to avoid
-    /// providing the caller with extra copies of `NodeId`s should the corresponding `Node`s be
-    /// removed from the `Tree` at a later time.
-    ///
-    /// If the caller needs a copy of the parent or child `NodeId`s, they must `Clone` them before
-    /// this `Node` is removed from the `Tree`.  Please see the
-    /// [Potential `NodeId` Issues](struct.NodeId.html#potential-nodeid-issues) section
-    /// of the `NodeId` documentation for more information on the implications of calling `Clone` on
-    /// a `NodeId`.
-    ///
-    /// ```
-    /// use id_tree::Tree;
-    /// use id_tree::Node;
-    ///
-    /// let root_node = Node::new(1);
-    /// let child_node = Node::new(2);
-    /// let grandchild_node = Node::new(3);
-    ///
-    /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.set_root(root_node);
-    ///
-    /// let child_id = tree.insert_with_parent(child_node, &root_id).ok().unwrap();
-    /// tree.insert_with_parent(grandchild_node, &root_id);
-    ///
-    /// let root_node = tree.remove_node_orphan_children(child_id);
-    /// ```
-    ///
-    pub fn remove_node_orphan_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(&node_id);
-        if !is_valid {
-            return Err(error.expect("Tree::remove_node_orphan_children: Missing an error value but \
-                found an invalid NodeId."));
-        }
-
+    fn remove_node_orphan_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
         self.clear_parent_of_children(&node_id);
-        Ok(self.remove_node(node_id))
+        Ok(self.remove_node_internal(node_id))
     }
 
     ///
     /// Remove a `Node` from the `Tree` including all its children recursively.
     ///
-    /// Returns a `Result` containing the removed `Node` or a `NodeIdError` if one occurred.
-    ///
-    /// **NOTE:** The `Node` that is returned will have its parent value cleared to avoid
-    /// providing the caller with extra copies of `NodeId`s should the corresponding `Node`s be
-    /// removed from the `Tree` at a later time.
-    ///
-    /// **NOTE:** Please keep in mind: Children of this `NodeId` *are removed during this method
-    /// call*, so `NodeId`s that previously pointed to them will no longer be valid after calling
-    /// this method. This means even without using `Clone` you might end up with copies of invalid
-    /// Id's. Use with caution.
-    ///
-    /// If the caller needs a copy of the parent `NodeId`s, they must `Clone` them before
-    /// this `Node` is removed from the `Tree`.  Please see the
-    /// [Potential `NodeId` Issues](struct.NodeId.html#potential-nodeid-issues) section
-    /// of the `NodeId` documentation for more information on the implications of calling `Clone` on
-    /// a `NodeId`.
+    fn remove_node_drop_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
+        let mut children = self.get_mut_unsafe(&node_id).take_children();
+        for child in children.drain(..) {
+            try!(self.remove_node_drop_children(child));
+        }
+        Ok(self.remove_node_internal(node_id))
+    }
+
+    /// Moves a `Node` in the `Tree` to a new location based upon the `MoveBehavior` provided.
     ///
     /// ```
-    /// use id_tree::Tree;
-    /// use id_tree::Node;
+    /// use id_tree::*;
     ///
     /// let root_node = Node::new(1);
     /// let child_node = Node::new(2);
     /// let grandchild_node = Node::new(3);
     ///
     /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.set_root(root_node);
+    /// let root_id = tree.insert(root_node, InsertBehavior::AsRoot).unwrap();
     ///
-    /// let child_id = tree.insert_with_parent(child_node, &root_id).ok().unwrap();
-    /// # let grandchild_id =
-    /// tree.insert_with_parent(grandchild_node, &child_id).unwrap();
+    /// let child_id = tree.insert(child_node,  InsertBehavior::UnderNode(&root_id)).unwrap();
+    /// let grandchild_id = tree.insert(grandchild_node, InsertBehavior::UnderNode(&child_id))
+    ///     .unwrap();
     ///
-    /// # let child_id_copy = child_id.clone();
-    /// let child_node = tree.remove_node_drop_children(child_id);
-    /// # assert!(tree.get(&root_id).is_some());
-    /// # assert!(!tree.get(&child_id_copy).is_some());
-    /// # assert!(!tree.get(&grandchild_id).is_some());
-    /// ```
+    /// tree.move_node(&grandchild_id, MoveBehavior::ToRoot).unwrap();
     ///
-    pub fn remove_node_drop_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(&node_id);
-        if !is_valid {
-            return Err(error.expect("Tree::remove_node_drop_children: Missing an error value but \
-                found an invalid NodeId."));
-        }
-
-        let mut children = self.get_mut_unsafe(&node_id).take_children();
-        for child in children.drain(..) {
-            try!(self.remove_node_drop_children(child));
-        }
-        Ok(self.remove_node(node_id))
-    }
-
-    /// Moves a `Node` inside a `Tree` to a new parent leaving all children in their place.
-    ///
-    /// If the new parent (let's call it `B`) is a descendant of the `Node` being moved (`A`), then
-    /// the direct child of `A` on the path from `A` to `B` will be shifted upwards to take the
-    /// place of its parent (`A`).  All other children of `A` will be left alone, meaning they will
-    /// travel with it down the `Tree`.
-    ///
-    /// Please note that during the "shift-up" part of the above scenario, the `Node` being shifted
-    /// up will always be added as the last child of its new parent.
-    ///
-    /// Returns an empty `Result` containing a `NodeIdError` if one occurred on either provided
-    /// `Id`.
-    ///
-    /// ```
-    /// use id_tree::Tree;
-    /// use id_tree::Node;
-    ///
-    /// let root_node = Node::new(1);
-    /// let first_child_node = Node::new(2);
-    /// let second_child_node = Node::new(3);
-    /// let grandchild_node = Node::new(4);
-    ///
-    /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.set_root(root_node);
-    ///
-    /// let first_child_id = tree.insert_with_parent(first_child_node,  &root_id).ok().unwrap();
-    /// let second_child_id = tree.insert_with_parent(second_child_node, &root_id).ok().unwrap();
-    /// let grandchild_id = tree.insert_with_parent(grandchild_node, &first_child_id).ok().unwrap();
-    ///
-    /// tree.move_node_to_parent(&grandchild_id, &second_child_id).unwrap();
-    ///
-    /// # assert!(!tree.get(&first_child_id).unwrap().children().contains(&grandchild_id));
-    /// # assert!(tree.get(&second_child_id).unwrap().children().contains(&grandchild_id));
+    /// assert_eq!(tree.root_node_id(), Some(&grandchild_id));
+    /// # assert!(tree.get(&grandchild_id).unwrap().children().contains(&root_id));
+    /// # assert!(!tree.get(&child_id).unwrap().children().contains(&grandchild_id));
     /// ```
     ///
     #[cfg_attr(rustfmt, rustfmt_skip)]
     // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
-    pub fn move_node_to_parent(&mut self, node_id: &NodeId, parent_id: &NodeId)
+    pub fn move_node(&mut self, node_id: &NodeId, behavior: MoveBehavior)
         -> Result<(), NodeIdError>
     {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
+        let (is_valid, error) = self.is_valid_node_id(&node_id);
         if !is_valid {
-            return Err(error.expect(
-                "Tree::move_node_to_parent: Missing an error value but found an invalid NodeId."));
+            return Err(error.expect("Tree::move_node: Missing an error value on finding an \
+                invalid NodeId."));
         }
 
-        let (is_valid, error) = self.is_valid_node_id(parent_id);
-        if !is_valid {
-            return Err(error.expect(
-                "Tree::move_node_to_parent: Missing an error value but found an invalid NodeId."));
+        match behavior {
+            MoveBehavior::ToRoot => self.move_node_to_root(node_id),
+            MoveBehavior::ToParent(parent_id) => {
+                let (is_valid, error) = self.is_valid_node_id(parent_id);
+                if !is_valid {
+                    return Err(error.expect("Tree::move_node: Missing an error value on finding \
+                        an invalid NodeId."));
+                }
+                self.move_node_to_parent(node_id, parent_id)
+            }
         }
+    }
 
+    /// Moves a `Node` inside a `Tree` to a new parent leaving all children in their place.
+    ///
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
+    fn move_node_to_parent(&mut self, node_id: &NodeId, parent_id: &NodeId)
+        -> Result<(), NodeIdError>
+    {
         if let Some(subtree_root_id) =
             self.find_subtree_root_between_ids(parent_id, node_id).cloned() {
             // node_id is above parent_id, this is a move "down" the tree.
@@ -556,40 +490,7 @@ impl<T> Tree<T> {
     ///
     /// Sets a `Node` inside a `Tree` as the new root `Node`, leaving all children in their place.
     ///
-    /// If a root is already set, it is attached to the new root.
-    /// This new child will always be added as the last child of its new parent.
-    ///
-    /// Returns an empty `Result` containing a `NodeIdError` if one occurred on either provided
-    /// `Id`.
-    ///
-    /// ```
-    /// use id_tree::Tree;
-    /// use id_tree::Node;
-    ///
-    /// let root_node = Node::new(1);
-    /// let child_node = Node::new(2);
-    /// let grandchild_node = Node::new(3);
-    ///
-    /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.set_root(root_node);
-    ///
-    /// let child_id  = tree.insert_with_parent(child_node,  &root_id).ok().unwrap();
-    /// let grandchild_id   = tree.insert_with_parent(grandchild_node, &child_id).ok().unwrap();
-    ///
-    /// tree.move_node_to_root(&grandchild_id).unwrap();
-    ///
-    /// # assert_eq!(tree.root_node_id(), Some(&grandchild_id));
-    /// # assert!(tree.get(&grandchild_id).unwrap().children().contains(&root_id));
-    /// # assert!(!tree.get(&child_id).unwrap().children().contains(&grandchild_id));
-    /// ```
-    ///
-    pub fn move_node_to_root(&mut self, node_id: &NodeId) -> Result<(), NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
-        if !is_valid {
-            return Err(error.expect(
-                "Tree::move_node_to_root: Missing an error value but found an invalid NodeId."));
-        }
-
+    fn move_node_to_root(&mut self, node_id: &NodeId) -> Result<(), NodeIdError> {
         let old_root = self.root.clone();
 
         if let Some(parent_id) = self.get_unsafe(node_id).parent().cloned() {
@@ -614,8 +515,7 @@ impl<T> Tree<T> {
     /// Returns an empty `Result` containing a `NodeIdError` if one occurred.
     ///
     /// ```
-    /// use id_tree::Tree;
-    /// use id_tree::Node;
+    /// use id_tree::*;
     ///
     /// let root_node = Node::new(100);
     /// let first_child = Node::new(1);
@@ -623,11 +523,11 @@ impl<T> Tree<T> {
     /// let third_child = Node::new(0);
     ///
     /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.set_root(root_node);
+    /// let root_id = tree.insert(root_node, InsertBehavior::AsRoot).unwrap();
     ///
-    /// tree.insert_with_parent(first_child, &root_id).unwrap();
-    /// tree.insert_with_parent(second_child, &root_id).unwrap();
-    /// tree.insert_with_parent(third_child, &root_id).unwrap();
+    /// tree.insert(first_child, InsertBehavior::UnderNode(&root_id)).unwrap();
+    /// tree.insert(second_child, InsertBehavior::UnderNode(&root_id)).unwrap();
+    /// tree.insert(third_child, InsertBehavior::UnderNode(&root_id)).unwrap();
     ///
     /// tree.sort_children_by(&root_id, |a, b| a.data().cmp(b.data()));
     ///
@@ -662,8 +562,7 @@ impl<T> Tree<T> {
     /// Returns an empty `Result` containing a `NodeIdError` if one occurred.
     ///
     /// ```
-    /// use id_tree::Tree;
-    /// use id_tree::Node;
+    /// use id_tree::*;
     ///
     /// let root_node = Node::new(100);
     /// let first_child = Node::new(1);
@@ -671,11 +570,11 @@ impl<T> Tree<T> {
     /// let third_child = Node::new(0);
     ///
     /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.set_root(root_node);
+    /// let root_id = tree.insert(root_node, InsertBehavior::AsRoot).unwrap();
     ///
-    /// tree.insert_with_parent(first_child, &root_id).unwrap();
-    /// tree.insert_with_parent(second_child, &root_id).unwrap();
-    /// tree.insert_with_parent(third_child, &root_id).unwrap();
+    /// tree.insert(first_child, InsertBehavior::UnderNode(&root_id)).unwrap();
+    /// tree.insert(second_child, InsertBehavior::UnderNode(&root_id)).unwrap();
+    /// tree.insert(third_child, InsertBehavior::UnderNode(&root_id)).unwrap();
     ///
     /// tree.sort_children_by_data(&root_id);
     ///
@@ -710,8 +609,7 @@ impl<T> Tree<T> {
     /// Returns an empty `Result` containing a `NodeIdError` if one occurred.
     ///
     /// ```
-    /// use id_tree::Tree;
-    /// use id_tree::Node;
+    /// use id_tree::*;
     ///
     /// let root_node = Node::new(100);
     /// let first_child = Node::new(1);
@@ -719,11 +617,11 @@ impl<T> Tree<T> {
     /// let third_child = Node::new(0);
     ///
     /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.set_root(root_node);
+    /// let root_id = tree.insert(root_node, InsertBehavior::AsRoot).unwrap();
     ///
-    /// tree.insert_with_parent(first_child, &root_id).unwrap();
-    /// tree.insert_with_parent(second_child, &root_id).unwrap();
-    /// tree.insert_with_parent(third_child, &root_id).unwrap();
+    /// tree.insert(first_child, InsertBehavior::UnderNode(&root_id)).unwrap();
+    /// tree.insert(second_child, InsertBehavior::UnderNode(&root_id)).unwrap();
+    /// tree.insert(third_child, InsertBehavior::UnderNode(&root_id)).unwrap();
     ///
     /// tree.sort_children_by_key(&root_id, |x| x.data().clone());
     ///
@@ -749,12 +647,8 @@ impl<T> Tree<T> {
         Result::Ok(())
     }
 
-    /// Swaps two `Node`s including their children given their `NodeId`s.
-    ///
-    /// If one `Node` is a descendant of the other getting swapped, the former *upper* `Node` is
-    /// attached as the last child of the former *lower* `Node` after the swap. (The *lower* will
-    /// take the *uppers* original position as usual.) The subtree of the former *upper* node is not
-    /// touched except that the *lower* `Node` is moved including all its children.
+
+    /// Swap `Node`s in the `Tree` based upon the `SwapBehavior` provided.
     ///
     /// Both `NodeId`s are still valid after this process and are not swapped.
     ///
@@ -764,8 +658,9 @@ impl<T> Tree<T> {
     /// `NodeId`.
     ///
     /// ```
-    /// use id_tree::Tree;
-    /// use id_tree::Node;
+    /// use id_tree::*;
+    /// use id_tree::InsertBehavior::*;
+    /// use id_tree::SwapBehavior::*;
     ///
     /// let root_node = Node::new(1);
     /// let first_child_node = Node::new(2);
@@ -773,13 +668,13 @@ impl<T> Tree<T> {
     /// let grandchild_node = Node::new(4);
     ///
     /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.set_root(root_node);
+    /// let root_id = tree.insert(root_node, AsRoot).unwrap();
     ///
-    /// let first_child_id  = tree.insert_with_parent(first_child_node,  &root_id).ok().unwrap();
-    /// let second_child_id = tree.insert_with_parent(second_child_node, &root_id).ok().unwrap();
-    /// let grandchild_id   = tree.insert_with_parent(grandchild_node, &second_child_id).unwrap();
+    /// let first_child_id = tree.insert(first_child_node, UnderNode(&root_id)).unwrap();
+    /// let second_child_id = tree.insert(second_child_node, UnderNode(&root_id)).unwrap();
+    /// let grandchild_id = tree.insert(grandchild_node, UnderNode(&second_child_id)).unwrap();
     ///
-    /// tree.swap_sub_tree(&first_child_id, &grandchild_id).unwrap();
+    /// tree.swap_nodes(&first_child_id, &grandchild_id, TakeChildren).unwrap();
     ///
     /// assert!(tree.get(&second_child_id).unwrap().children().contains(&first_child_id));
     /// assert!(tree.get(&root_id).unwrap().children().contains(&grandchild_id));
@@ -787,21 +682,35 @@ impl<T> Tree<T> {
     ///
     #[cfg_attr(rustfmt, rustfmt_skip)]
     // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
-    pub fn swap_sub_tree(&mut self, first_id: &NodeId, second_id: &NodeId)
+    pub fn swap_nodes(&mut self, first_id: &NodeId, second_id: &NodeId, behavior: SwapBehavior)
         -> Result<(), NodeIdError>
     {
         let (is_valid, error) = self.is_valid_node_id(first_id);
         if !is_valid {
             return Err(error.expect(
-                "Tree::swap_sub_tree: Missing an error value but found an invalid NodeId."));
+                "Tree::swap_nodes: Missing an error value but found an invalid NodeId."));
         }
 
         let (is_valid, error) = self.is_valid_node_id(second_id);
         if !is_valid {
             return Err(error.expect(
-                "Tree::swap_sub_tree: Missing an error value but found an invalid NodeId."));
+                "Tree::swap_nodes: Missing an error value but found an invalid NodeId."));
         }
 
+        match behavior {
+            SwapBehavior::TakeChildren => self.swap_nodes_take_children(first_id, second_id),
+            SwapBehavior::LeaveChildren => self.swap_nodes_leave_children(first_id, second_id),
+            SwapBehavior::ChildrenOnly => self.swap_nodes_children_only(first_id, second_id),
+        }
+    }
+
+    /// Swaps two `Node`s including their children given their `NodeId`s.
+    ///
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
+    fn swap_nodes_take_children(&mut self, first_id: &NodeId, second_id: &NodeId)
+        -> Result<(), NodeIdError>
+    {
         let lower_upper_test = self.find_subtree_root_between_ids(first_id, second_id)
             .map(|_| (first_id, second_id))
             .or(self.find_subtree_root_between_ids(second_id, first_id)
@@ -885,16 +794,191 @@ impl<T> Tree<T> {
         Ok(())
     }
 
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
+    fn swap_nodes_leave_children(&mut self, first_id: &NodeId, second_id: &NodeId)
+        -> Result<(), NodeIdError>
+    {
+        //take care of these nodes' children's parent values
+        self.set_parent_of_children(first_id, Some(second_id.clone()));
+        self.set_parent_of_children(second_id, Some(first_id.clone()));
+
+        //swap children of these nodes
+        let first_children = self.get_unsafe(first_id).children().clone();
+        let second_children = self.get_unsafe(second_id).children().clone();
+        self.get_mut_unsafe(first_id).set_children(second_children);
+        self.get_mut_unsafe(second_id).set_children(first_children);
+
+        let first_parent = self.get_unsafe(first_id).parent().cloned();
+        let second_parent = self.get_unsafe(second_id).parent().cloned();
+
+        //todo: some of this could probably be abstracted out into a method or two
+        match (first_parent, second_parent) {
+            (Some(ref first_parent_id), Some(ref second_parent_id)) => {
+                let first_index = self.get_unsafe(first_parent_id)
+                    .children()
+                    .iter()
+                    .position(|id| id == first_id)
+                    .unwrap();
+                let second_index = self.get_unsafe(second_parent_id)
+                    .children()
+                    .iter()
+                    .position(|id| id == second_id)
+                    .unwrap();
+
+                unsafe {
+                    let temp = self.get_mut_unsafe(first_parent_id)
+                        .children_mut()
+                        .get_unchecked_mut(first_index);
+                    *temp = second_id.clone();
+                }
+                unsafe {
+                    let temp = self.get_mut_unsafe(second_parent_id)
+                        .children_mut()
+                        .get_unchecked_mut(second_index);
+                    *temp = first_id.clone();
+                }
+
+                self.get_mut_unsafe(first_id).set_parent(Some(second_parent_id.clone()));
+                self.get_mut_unsafe(second_id).set_parent(Some(first_parent_id.clone()));
+            },
+            (Some(ref first_parent_id), None) => {
+                let first_index = self.get_unsafe(first_parent_id)
+                    .children()
+                    .iter()
+                    .position(|id| id == first_id)
+                    .unwrap();
+
+                unsafe {
+                    let temp = self.get_mut_unsafe(first_parent_id)
+                        .children_mut()
+                        .get_unchecked_mut(first_index);
+                    *temp = second_id.clone();
+                }
+
+                self.get_mut_unsafe(first_id).set_parent(None);
+                self.get_mut_unsafe(second_id).set_parent(Some(first_parent_id.clone()));
+
+                if let Some(root_id) = self.root_node_id().cloned() {
+                    if root_id == second_id.clone() {
+                        self.root = Some(first_id.clone());
+                    }
+                }
+            },
+            (None, Some(ref second_parent_id)) => {
+                let second_index = self.get_unsafe(second_parent_id)
+                    .children()
+                    .iter()
+                    .position(|id| id == second_id)
+                    .unwrap();
+
+                unsafe {
+                    let temp = self.get_mut_unsafe(second_parent_id)
+                        .children_mut()
+                        .get_unchecked_mut(second_index);
+                    *temp = first_id.clone();
+                }
+
+                self.get_mut_unsafe(first_id).set_parent(Some(second_parent_id.clone()));
+                self.get_mut_unsafe(second_id).set_parent(None);
+
+                if let Some(root_id) = self.root_node_id().cloned() {
+                    if root_id == first_id.clone() {
+                        self.root = Some(second_id.clone());
+                    }
+                }
+            },
+            (None, None) => {
+                if let Some(root_id) = self.root_node_id().cloned() {
+
+                    if root_id == first_id.clone() {
+                        self.root = Some(second_id.clone());
+                    } else if root_id == second_id.clone() {
+                        self.root = Some(first_id.clone());
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
+    fn swap_nodes_children_only(&mut self, first_id: &NodeId, second_id: &NodeId)
+        -> Result<(), NodeIdError>
+    {
+        let lower_upper_test = self.find_subtree_root_between_ids(first_id, second_id)
+            .map(|_| (first_id, second_id))
+            .or(self.find_subtree_root_between_ids(second_id, first_id)
+                .map(|_| (second_id, first_id)));
+
+        // todo: lots of repetition in here
+
+        let first_children = self.get_unsafe(first_id).children().clone();
+        let second_children = self.get_unsafe(second_id).children().clone();
+
+        if let Some((lower_id, upper_id)) = lower_upper_test {
+
+            let lower_parent = self.get_unsafe(lower_id).parent().cloned().unwrap();
+
+            let mut upper_children;
+            let lower_children;
+            if upper_id == first_id {
+                upper_children = first_children;
+                lower_children = second_children;
+            } else {
+                upper_children = second_children;
+                lower_children = first_children;
+            }
+
+            for child in upper_children.iter() {
+                self.get_mut_unsafe(child).set_parent(Some(lower_id.clone()));
+            }
+            for child in lower_children.iter() {
+                self.get_mut_unsafe(child).set_parent(Some(upper_id.clone()));
+            }
+
+            if upper_id == &lower_parent {
+                // direct child
+                upper_children.retain(|id| id != lower_id);
+            }
+
+            //swap children of these nodes
+            self.get_mut_unsafe(upper_id).set_children(lower_children);
+            self.get_mut_unsafe(lower_id).set_children(upper_children);
+
+            //add lower to upper
+            self.set_as_parent_and_child(upper_id, lower_id);
+
+        } else {
+            //just across
+
+            //take care of these nodes' children's parent values
+            for child in first_children.iter() {
+                self.get_mut_unsafe(child).set_parent(Some(second_id.clone()));
+            }
+            for child in second_children.iter() {
+                self.get_mut_unsafe(child).set_parent(Some(first_id.clone()));
+            }
+
+            //swap children of these nodes
+            self.get_mut_unsafe(first_id).set_children(second_children);
+            self.get_mut_unsafe(second_id).set_children(first_children);
+        }
+
+        Ok(())
+    }
+
     ///
     /// Returns a `Some` value containing the `NodeId` of the root `Node` if it exists.  Otherwise a
     /// `None` value is returned.
     ///
     /// ```
-    /// use id_tree::Tree;
-    /// use id_tree::Node;
+    /// use id_tree::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.set_root(Node::new(5));
+    /// let root_id = tree.insert(Node::new(5), InsertBehavior::AsRoot).unwrap();
     ///
     /// assert_eq!(&root_id, tree.root_node_id().unwrap());
     /// ```
@@ -951,7 +1035,7 @@ impl<T> Tree<T> {
     }
 
     fn detach_from_parent(&mut self, parent_id: &NodeId, node_id: &NodeId) {
-        self.get_mut_unsafe(&parent_id)
+        self.get_mut_unsafe(parent_id)
             .children_mut()
             .retain(|child_id| child_id != node_id);
     }
@@ -975,7 +1059,7 @@ impl<T> Tree<T> {
         }
     }
 
-    fn remove_node(&mut self, node_id: NodeId) -> Node<T> {
+    fn remove_node_internal(&mut self, node_id: NodeId) -> Node<T> {
 
         if let Some(root_id) = self.root.clone() {
             if node_id == root_id {
@@ -1020,12 +1104,20 @@ impl<T> Tree<T> {
     }
 
     fn clear_parent(&mut self, node_id: &NodeId) {
-        self.get_mut_unsafe(node_id).set_parent(None);
+        self.set_parent(node_id, None);
+    }
+
+    fn set_parent(&mut self, node_id: &NodeId, new_parent: Option<NodeId>) {
+        self.get_mut_unsafe(node_id).set_parent(new_parent);
     }
 
     fn clear_parent_of_children(&mut self, node_id: &NodeId) {
+        self.set_parent_of_children(node_id, None);
+    }
+
+    fn set_parent_of_children(&mut self, node_id: &NodeId, new_parent: Option<NodeId>) {
         for child_id in self.get_unsafe(node_id).children().clone() {
-            self.clear_parent(&child_id);
+            self.set_parent(&child_id, new_parent.clone());
         }
     }
 
@@ -1124,6 +1216,9 @@ mod tree_tests {
     use super::TreeBuilder;
     use super::super::NodeId;
     use super::super::Node;
+    use super::super::InsertBehavior;
+    use super::super::RemoveBehavior;
+    use super::super::MoveBehavior;
 
     #[test]
     fn test_new() {
@@ -1174,7 +1269,7 @@ mod tree_tests {
 
         let mut tree = TreeBuilder::new().build();
 
-        let node_a_id = tree.set_root(node_a);
+        let node_a_id = tree.insert(node_a, InsertBehavior::AsRoot).unwrap();
         let root_id = tree.root.clone().unwrap();
         assert_eq!(node_a_id, root_id);
 
@@ -1185,7 +1280,7 @@ mod tree_tests {
             assert_eq!(root_ref.data(), &a);
         }
 
-        let node_b_id = tree.set_root(node_b);
+        let node_b_id = tree.insert(node_b, InsertBehavior::AsRoot).unwrap();
         let root_id = tree.root.clone().unwrap();
         assert_eq!(node_b_id, root_id);
 
@@ -1225,8 +1320,8 @@ mod tree_tests {
         let node_b = Node::new(b);
 
         let root_id = tree.root.clone().unwrap();
-        let node_a_id = tree.insert_with_parent(node_a, &root_id).unwrap();
-        let node_b_id = tree.insert_with_parent(node_b, &root_id).unwrap();
+        let node_a_id = tree.insert(node_a, InsertBehavior::UnderNode(&root_id)).unwrap();
+        let node_b_id = tree.insert(node_b, InsertBehavior::UnderNode(&root_id)).unwrap();
 
         let node_a_ref = tree.get(&node_a_id).unwrap();
         let node_b_ref = tree.get(&node_b_id).unwrap();
@@ -1258,18 +1353,18 @@ mod tree_tests {
 
         let root_id = tree.root.clone().unwrap();
 
-        let node_1_id = tree.insert_with_parent(Node::new(1), &root_id).unwrap();
-        let node_2_id = tree.insert_with_parent(Node::new(2), &node_1_id).unwrap();
-        let node_3_id = tree.insert_with_parent(Node::new(3), &node_1_id).unwrap();
+        let node_1_id = tree.insert(Node::new(1), InsertBehavior::UnderNode(&root_id)).unwrap();
+        let node_2_id = tree.insert(Node::new(2), InsertBehavior::UnderNode(&node_1_id)).unwrap();
+        let node_3_id = tree.insert(Node::new(3), InsertBehavior::UnderNode(&node_1_id)).unwrap();
 
-        let node_1 = tree.remove_node_lift_children(node_1_id.clone()).unwrap();
+        let node_1 = tree.remove_node(node_1_id.clone(), RemoveBehavior::LiftChildren).unwrap();
 
         assert_eq!(Some(&root_id), tree.root_node_id());
 
         assert_eq!(node_1.data(), &1);
         assert_eq!(node_1.children().len(), 0);
         assert!(node_1.parent().is_none());
-        assert!(tree.get(&node_1_id).is_none());
+        assert!(tree.get(&node_1_id).is_err());
 
         let root_ref = tree.get(&root_id).unwrap();
         let node_2_ref = tree.get(&node_2_id).unwrap();
@@ -1294,18 +1389,18 @@ mod tree_tests {
 
         let root_id = tree.root.clone().unwrap();
 
-        let node_1_id = tree.insert_with_parent(Node::new(1), &root_id).unwrap();
-        let node_2_id = tree.insert_with_parent(Node::new(2), &node_1_id).unwrap();
-        let node_3_id = tree.insert_with_parent(Node::new(3), &node_1_id).unwrap();
+        let node_1_id = tree.insert(Node::new(1), InsertBehavior::UnderNode(&root_id)).unwrap();
+        let node_2_id = tree.insert(Node::new(2), InsertBehavior::UnderNode(&node_1_id)).unwrap();
+        let node_3_id = tree.insert(Node::new(3), InsertBehavior::UnderNode(&node_1_id)).unwrap();
 
-        let node_1 = tree.remove_node_orphan_children(node_1_id.clone()).unwrap();
+        let node_1 = tree.remove_node(node_1_id.clone(), RemoveBehavior::OrphanChildren).unwrap();
 
         assert_eq!(Some(&root_id), tree.root_node_id());
 
         assert_eq!(node_1.data(), &1);
         assert_eq!(node_1.children().len(), 0);
         assert!(node_1.parent().is_none());
-        assert!(tree.get(&node_1_id).is_none());
+        assert!(tree.get(&node_1_id).is_err());
 
         let node_2_ref = tree.get(&node_2_id).unwrap();
         let node_3_ref = tree.get(&node_3_id).unwrap();
@@ -1324,7 +1419,7 @@ mod tree_tests {
             .build();
 
         let root_id = tree.root.clone().unwrap();
-        tree.remove_node_orphan_children(root_id.clone()).unwrap();
+        tree.remove_node(root_id.clone(), RemoveBehavior::OrphanChildren).unwrap();
         assert_eq!(None, tree.root_node_id());
 
         let mut tree = TreeBuilder::new()
@@ -1332,7 +1427,7 @@ mod tree_tests {
             .build();
 
         let root_id = tree.root.clone().unwrap();
-        tree.remove_node_lift_children(root_id.clone()).unwrap();
+        tree.remove_node(root_id.clone(), RemoveBehavior::LiftChildren).unwrap();
         assert_eq!(None, tree.root_node_id());
     }
 
@@ -1340,41 +1435,41 @@ mod tree_tests {
     fn test_move_node_to_parent() {
         let mut tree = Tree::new();
 
-        let root_id = tree.set_root(Node::new(0));
-        let node_1_id = tree.insert_with_parent(Node::new(1), &root_id).unwrap();
-        let node_2_id = tree.insert_with_parent(Node::new(2), &root_id).unwrap();
-        let node_3_id = tree.insert_with_parent(Node::new(3), &node_1_id).unwrap();
+        let root_id = tree.insert(Node::new(0), InsertBehavior::AsRoot).unwrap();
+        let node_1_id = tree.insert(Node::new(1), InsertBehavior::UnderNode(&root_id)).unwrap();
+        let node_2_id = tree.insert(Node::new(2), InsertBehavior::UnderNode(&root_id)).unwrap();
+        let node_3_id = tree.insert(Node::new(3), InsertBehavior::UnderNode(&node_1_id)).unwrap();
 
         // move 3 "across" the tree
-        tree.move_node_to_parent(&node_3_id, &node_2_id).unwrap();
+        tree.move_node(&node_3_id, MoveBehavior::ToParent(&node_2_id)).unwrap();
         assert!(tree.get(&root_id).unwrap().children().contains(&node_1_id));
         assert!(tree.get(&root_id).unwrap().children().contains(&node_2_id));
         assert!(tree.get(&node_2_id).unwrap().children().contains(&node_3_id));
 
         // move 3 "up" the tree
-        tree.move_node_to_parent(&node_3_id, &root_id).unwrap();
+        tree.move_node(&node_3_id, MoveBehavior::ToParent(&root_id)).unwrap();
         assert!(tree.get(&root_id).unwrap().children().contains(&node_1_id));
         assert!(tree.get(&root_id).unwrap().children().contains(&node_2_id));
         assert!(tree.get(&root_id).unwrap().children().contains(&node_3_id));
 
         // move 3 "down" (really this is across though) the tree
-        tree.move_node_to_parent(&node_3_id, &node_1_id).unwrap();
+        tree.move_node(&node_3_id, MoveBehavior::ToParent(&node_1_id)).unwrap();
         assert!(tree.get(&root_id).unwrap().children().contains(&node_1_id));
         assert!(tree.get(&root_id).unwrap().children().contains(&node_2_id));
         assert!(tree.get(&node_1_id).unwrap().children().contains(&node_3_id));
 
         // move 1 "down" the tree
-        tree.move_node_to_parent(&node_1_id, &node_3_id).unwrap();
+        tree.move_node(&node_1_id, MoveBehavior::ToParent(&node_3_id)).unwrap();
         assert!(tree.get(&root_id).unwrap().children().contains(&node_2_id));
         assert!(tree.get(&root_id).unwrap().children().contains(&node_3_id));
         assert!(tree.get(&node_3_id).unwrap().children().contains(&node_1_id));
 
         // note: node_1 is at the lowest point in the tree before these insertions.
-        let node_4_id = tree.insert_with_parent(Node::new(4), &node_1_id).unwrap();
-        let node_5_id = tree.insert_with_parent(Node::new(5), &node_4_id).unwrap();
+        let node_4_id = tree.insert(Node::new(4), InsertBehavior::UnderNode(&node_1_id)).unwrap();
+        let node_5_id = tree.insert(Node::new(5), InsertBehavior::UnderNode(&node_4_id)).unwrap();
 
         // move 3 "down" the tree
-        tree.move_node_to_parent(&node_3_id, &node_5_id).unwrap();
+        tree.move_node(&node_3_id, MoveBehavior::ToParent(&node_5_id)).unwrap();
         assert!(tree.get(&root_id).unwrap().children().contains(&node_2_id));
         assert!(tree.get(&root_id).unwrap().children().contains(&node_1_id));
         assert!(tree.get(&node_1_id).unwrap().children().contains(&node_4_id));
@@ -1382,7 +1477,7 @@ mod tree_tests {
         assert!(tree.get(&node_5_id).unwrap().children().contains(&node_3_id));
 
         // move root "down" the tree
-        tree.move_node_to_parent(&root_id, &node_2_id).unwrap();
+        tree.move_node(&root_id, MoveBehavior::ToParent(&node_2_id)).unwrap();
         assert!(tree.get(&node_2_id).unwrap().children().contains(&root_id));
         assert!(tree.get(&root_id).unwrap().children().contains(&node_1_id));
         assert!(tree.get(&node_1_id).unwrap().children().contains(&node_4_id));
@@ -1397,9 +1492,10 @@ mod tree_tests {
         // test move with existing root
         {
             let mut tree = Tree::new();
-            let root_id = tree.set_root(Node::new(0));
-            let node_1_id = tree.insert_with_parent(Node::new(1), &root_id).unwrap();
-            let node_2_id = tree.insert_with_parent(Node::new(2), &node_1_id).unwrap();
+            let root_id = tree.insert(Node::new(0), InsertBehavior::AsRoot).unwrap();
+            let node_1_id = tree.insert(Node::new(1), InsertBehavior::UnderNode(&root_id)).unwrap();
+            let node_2_id = tree.insert(Node::new(2), InsertBehavior::UnderNode(&node_1_id))
+                .unwrap();
 
             tree.move_node_to_root(&node_2_id).unwrap();
 
@@ -1411,9 +1507,10 @@ mod tree_tests {
         // test move with existing root and with orphan
         {
             let mut tree = Tree::new();
-            let root_id = tree.set_root(Node::new(0));
-            let node_1_id = tree.insert_with_parent(Node::new(1), &root_id).unwrap();
-            let node_2_id = tree.insert_with_parent(Node::new(2), &node_1_id).unwrap();
+            let root_id = tree.insert(Node::new(0), InsertBehavior::AsRoot).unwrap();
+            let node_1_id = tree.insert(Node::new(1), InsertBehavior::UnderNode(&root_id)).unwrap();
+            let node_2_id = tree.insert(Node::new(2), InsertBehavior::UnderNode(&node_1_id))
+                .unwrap();
 
             tree.remove_node_orphan_children(node_1_id).unwrap();
             tree.move_node_to_root(&node_2_id).unwrap();
@@ -1426,9 +1523,10 @@ mod tree_tests {
         // test move without root and with orphan
         {
             let mut tree = Tree::new();
-            let root_id = tree.set_root(Node::new(0));
-            let node_1_id = tree.insert_with_parent(Node::new(1), &root_id).unwrap();
-            let node_2_id = tree.insert_with_parent(Node::new(2), &node_1_id).unwrap();
+            let root_id = tree.insert(Node::new(0), InsertBehavior::AsRoot).unwrap();
+            let node_1_id = tree.insert(Node::new(1), InsertBehavior::UnderNode(&root_id)).unwrap();
+            let node_2_id = tree.insert(Node::new(2), InsertBehavior::UnderNode(&node_1_id))
+                .unwrap();
 
             tree.remove_node_orphan_children(root_id).unwrap();
             tree.move_node_to_root(&node_1_id).unwrap();
@@ -1443,11 +1541,11 @@ mod tree_tests {
     fn test_find_subtree_root_below_upper_id() {
         let mut tree = Tree::new();
 
-        let root_id = tree.set_root(Node::new(0));
-        let node_1_id = tree.insert_with_parent(Node::new(1), &root_id).unwrap();
-        let node_2_id = tree.insert_with_parent(Node::new(2), &node_1_id).unwrap();
-        let node_3_id = tree.insert_with_parent(Node::new(3), &node_1_id).unwrap();
-        let node_4_id = tree.insert_with_parent(Node::new(4), &node_2_id).unwrap();
+        let root_id = tree.insert(Node::new(0), InsertBehavior::AsRoot).unwrap();
+        let node_1_id = tree.insert(Node::new(1), InsertBehavior::UnderNode(&root_id)).unwrap();
+        let node_2_id = tree.insert(Node::new(2), InsertBehavior::UnderNode(&node_1_id)).unwrap();
+        let node_3_id = tree.insert(Node::new(3), InsertBehavior::UnderNode(&node_1_id)).unwrap();
+        let node_4_id = tree.insert(Node::new(4), InsertBehavior::UnderNode(&node_2_id)).unwrap();
 
         let sub_root = tree.find_subtree_root_between_ids(&node_1_id, &root_id);
         assert_eq!(sub_root, Some(&node_1_id));
@@ -1471,18 +1569,20 @@ mod tree_tests {
     }
 
     #[test]
-    fn test_swap_sub_trees() {
+    fn test_swap_nodes_take_children() {
+        use InsertBehavior::*;
+        use SwapBehavior::*;
 
         // test across swap
         {
             let mut tree = Tree::new();
-            let root_id = tree.set_root(Node::new(0));
-            let node_1_id = tree.insert_with_parent(Node::new(1), &root_id).unwrap();
-            let node_2_id = tree.insert_with_parent(Node::new(2), &root_id).unwrap();
-            let node_3_id = tree.insert_with_parent(Node::new(3), &node_1_id).unwrap();
-            let node_4_id = tree.insert_with_parent(Node::new(4), &node_2_id).unwrap();
+            let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+            let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
+            let node_4_id = tree.insert(Node::new(4), UnderNode(&node_2_id)).unwrap();
 
-            tree.swap_sub_tree(&node_3_id, &node_4_id).unwrap();
+            tree.swap_nodes(&node_3_id, &node_4_id, TakeChildren).unwrap();
 
             assert!(tree.get(&node_1_id).unwrap().children().contains(&node_4_id));
             assert!(tree.get(&node_2_id).unwrap().children().contains(&node_3_id));
@@ -1491,11 +1591,11 @@ mod tree_tests {
         // test ordering via swap
         {
             let mut tree = Tree::new();
-            let root_id = tree.set_root(Node::new(0));
-            let node_1_id = tree.insert_with_parent(Node::new(1), &root_id).unwrap();
-            let node_2_id = tree.insert_with_parent(Node::new(2), &root_id).unwrap();
+            let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+            let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
 
-            tree.swap_sub_tree(&node_1_id, &node_2_id).unwrap();
+            tree.swap_nodes(&node_1_id, &node_2_id, TakeChildren).unwrap();
 
             let children = tree.get(&root_id).unwrap().children();
             assert!(children[0] == node_2_id);
@@ -1505,12 +1605,12 @@ mod tree_tests {
         // test swap down
         {
             let mut tree = Tree::new();
-            let root_id = tree.set_root(Node::new(0));
-            let node_1_id = tree.insert_with_parent(Node::new(1), &root_id).unwrap();
-            let node_2_id = tree.insert_with_parent(Node::new(2), &root_id).unwrap();
-            let node_3_id = tree.insert_with_parent(Node::new(3), &node_1_id).unwrap();
+            let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+            let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
 
-            tree.swap_sub_tree(&root_id, &node_3_id).unwrap();
+            tree.swap_nodes(&root_id, &node_3_id, TakeChildren).unwrap();
 
             assert_eq!(tree.root_node_id(), Some(&node_3_id));
 
@@ -1524,18 +1624,416 @@ mod tree_tests {
         // test swap down without root
         {
             let mut tree = Tree::new();
-            let root_id = tree.set_root(Node::new(0));
-            let node_1_id = tree.insert_with_parent(Node::new(1), &root_id).unwrap();
-            let node_2_id = tree.insert_with_parent(Node::new(2), &root_id).unwrap();
-            let node_3_id = tree.insert_with_parent(Node::new(3), &node_1_id).unwrap();
+            let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+            let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
 
-            tree.swap_sub_tree(&node_1_id, &node_3_id).unwrap();
+            tree.swap_nodes(&node_1_id, &node_3_id, TakeChildren).unwrap();
 
             assert!(tree.get(&node_3_id).unwrap().children().contains(&node_1_id));
 
             let children = tree.get(&root_id).unwrap().children();
             assert!(children[0] == node_3_id);
             assert!(children[1] == node_2_id);
+        }
+    }
+
+    #[test]
+    fn test_swap_nodes_leave_children() {
+        use InsertBehavior::*;
+        use SwapBehavior::*;
+        use MoveBehavior::*;
+        use RemoveBehavior::*;
+
+        // test across swap
+        // from:
+        //        0
+        //       / \
+        //      1   2
+        //      |   |
+        //      3   4
+        // to:
+        //        0
+        //       / \
+        //      2   1
+        //      |   |
+        //      3   4
+        {
+            let mut tree = Tree::new();
+            let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+            let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
+            let node_4_id = tree.insert(Node::new(4), UnderNode(&node_2_id)).unwrap();
+
+            tree.swap_nodes(&node_1_id, &node_2_id, LeaveChildren).unwrap();
+
+            let root_children = tree.get(&root_id).unwrap().children();
+            assert_eq!(root_children[0], node_2_id);
+            assert_eq!(root_children[1], node_1_id);
+
+            assert_eq!(tree.get(&node_3_id).unwrap().parent(), Some(&node_2_id));
+            assert_eq!(tree.get(&node_4_id).unwrap().parent(), Some(&node_1_id));
+
+            assert!(tree.get(&node_1_id).unwrap().children().contains(&node_4_id));
+            assert!(tree.get(&node_2_id).unwrap().children().contains(&node_3_id));
+        }
+
+        // test down swap (with no space between nodes)
+        // from:
+        //        0
+        //       / \
+        //      1   2
+        //      |   |
+        //      3   4
+        // to:
+        //        0
+        //       / \
+        //      3   2
+        //      |   |
+        //      1   4
+        {
+            let mut tree = Tree::new();
+            let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+            let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
+            let node_4_id = tree.insert(Node::new(4), UnderNode(&node_2_id)).unwrap();
+
+            tree.swap_nodes(&node_1_id, &node_3_id, LeaveChildren).unwrap();
+
+            let root_children = tree.get(&root_id).unwrap().children();
+            assert_eq!(root_children[0], node_3_id);
+            assert_eq!(root_children[1], node_2_id);
+
+            assert_eq!(tree.get(&node_3_id).unwrap().parent(), Some(&root_id));
+            assert_eq!(tree.get(&node_1_id).unwrap().parent(), Some(&node_3_id));
+
+            assert!(tree.get(&node_3_id).unwrap().children().contains(&node_1_id));
+            assert_eq!(tree.get(&node_1_id).unwrap().children().len(), 0);
+        }
+
+        // test down swap (with space between nodes)
+        // from:
+        //        0
+        //       / \
+        //      1   2
+        //      |   |
+        //      3   4
+        //      |
+        //      5
+        // to:
+        //        0
+        //       / \
+        //      5   2
+        //      |   |
+        //      3   4
+        //      |
+        //      1
+        {
+            let mut tree = Tree::new();
+            let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+            let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
+            let node_4_id = tree.insert(Node::new(4), UnderNode(&node_2_id)).unwrap();
+            let node_5_id = tree.insert(Node::new(5), UnderNode(&node_3_id)).unwrap();
+
+            tree.swap_nodes(&node_1_id, &node_5_id, LeaveChildren).unwrap();
+
+            let root_children = tree.get(&root_id).unwrap().children();
+            assert_eq!(root_children[0], node_5_id);
+            assert_eq!(root_children[1], node_2_id);
+
+            assert_eq!(tree.get(&node_3_id).unwrap().parent(), Some(&node_5_id));
+            assert_eq!(tree.get(&node_1_id).unwrap().parent(), Some(&node_3_id));
+            assert_eq!(tree.get(&node_5_id).unwrap().parent(), Some(&root_id));
+
+            assert!(tree.get(&node_3_id).unwrap().children().contains(&node_1_id));
+            assert!(tree.get(&node_5_id).unwrap().children().contains(&node_3_id));
+            assert_eq!(tree.get(&node_1_id).unwrap().children().len(), 0);
+        }
+
+        // test down swap (with root)
+        // from:
+        //        0
+        //       / \
+        //      1   2
+        //      |   |
+        //      3   4
+        // to:
+        //        4
+        //       / \
+        //      1   2
+        //      |   |
+        //      3   0
+        {
+            let mut tree = Tree::new();
+            let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+            let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
+            let node_4_id = tree.insert(Node::new(4), UnderNode(&node_2_id)).unwrap();
+
+            tree.swap_nodes(&root_id, &node_4_id, LeaveChildren).unwrap();
+
+            assert_eq!(tree.root_node_id(), Some(&node_4_id));
+
+            let node_4_children = tree.get(&node_4_id).unwrap().children();
+            assert_eq!(node_4_children[0], node_1_id);
+            assert_eq!(node_4_children[1], node_2_id);
+
+            assert_eq!(tree.get(&node_1_id).unwrap().parent(), Some(&node_4_id));
+            assert_eq!(tree.get(&node_2_id).unwrap().parent(), Some(&node_4_id));
+            assert_eq!(tree.get(&root_id).unwrap().parent(), Some(&node_2_id));
+
+            assert!(tree.get(&node_2_id).unwrap().children().contains(&root_id));
+            assert_eq!(tree.get(&root_id).unwrap().children().len(), 0);
+        }
+
+        // test orphaned swap (no root)
+        // from:
+        //      1   2
+        //      |   |
+        //      3   4
+        // to:
+        //      2   1
+        //      |   |
+        //      3   4
+        {
+            let mut tree = Tree::new();
+            let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+            let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
+            let node_4_id = tree.insert(Node::new(4), UnderNode(&node_2_id)).unwrap();
+            tree.remove_node(root_id, OrphanChildren);
+
+            tree.swap_nodes(&node_1_id, &node_2_id, LeaveChildren).unwrap();
+
+            assert_eq!(tree.root_node_id(), None);
+
+            assert_eq!(tree.get(&node_3_id).unwrap().parent(), Some(&node_2_id));
+            assert_eq!(tree.get(&node_4_id).unwrap().parent(), Some(&node_1_id));
+
+            assert!(tree.get(&node_2_id).unwrap().children().contains(&node_3_id));
+            assert!(tree.get(&node_1_id).unwrap().children().contains(&node_4_id));
+        }
+
+        // test orphaned swap (1 is root)
+        // from:
+        //      1   2
+        //      |   |
+        //      3   4
+        // to:
+        //      2   1
+        //      |   |
+        //      3   4
+        {
+            let mut tree = Tree::new();
+            let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+            let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
+            let node_4_id = tree.insert(Node::new(4), UnderNode(&node_2_id)).unwrap();
+            tree.remove_node(root_id, OrphanChildren);
+            tree.move_node(&node_1_id, ToRoot);
+
+            tree.swap_nodes(&node_1_id, &node_2_id, LeaveChildren).unwrap();
+
+            assert_eq!(tree.root_node_id(), Some(&node_2_id));
+
+            assert_eq!(tree.get(&node_3_id).unwrap().parent(), Some(&node_2_id));
+            assert_eq!(tree.get(&node_4_id).unwrap().parent(), Some(&node_1_id));
+
+            assert!(tree.get(&node_2_id).unwrap().children().contains(&node_3_id));
+            assert!(tree.get(&node_1_id).unwrap().children().contains(&node_4_id));
+        }
+    }
+
+    #[test]
+    fn test_swap_nodes_children_only() {
+        use InsertBehavior::*;
+        use SwapBehavior::*;
+
+        // test across swap
+        // swap(1,2)
+        // from:
+        //        0
+        //       / \
+        //      1   2
+        //     / \   \
+        //    3   4   5
+        // to:
+        //        0
+        //       / \
+        //      1   2
+        //     /   / \
+        //    5   3   4
+        {
+            let mut tree = Tree::new();
+            let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+            let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
+            let node_4_id = tree.insert(Node::new(4), UnderNode(&node_1_id)).unwrap();
+            let node_5_id = tree.insert(Node::new(5), UnderNode(&node_2_id)).unwrap();
+
+            tree.swap_nodes(&node_1_id, &node_2_id, ChildrenOnly).unwrap();
+
+            let root_children = tree.get(&root_id).unwrap().children();
+            assert_eq!(root_children[0], node_1_id);
+            assert_eq!(root_children[1], node_2_id);
+
+            assert_eq!(tree.get(&node_3_id).unwrap().parent(), Some(&node_2_id));
+            assert_eq!(tree.get(&node_4_id).unwrap().parent(), Some(&node_2_id));
+            assert_eq!(tree.get(&node_5_id).unwrap().parent(), Some(&node_1_id));
+
+            assert!(tree.get(&node_1_id).unwrap().children().contains(&node_5_id));
+            assert!(tree.get(&node_2_id).unwrap().children().contains(&node_3_id));
+            assert!(tree.get(&node_2_id).unwrap().children().contains(&node_4_id));
+        }
+
+        // test down swap (with no space between nodes)
+        // swap(1,3)
+        // from:
+        //        0
+        //       / \
+        //      1   2
+        //     / \   \
+        //    3   4   5
+        //    |   |
+        //    6   7
+        // to:
+        //        0
+        //       / \
+        //      1   2
+        //     / \   \
+        //    6   3   5
+        //        |
+        //        4
+        //        |
+        //        7
+        {
+            let mut tree = Tree::new();
+            let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+            let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
+            let node_4_id = tree.insert(Node::new(4), UnderNode(&node_1_id)).unwrap();
+            let node_5_id = tree.insert(Node::new(5), UnderNode(&node_2_id)).unwrap();
+            let node_6_id = tree.insert(Node::new(6), UnderNode(&node_3_id)).unwrap();
+            let node_7_id = tree.insert(Node::new(7), UnderNode(&node_4_id)).unwrap();
+
+            tree.swap_nodes(&node_1_id, &node_3_id, ChildrenOnly).unwrap();
+
+            let root_children = tree.get(&root_id).unwrap().children();
+            assert_eq!(root_children[0], node_1_id);
+            assert_eq!(root_children[1], node_2_id);
+
+            assert_eq!(tree.get(&node_3_id).unwrap().parent(), Some(&node_1_id));
+            assert_eq!(tree.get(&node_1_id).unwrap().parent(), Some(&root_id));
+            assert_eq!(tree.get(&node_4_id).unwrap().parent(), Some(&node_3_id));
+            assert_eq!(tree.get(&node_6_id).unwrap().parent(), Some(&node_1_id));
+
+            let node_1_children = tree.get(&node_1_id).unwrap().children();
+            assert_eq!(node_1_children[0], node_6_id);
+            assert_eq!(node_1_children[1], node_3_id);
+            assert!(tree.get(&node_3_id).unwrap().children().contains(&node_4_id));
+        }
+
+        // test down swap (with space between nodes)
+        // swap(1, 6)
+        // from:
+        //        0
+        //       / \
+        //      1   2
+        //     / \   \
+        //    3   4   5
+        //    |   |
+        //    6   7
+        // to:
+        //        0
+        //       / \
+        //      1   2
+        //     /     \
+        //    6       5
+        //   / \
+        //  3   4
+        //      |
+        //      7
+        {
+            let mut tree = Tree::new();
+            let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+            let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
+            let node_4_id = tree.insert(Node::new(4), UnderNode(&node_1_id)).unwrap();
+            let node_5_id = tree.insert(Node::new(5), UnderNode(&node_2_id)).unwrap();
+            let node_6_id = tree.insert(Node::new(6), UnderNode(&node_3_id)).unwrap();
+            let node_7_id = tree.insert(Node::new(7), UnderNode(&node_4_id)).unwrap();
+
+            tree.swap_nodes(&node_1_id, &node_6_id, ChildrenOnly).unwrap();
+
+            let root_children = tree.get(&root_id).unwrap().children();
+            assert_eq!(root_children[0], node_1_id);
+            assert_eq!(root_children[1], node_2_id);
+
+            assert_eq!(tree.get(&node_3_id).unwrap().parent(), Some(&node_6_id));
+            assert_eq!(tree.get(&node_4_id).unwrap().parent(), Some(&node_6_id));
+            assert_eq!(tree.get(&node_6_id).unwrap().parent(), Some(&node_1_id));
+
+            assert!(tree.get(&node_1_id).unwrap().children().contains(&node_6_id));
+            assert!(!tree.get(&node_1_id).unwrap().children().contains(&node_3_id));
+            assert!(!tree.get(&node_1_id).unwrap().children().contains(&node_4_id));
+            assert!(tree.get(&node_6_id).unwrap().children().contains(&node_3_id));
+            assert!(tree.get(&node_6_id).unwrap().children().contains(&node_4_id));
+        }
+
+        // test down swap (with root)
+        // swap(0,1)
+        // from:
+        //        0
+        //       / \
+        //      1   2
+        //     / \   \
+        //    3   4   5
+        //    |   |
+        //    6   7
+        // to:
+        //        0
+        //       /|\
+        //      3 4 1
+        //      | | |
+        //      6 7 2
+        //          |
+        //          5
+        {
+            let mut tree = Tree::new();
+            let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+            let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
+            let node_4_id = tree.insert(Node::new(4), UnderNode(&node_1_id)).unwrap();
+            let node_5_id = tree.insert(Node::new(5), UnderNode(&node_2_id)).unwrap();
+            let node_6_id = tree.insert(Node::new(6), UnderNode(&node_3_id)).unwrap();
+            let node_7_id = tree.insert(Node::new(7), UnderNode(&node_4_id)).unwrap();
+
+            tree.swap_nodes(&root_id, &node_1_id, ChildrenOnly).unwrap();
+
+            let root_children = tree.get(&root_id).unwrap().children();
+            assert_eq!(root_children[0], node_3_id);
+            assert_eq!(root_children[1], node_4_id);
+            assert_eq!(root_children[2], node_1_id);
+
+            assert_eq!(tree.get(&node_1_id).unwrap().parent(), Some(&root_id));
+            assert_eq!(tree.get(&node_3_id).unwrap().parent(), Some(&root_id));
+            assert_eq!(tree.get(&node_4_id).unwrap().parent(), Some(&root_id));
+            assert_eq!(tree.get(&node_2_id).unwrap().parent(), Some(&node_1_id));
+
+            let node_1_children = tree.get(&node_1_id).unwrap().children();
+            assert_eq!(node_1_children[0], node_2_id);
         }
     }
 }
