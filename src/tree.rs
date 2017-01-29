@@ -1685,7 +1685,7 @@ mod tree_tests {
             let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
             let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
             let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
-            let node_4_id = tree.insert(Node::new(4), UnderNode(&node_2_id)).unwrap();
+            tree.insert(Node::new(4), UnderNode(&node_2_id)).unwrap();
 
             tree.swap_nodes(&node_1_id, &node_3_id, LeaveChildren).unwrap();
 
@@ -1723,7 +1723,7 @@ mod tree_tests {
             let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
             let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
             let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
-            let node_4_id = tree.insert(Node::new(4), UnderNode(&node_2_id)).unwrap();
+            tree.insert(Node::new(4), UnderNode(&node_2_id)).unwrap();
             let node_5_id = tree.insert(Node::new(5), UnderNode(&node_3_id)).unwrap();
 
             tree.swap_nodes(&node_1_id, &node_5_id, LeaveChildren).unwrap();
@@ -1759,7 +1759,7 @@ mod tree_tests {
             let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
             let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
             let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
-            let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
+            tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
             let node_4_id = tree.insert(Node::new(4), UnderNode(&node_2_id)).unwrap();
 
             tree.swap_nodes(&root_id, &node_4_id, LeaveChildren).unwrap();
@@ -1794,7 +1794,7 @@ mod tree_tests {
             let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
             let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
             let node_4_id = tree.insert(Node::new(4), UnderNode(&node_2_id)).unwrap();
-            tree.remove_node(root_id, OrphanChildren);
+            tree.remove_node(root_id, OrphanChildren).unwrap();
 
             tree.swap_nodes(&node_1_id, &node_2_id, LeaveChildren).unwrap();
 
@@ -1823,8 +1823,8 @@ mod tree_tests {
             let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
             let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
             let node_4_id = tree.insert(Node::new(4), UnderNode(&node_2_id)).unwrap();
-            tree.remove_node(root_id, OrphanChildren);
-            tree.move_node(&node_1_id, ToRoot);
+            tree.remove_node(root_id, OrphanChildren).unwrap();
+            tree.move_node(&node_1_id, ToRoot).unwrap();
 
             tree.swap_nodes(&node_1_id, &node_2_id, LeaveChildren).unwrap();
 
@@ -1908,9 +1908,9 @@ mod tree_tests {
             let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
             let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
             let node_4_id = tree.insert(Node::new(4), UnderNode(&node_1_id)).unwrap();
-            let node_5_id = tree.insert(Node::new(5), UnderNode(&node_2_id)).unwrap();
+            tree.insert(Node::new(5), UnderNode(&node_2_id)).unwrap();
             let node_6_id = tree.insert(Node::new(6), UnderNode(&node_3_id)).unwrap();
-            let node_7_id = tree.insert(Node::new(7), UnderNode(&node_4_id)).unwrap();
+            tree.insert(Node::new(7), UnderNode(&node_4_id)).unwrap();
 
             tree.swap_nodes(&node_1_id, &node_3_id, ChildrenOnly).unwrap();
 
@@ -1956,9 +1956,9 @@ mod tree_tests {
             let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
             let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
             let node_4_id = tree.insert(Node::new(4), UnderNode(&node_1_id)).unwrap();
-            let node_5_id = tree.insert(Node::new(5), UnderNode(&node_2_id)).unwrap();
+            tree.insert(Node::new(5), UnderNode(&node_2_id)).unwrap();
             let node_6_id = tree.insert(Node::new(6), UnderNode(&node_3_id)).unwrap();
-            let node_7_id = tree.insert(Node::new(7), UnderNode(&node_4_id)).unwrap();
+            tree.insert(Node::new(7), UnderNode(&node_4_id)).unwrap();
 
             tree.swap_nodes(&node_1_id, &node_6_id, ChildrenOnly).unwrap();
 
@@ -2002,9 +2002,9 @@ mod tree_tests {
             let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
             let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
             let node_4_id = tree.insert(Node::new(4), UnderNode(&node_1_id)).unwrap();
-            let node_5_id = tree.insert(Node::new(5), UnderNode(&node_2_id)).unwrap();
-            let node_6_id = tree.insert(Node::new(6), UnderNode(&node_3_id)).unwrap();
-            let node_7_id = tree.insert(Node::new(7), UnderNode(&node_4_id)).unwrap();
+            tree.insert(Node::new(5), UnderNode(&node_2_id)).unwrap();
+            tree.insert(Node::new(6), UnderNode(&node_3_id)).unwrap();
+            tree.insert(Node::new(7), UnderNode(&node_4_id)).unwrap();
 
             tree.swap_nodes(&root_id, &node_1_id, ChildrenOnly).unwrap();
 
