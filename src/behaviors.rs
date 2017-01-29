@@ -205,17 +205,12 @@ pub enum SwapBehavior {
     /// use id_tree::InsertBehavior::*;
     /// use id_tree::SwapBehavior::*;
     ///
-    /// let root_node = Node::new(1);
-    /// let first_child_node = Node::new(2);
-    /// let second_child_node = Node::new(3);
-    /// let grandchild_node = Node::new(4);
-    ///
     /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.insert(root_node, AsRoot).unwrap();
     ///
-    /// let first_child_id = tree.insert(first_child_node, UnderNode(&root_id)).unwrap();
-    /// let second_child_id = tree.insert(second_child_node, UnderNode(&root_id)).unwrap();
-    /// let grandchild_id = tree.insert(grandchild_node, UnderNode(&second_child_id)).unwrap();
+    /// let root_id = tree.insert(Node::new(1), AsRoot).unwrap();
+    /// let first_child_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+    /// let second_child_id = tree.insert(Node::new(3), UnderNode(&root_id)).unwrap();
+    /// let grandchild_id = tree.insert(Node::new(4), UnderNode(&second_child_id)).unwrap();
     ///
     /// tree.swap_nodes(&first_child_id, &grandchild_id, TakeChildren).unwrap();
     ///
@@ -239,17 +234,12 @@ pub enum SwapBehavior {
     /// use id_tree::InsertBehavior::*;
     /// use id_tree::SwapBehavior::*;
     ///
-    /// let root_node = Node::new(1);
-    /// let first_child_node = Node::new(2);
-    /// let second_child_node = Node::new(3);
-    /// let grandchild_node = Node::new(4);
-    ///
     /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.insert(root_node, AsRoot).unwrap();
     ///
-    /// let first_child_id = tree.insert(first_child_node, UnderNode(&root_id)).unwrap();
-    /// let second_child_id = tree.insert(second_child_node, UnderNode(&root_id)).unwrap();
-    /// let grandchild_id = tree.insert(grandchild_node, UnderNode(&second_child_id)).unwrap();
+    /// let root_id = tree.insert(Node::new(1), AsRoot).unwrap();
+    /// let first_child_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+    /// let second_child_id = tree.insert(Node::new(3), UnderNode(&root_id)).unwrap();
+    /// let grandchild_id = tree.insert(Node::new(4), UnderNode(&second_child_id)).unwrap();
     ///
     /// tree.swap_nodes(&first_child_id, &second_child_id, LeaveChildren).unwrap();
     ///
@@ -277,19 +267,13 @@ pub enum SwapBehavior {
     /// use id_tree::InsertBehavior::*;
     /// use id_tree::SwapBehavior::*;
     ///
-    /// let root_node = Node::new(1);
-    /// let first_child_node = Node::new(2);
-    /// let second_child_node = Node::new(3);
-    /// let grandchild_node = Node::new(4);
-    /// let grandchild_node_2 = Node::new(5);
-    ///
     /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.insert(root_node, AsRoot).unwrap();
     ///
-    /// let first_child_id = tree.insert(first_child_node, UnderNode(&root_id)).unwrap();
-    /// let second_child_id = tree.insert(second_child_node, UnderNode(&root_id)).unwrap();
-    /// let grandchild_id = tree.insert(grandchild_node, UnderNode(&second_child_id)).unwrap();
-    /// let grandchild_id_2 = tree.insert(grandchild_node_2, UnderNode(&first_child_id)).unwrap();
+    /// let root_id = tree.insert(Node::new(1), AsRoot).unwrap();
+    /// let first_child_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+    /// let second_child_id = tree.insert(Node::new(3), UnderNode(&root_id)).unwrap();
+    /// let grandchild_id = tree.insert(Node::new(4), UnderNode(&second_child_id)).unwrap();
+    /// let grandchild_id_2 = tree.insert(Node::new(5), UnderNode(&first_child_id)).unwrap();
     ///
     /// tree.swap_nodes(&first_child_id, &second_child_id, ChildrenOnly).unwrap();
     ///
