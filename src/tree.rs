@@ -199,7 +199,7 @@ impl<T> Tree<T> {
     /// let mut tree: Tree<i32> = Tree::new();
     /// let root_id = tree.insert(root_node, AsRoot).unwrap();
     ///
-    /// tree.insert(child_node, UnderNode(&root_id));
+    /// tree.insert(child_node, UnderNode(&root_id)).unwrap();
     /// ```
     ///
     #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -259,6 +259,8 @@ impl<T> Tree<T> {
     /// let root_id = tree.insert(Node::new(5), AsRoot).unwrap();
     ///
     /// let root_node: &Node<i32> = tree.get(&root_id).unwrap();
+    ///
+    /// # assert_eq!(root_node.data(), &5);
     /// ```
     ///
     pub fn get(&self, node_id: &NodeId) -> Result<&Node<T>, NodeIdError> {
@@ -283,6 +285,8 @@ impl<T> Tree<T> {
     /// let root_id = tree.insert(Node::new(5), AsRoot).unwrap();
     ///
     /// let root_node: &mut Node<i32> = tree.get_mut(&root_id).unwrap();
+    ///
+    /// # assert_eq!(root_node.data(), &5);
     /// ```
     ///
     pub fn get_mut(&mut self, node_id: &NodeId) -> Result<&mut Node<T>, NodeIdError> {
@@ -324,6 +328,8 @@ impl<T> Tree<T> {
     ///
     /// # assert!(tree.get(&grandchild_id).is_err());
     /// # assert_eq!(tree.get(&root_id).unwrap().children().len(), 0);
+    /// # assert_eq!(child.children().len(), 0);
+    /// # assert_eq!(child.parent(), None);
     /// ```
     ///
     #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -526,7 +532,7 @@ impl<T> Tree<T> {
     /// tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
     /// tree.insert(Node::new(0), UnderNode(&root_id)).unwrap();
     ///
-    /// tree.sort_children_by(&root_id, |a, b| a.data().cmp(b.data()));
+    /// tree.sort_children_by(&root_id, |a, b| a.data().cmp(b.data())).unwrap();
     ///
     /// # for (i, id) in tree.get(&root_id).unwrap().children().iter().enumerate() {
     /// #   assert_eq!(*tree.get(&id).unwrap().data(), i as i32);
@@ -569,7 +575,7 @@ impl<T> Tree<T> {
     /// tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
     /// tree.insert(Node::new(0), UnderNode(&root_id)).unwrap();
     ///
-    /// tree.sort_children_by_data(&root_id);
+    /// tree.sort_children_by_data(&root_id).unwrap();
     ///
     /// # for (i, id) in tree.get(&root_id).unwrap().children().iter().enumerate() {
     /// #   assert_eq!(*tree.get(&id).unwrap().data(), i as i32);
@@ -612,7 +618,7 @@ impl<T> Tree<T> {
     /// tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
     /// tree.insert(Node::new(0), UnderNode(&root_id)).unwrap();
     ///
-    /// tree.sort_children_by_key(&root_id, |x| x.data().clone());
+    /// tree.sort_children_by_key(&root_id, |x| x.data().clone()).unwrap();
     ///
     /// # for (i, id) in tree.get(&root_id).unwrap().children().iter().enumerate() {
     /// #   assert_eq!(*tree.get(&id).unwrap().data(), i as i32);
