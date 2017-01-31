@@ -11,8 +11,8 @@ categories = ["data-structures"]
 license = "MIT"
 
 [badges]
-travis-ci = { repository = "https://github.com/iwburns/id-tree", branch = "master" }
-appveyor = { repository = "https://github.com/iwburns/id-tree", branch = "master", service = "github" }
+travis-ci = { repository = "iwburns/id-tree", branch = "master" }
+appveyor = { repository = "iwburns/id-tree", branch = "master", service = "github" }
 
 [dependencies]
 snowflake = "1.2.0"
