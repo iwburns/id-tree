@@ -27,6 +27,8 @@ pub enum RemoveBehavior {
     ///
     /// assert!(tree.get(&grandchild_id).is_err());
     /// assert_eq!(tree.get(&root_id).unwrap().children().len(), 0);
+    /// assert_eq!(child.children().len(), 0);
+    /// assert_eq!(child.parent(), None);
     /// ```
     ///
     DropChildren,
@@ -53,6 +55,8 @@ pub enum RemoveBehavior {
     ///
     /// assert!(tree.get(&grandchild_id).is_ok());
     /// assert!(tree.get(&root_id).unwrap().children().contains(&grandchild_id));
+    /// assert_eq!(child.children().len(), 0);
+    /// assert_eq!(child.parent(), None);
     /// ```
     ///
     LiftChildren,
@@ -77,6 +81,8 @@ pub enum RemoveBehavior {
     ///
     /// assert!(tree.get(&grandchild_id).is_ok());
     /// assert_eq!(tree.get(&root_id).unwrap().children().len(), 0);
+    /// assert_eq!(child.children().len(), 0);
+    /// assert_eq!(child.parent(), None);
     /// ```
     ///
     OrphanChildren,
@@ -161,7 +167,7 @@ pub enum InsertBehavior<'a> {
     ///
     /// let mut tree: Tree<i32> = Tree::new();
     ///
-    /// tree.insert(Node::new(5), AsRoot);
+    /// tree.insert(Node::new(5), AsRoot).unwrap();
     /// ```
     AsRoot,
 
@@ -181,7 +187,7 @@ pub enum InsertBehavior<'a> {
     /// let mut tree: Tree<i32> = Tree::new();
     /// let root_id = tree.insert(root_node, AsRoot).unwrap();
     ///
-    /// tree.insert(child_node, UnderNode(&root_id));
+    /// tree.insert(child_node, UnderNode(&root_id)).unwrap();
     /// ```
     UnderNode(&'a NodeId),
 }
