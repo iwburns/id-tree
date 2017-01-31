@@ -27,29 +27,35 @@ make those structural decisions for you.
 use id_tree::*;
 
 fn main() {
+    use id_tree::InsertBehavior::*;
+
+    //      0
+    //     / \
+    //    1   2
+    //   / \
+    //  3   4
     let mut tree: Tree<i32> = TreeBuilder::new()
         .with_node_capacity(5)
         .build();
 
-    let root_id: NodeId = tree.insert(Node::new(0), InsertBehavior::AsRoot).unwrap();
-    let child_id: NodeId = tree.insert(Node::new(1), InsertBehavior::UnderNode(&root_id))
-        .unwrap();
-    tree.insert(Node::new(2), InsertBehavior::UnderNode(&root_id)).unwrap();
-    tree.insert(Node::new(3), InsertBehavior::UnderNode(&child_id)).unwrap();
-    tree.insert(Node::new(4), InsertBehavior::UnderNode(&child_id)).unwrap();
+    let root_id: NodeId = tree.insert(Node::new(0), AsRoot).unwrap();
+    let child_id: NodeId = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+    tree.insert(Node::new(3), UnderNode(&child_id)).unwrap();
+    tree.insert(Node::new(4), UnderNode(&child_id)).unwrap();
 
     println!("Pre-order:");
-    print_nodes_pre_order(&tree, &root_id);
+    print_pre_order(&tree, &root_id);
     // results in the output "0, 1, 3, 4, 2, "
 }
 
-fn print_nodes_pre_order(tree: &Tree<i32>, node_id: &NodeId) {
-    let node_ref: &Node<i32> = tree.get(node_id).unwrap();
+fn print_pre_order(tree: &Tree<i32>, node_id: &NodeId) {
+    let node_ref = tree.get(node_id).unwrap();
 
-    println!("{}, ", node_ref.data());
+    print!("{}, ", node_ref.data());
 
     for child_id in node_ref.children() {
-        print_nodes_pre_order(tree, &child_id);
+        print_pre_order(tree, &child_id);
     }
 }
 ```
