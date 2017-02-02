@@ -235,3 +235,35 @@ fn test_swap_sub_trees_of_different_trees() {
     let error = result.err().unwrap();
     assert_eq!(error, NodeIdError::InvalidNodeIdForTree);
 }
+
+#[test]
+fn test_ancestors_different_trees() {
+    let mut a = Tree::new();
+    let b = Tree::<i32>::new();
+
+    let root_id = a.insert(Node::new(1), InsertBehavior::AsRoot).unwrap();
+
+    // note usage of `b` instead of `a`
+    let ancestors = b.ancestors(&root_id);
+
+    assert!(ancestors.is_err());
+    let error = ancestors.err().unwrap();
+    assert_eq!(error, NodeIdError::InvalidNodeIdForTree);
+}
+
+#[test]
+fn test_ancestors_old_id() {
+    let mut a = Tree::new();
+
+    let root_id = a.insert(Node::new(1), InsertBehavior::AsRoot).unwrap();
+    // `.clone()` required to get this error
+    let root_id_clone = root_id.clone();
+    let _ = a.remove_node(root_id, RemoveBehavior::DropChildren).unwrap();
+
+    // note usage of cloned `NodeId`
+    let ancestors = a.ancestors(&root_id_clone);
+
+    assert!(ancestors.is_err());
+    let error = ancestors.err().unwrap();
+    assert_eq!(error, NodeIdError::NodeIdNoLongerValid);
+}
