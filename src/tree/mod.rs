@@ -3,6 +3,8 @@ pub mod iterators;
 use std::cmp::Ordering;
 
 use super::*;
+use super::snowflake::ProcessUniqueId;
+use super::MutableNode;
 
 ///
 /// A `Tree` builder that provides more control over how a `Tree` is created.
