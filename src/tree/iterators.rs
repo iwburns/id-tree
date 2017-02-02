@@ -30,13 +30,9 @@ impl<'a, T> Iterator for Ancestors<'a, T> {
 
     fn next(&mut self) -> Option<&'a Node<T>> {
         if let Some(current_id) = self.node_id.clone() {
-
             if let Some(parent_id) = self.tree.get_unsafe(&current_id).parent() {
-
                 let parent = self.tree.get_unsafe(&parent_id);
-
                 self.node_id = Some(parent_id.clone());
-
                 return Some(parent);
             } else {
                 self.node_id = None;
