@@ -1,8 +1,9 @@
-use super::Tree;
-use super::Node;
-use super::NodeId;
-use super::IteratorNew;
+use std::slice::Iter;
 
+use Tree;
+use Node;
+use NodeId;
+use tree::IteratorNew;
 
 pub struct Ancestors<'a, T: 'a> {
     tree: &'a Tree<T>,
@@ -39,7 +40,35 @@ impl<'a, T> Iterator for Ancestors<'a, T> {
     }
 }
 
-use std::slice::Iter;
+pub struct AncestorIds<'a, T: 'a> {
+    tree: &'a Tree<T>,
+    node_id: Option<NodeId>,
+}
+
+impl<'a, T> IteratorNew<'a, T, AncestorIds<'a, T>> for AncestorIds<'a, T> {
+    fn new(tree: &'a Tree<T>, node_id: NodeId) -> AncestorIds<'a, T> {
+        AncestorIds {
+            tree: tree,
+            node_id: Some(node_id),
+        }
+    }
+}
+
+impl<'a, T> Iterator for AncestorIds<'a, T> {
+    type Item = &'a NodeId;
+
+    fn next(&mut self) -> Option<&'a NodeId> {
+        if let Some(current_id) = self.node_id.clone() {
+            if let Some(parent_id) = self.tree.get_unsafe(&current_id).parent() {
+                self.node_id = Some(parent_id.clone());
+                return Some(parent_id);
+            } else {
+                self.node_id = None;
+            }
+        }
+        None
+    }
+}
 
 pub struct Children<'a, T: 'a> {
     tree: &'a Tree<T>,
@@ -63,6 +92,26 @@ impl<'a, T> Iterator for Children<'a, T> {
             return Some(self.tree.get_unsafe(next_child_id));
         }
         None
+    }
+}
+
+pub struct ChildrenIds<'a> {
+    child_ids: Iter<'a, NodeId>,
+}
+
+impl<'a, T> IteratorNew<'a, T, ChildrenIds<'a>> for ChildrenIds<'a> {
+    fn new(tree: &'a Tree<T>, node_id: NodeId) -> ChildrenIds<'a> {
+        ChildrenIds {
+            child_ids: tree.get_unsafe(&node_id).children().as_slice().iter()
+        }
+    }
+}
+
+impl<'a> Iterator for ChildrenIds<'a> {
+    type Item = &'a NodeId;
+
+    fn next(&mut self) -> Option<&'a NodeId> {
+        self.child_ids.next()
     }
 }
 
@@ -103,6 +152,35 @@ mod tests {
     }
 
     #[test]
+    fn test_ancestor_ids() {
+
+        let mut tree = Tree::new();
+
+        let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+        let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+        let node_2 = tree.insert(Node::new(2), UnderNode(&node_1)).unwrap();
+        let node_3 = tree.insert(Node::new(3), UnderNode(&node_1)).unwrap();
+
+        let ancestor_ids = tree.ancestor_ids(&root_id).unwrap();
+        assert_eq!(ancestor_ids.count(), 0);
+
+        let data = [0];
+        for (index, node_id) in tree.ancestor_ids(&node_1).unwrap().enumerate() {
+            assert_eq!(tree.get(node_id).unwrap().data(), &data[index]);
+        }
+
+        let data = [1, 0];
+        for (index, node_id) in tree.ancestor_ids(&node_2).unwrap().enumerate() {
+            assert_eq!(tree.get(node_id).unwrap().data(), &data[index]);
+        }
+
+        let data = [1, 0];
+        for (index, node_id) in tree.ancestor_ids(&node_3).unwrap().enumerate() {
+            assert_eq!(tree.get(node_id).unwrap().data(), &data[index]);
+        }
+    }
+
+    #[test]
     fn test_children() {
 
         let mut tree = Tree::new();
@@ -127,5 +205,32 @@ mod tests {
 
         let children = tree.children(&node_3).unwrap();
         assert_eq!(children.count(), 0);
+    }
+
+    #[test]
+    fn test_children_ids() {
+
+        let mut tree = Tree::new();
+
+        let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+        let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+        let node_2 = tree.insert(Node::new(2), UnderNode(&node_1)).unwrap();
+        let node_3 = tree.insert(Node::new(3), UnderNode(&node_1)).unwrap();
+
+        let data = [1];
+        for (index, node_id) in tree.children_ids(&root_id).unwrap().enumerate() {
+            assert_eq!(tree.get(node_id).unwrap().data(), &data[index]);
+        }
+
+        let data = [2, 3];
+        for (index, node_id) in tree.children_ids(&node_1).unwrap().enumerate() {
+            assert_eq!(tree.get(node_id).unwrap().data(), &data[index]);
+        }
+
+        let children_ids = tree.children_ids(&node_2).unwrap();
+        assert_eq!(children_ids.count(), 0);
+
+        let children_ids = tree.children_ids(&node_3).unwrap();
+        assert_eq!(children_ids.count(), 0);
     }
 }

@@ -1,4 +1,4 @@
-use super::NodeId;
+use NodeId;
 
 ///
 /// Describes the possible behaviors of the `Tree::remove_node` method.

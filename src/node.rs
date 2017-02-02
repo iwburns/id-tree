@@ -1,5 +1,5 @@
-use super::NodeId;
-use super::MutableNode;
+use NodeId;
+use MutableNode;
 
 ///
 /// A `Node` builder that provides more control over how a `Node` is created.

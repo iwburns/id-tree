@@ -91,7 +91,9 @@ pub use node::Node;
 pub use tree::TreeBuilder;
 pub use tree::Tree;
 pub use tree::iterators::Ancestors;
+pub use tree::iterators::AncestorIds;
 pub use tree::iterators::Children;
+pub use tree::iterators::ChildrenIds;
 
 ///
 /// An identifier used to differentiate between `Node`s within a `Tree`.

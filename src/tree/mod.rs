@@ -2,17 +2,7 @@ pub mod iterators;
 
 use std::cmp::Ordering;
 
-use super::behaviors::RemoveBehavior;
-use super::behaviors::MoveBehavior;
-use super::behaviors::InsertBehavior;
-use super::behaviors::SwapBehavior;
-use super::snowflake::ProcessUniqueId;
-use super::Node;
-use super::NodeId;
-use super::MutableNode;
-use super::NodeIdError;
-use self::iterators::Ancestors;
-use self::iterators::Children;
+use super::*;
 
 ///
 /// A `Tree` builder that provides more control over how a `Tree` is created.
@@ -993,6 +983,16 @@ impl<T> Tree<T> {
         Ok(Ancestors::new(self, node_id.clone()))
     }
 
+    pub fn ancestor_ids(&self, node_id: &NodeId) -> Result<AncestorIds<T>, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::ancestor_ids: Missing an error value but found an invalid NodeId."));
+        }
+
+        Ok(AncestorIds::new(self, node_id.clone()))
+    }
+
     pub fn children(&self, node_id: &NodeId) -> Result<Children<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
@@ -1001,6 +1001,16 @@ impl<T> Tree<T> {
         }
 
         Ok(Children::new(self, node_id.clone()))
+    }
+
+    pub fn children_ids(&self, node_id: &NodeId) -> Result<ChildrenIds, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::children_ids: Missing an error value but found an invalid NodeId."));
+        }
+
+        Ok(ChildrenIds::new(self, node_id.clone()))
     }
 
     // Nothing should make it past this function.
