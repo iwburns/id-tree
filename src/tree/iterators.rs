@@ -5,6 +5,12 @@ use Node;
 use NodeId;
 use tree::IteratorNew;
 
+///
+/// An Iterator over the ancestors of a `Node`.
+///
+/// Iterates over the ancestor `Node`s of a given `Node` in the `Tree`.  Each call to `next` will
+/// return an immutable reference to the next `Node` up the `Tree`.
+///
 pub struct Ancestors<'a, T: 'a> {
     tree: &'a Tree<T>,
     node_id: Option<NodeId>,
@@ -40,6 +46,11 @@ impl<'a, T> Iterator for Ancestors<'a, T> {
     }
 }
 
+///
+/// An Iterator over the ancestors of a `Node`.
+///
+/// Iterates over `NodeId`s instead of over the `Node`s themselves.
+///
 pub struct AncestorIds<'a, T: 'a> {
     tree: &'a Tree<T>,
     node_id: Option<NodeId>,
@@ -70,6 +81,12 @@ impl<'a, T> Iterator for AncestorIds<'a, T> {
     }
 }
 
+///
+/// An Iterator over the children of a `Node`.
+///
+/// Iterates over the child `Node`s of a given `Node` in the `Tree`.  Each call to `next` will
+/// return an immutable reference to the next child `Node`.
+///
 pub struct Children<'a, T: 'a> {
     tree: &'a Tree<T>,
     child_ids: Iter<'a, NodeId>,
@@ -95,6 +112,11 @@ impl<'a, T> Iterator for Children<'a, T> {
     }
 }
 
+///
+/// An Iterator over the children of a `Node`.
+///
+/// Iterates over `NodeId`s instead of over the `Node`s themselves.
+///
 pub struct ChildrenIds<'a> {
     child_ids: Iter<'a, NodeId>,
 }
@@ -122,7 +144,6 @@ mod tests {
 
     #[test]
     fn test_ancestors() {
-
         let mut tree = Tree::new();
 
         let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
@@ -151,7 +172,6 @@ mod tests {
 
     #[test]
     fn test_ancestor_ids() {
-
         let mut tree = Tree::new();
 
         let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
@@ -180,7 +200,6 @@ mod tests {
 
     #[test]
     fn test_children() {
-
         let mut tree = Tree::new();
 
         let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
@@ -207,7 +226,6 @@ mod tests {
 
     #[test]
     fn test_children_ids() {
-
         let mut tree = Tree::new();
 
         let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
