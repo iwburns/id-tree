@@ -79,7 +79,7 @@ impl<'a, T> IteratorNew<'a, T, Children<'a, T>> for Children<'a, T> {
     fn new(tree: &'a Tree<T>, node_id: NodeId) -> Children<'a, T> {
         Children {
             tree: tree,
-            child_ids: tree.get_unsafe(&node_id).children().as_slice().iter()
+            child_ids: tree.get_unsafe(&node_id).children().as_slice().iter(),
         }
     }
 }
@@ -101,9 +101,7 @@ pub struct ChildrenIds<'a> {
 
 impl<'a, T> IteratorNew<'a, T, ChildrenIds<'a>> for ChildrenIds<'a> {
     fn new(tree: &'a Tree<T>, node_id: NodeId) -> ChildrenIds<'a> {
-        ChildrenIds {
-            child_ids: tree.get_unsafe(&node_id).children().as_slice().iter()
-        }
+        ChildrenIds { child_ids: tree.get_unsafe(&node_id).children().as_slice().iter() }
     }
 }
 
