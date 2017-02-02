@@ -1,3 +1,5 @@
+pub mod iterators;
+
 use std::cmp::Ordering;
 
 use super::behaviors::RemoveBehavior;
@@ -9,6 +11,8 @@ use super::Node;
 use super::NodeId;
 use super::MutableNode;
 use super::NodeIdError;
+use self::iterators::Ancestors;
+use self::iterators::Children;
 
 ///
 /// A `Tree` builder that provides more control over how a `Tree` is created.
@@ -979,6 +983,26 @@ impl<T> Tree<T> {
         self.root.as_ref()
     }
 
+    pub fn ancestors(&self, node_id: &NodeId) -> Result<Ancestors<T>, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::ancestors: Missing an error value but found an invalid NodeId."));
+        }
+
+        Ok(Ancestors::new(self, node_id.clone()))
+    }
+
+    pub fn children(&self, node_id: &NodeId) -> Result<Children<T>, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::children: Missing an error value but found an invalid NodeId."));
+        }
+
+        Ok(Children::new(self, node_id.clone()))
+    }
+
     // Nothing should make it past this function.
     // If there is a way for a NodeId to be invalid, it should be caught here.
     fn is_valid_node_id(&self, node_id: &NodeId) -> (bool, Option<NodeIdError>) {
@@ -1132,6 +1156,10 @@ impl<T> Tree<T> {
                     checks.  Please report this issue!")
         }
     }
+}
+
+trait IteratorNew<'a, T, I> {
+    fn new(tree: &'a Tree<T>, node_id: NodeId) -> I;
 }
 
 #[cfg(test)]
