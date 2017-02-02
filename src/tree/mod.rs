@@ -975,6 +975,26 @@ impl<T> Tree<T> {
         self.root.as_ref()
     }
 
+    ///
+    /// Returns an `Ancestors` iterator (or a `NodeIdError` if one occurred).
+    ///
+    /// Allows iteration over the ancestor `Node`s of a given `NodeId` directly instead of having
+    /// to call `tree.get(...)` with a `NodeId` each time.
+    ///
+    /// ```
+    /// use id_tree::*;
+    /// use id_tree::InsertBehavior::*;
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+    /// let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    ///
+    /// let mut ancestors = tree.ancestors(&node_1).unwrap();
+    ///
+    /// assert_eq!(ancestors.next().unwrap().data(), &0);
+    /// assert!(ancestors.next().is_none());
+    /// ```
+    ///
     pub fn ancestors(&self, node_id: &NodeId) -> Result<Ancestors<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
@@ -985,6 +1005,25 @@ impl<T> Tree<T> {
         Ok(Ancestors::new(self, node_id.clone()))
     }
 
+    ///
+    /// Returns an `AncestorIds` iterator (or a `NodeIdError` if one occurred).
+    ///
+    /// Allows iteration over the ancestor `NodeId`s of a given `NodeId`.
+    ///
+    /// ```
+    /// use id_tree::*;
+    /// use id_tree::InsertBehavior::*;
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+    /// let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    ///
+    /// let mut ancestor_ids = tree.ancestor_ids(&node_1).unwrap();
+    ///
+    /// assert_eq!(ancestor_ids.next().unwrap(), &root_id);
+    /// assert!(ancestor_ids.next().is_none());
+    /// ```
+    ///
     pub fn ancestor_ids(&self, node_id: &NodeId) -> Result<AncestorIds<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
@@ -995,6 +1034,26 @@ impl<T> Tree<T> {
         Ok(AncestorIds::new(self, node_id.clone()))
     }
 
+    ///
+    /// Returns a `Children` iterator (or a `NodeIdError` if one occurred).
+    ///
+    /// Allows iteration over the child `Node`s of a given `NodeId` directly instead of having
+    /// to call `tree.get(...)` with a `NodeId` each time.
+    ///
+    /// ```
+    /// use id_tree::*;
+    /// use id_tree::InsertBehavior::*;
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+    /// tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    ///
+    /// let mut children = tree.children(&root_id).unwrap();
+    ///
+    /// assert_eq!(children.next().unwrap().data(), &1);
+    /// assert!(children.next().is_none());
+    /// ```
+    ///
     pub fn children(&self, node_id: &NodeId) -> Result<Children<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
@@ -1005,6 +1064,25 @@ impl<T> Tree<T> {
         Ok(Children::new(self, node_id.clone()))
     }
 
+    ///
+    /// Returns a `ChildrenIds` iterator (or a `NodeIdError` if one occurred).
+    ///
+    /// Allows iteration over the child `NodeId`s of a given `NodeId`.
+    ///
+    /// ```
+    /// use id_tree::*;
+    /// use id_tree::InsertBehavior::*;
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+    /// let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    ///
+    /// let mut children_ids = tree.children_ids(&root_id).unwrap();
+    ///
+    /// assert_eq!(children_ids.next().unwrap(), &node_1);
+    /// assert!(children_ids.next().is_none());
+    /// ```
+    ///
     pub fn children_ids(&self, node_id: &NodeId) -> Result<ChildrenIds, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
