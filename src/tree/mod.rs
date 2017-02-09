@@ -1093,8 +1093,11 @@ impl<T> Tree<T> {
         Ok(ChildrenIds::new(self, node_id.clone()))
     }
 
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
     pub fn traverse_pre_order(&self, node_id: &NodeId)
-        -> Result<PreOrderTraversal<T>, NodeIdError> {
+        -> Result<PreOrderTraversal<T>, NodeIdError>
+    {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
@@ -1104,8 +1107,11 @@ impl<T> Tree<T> {
         Ok(PreOrderTraversal::new(self, node_id.clone()))
     }
 
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
     pub fn traverse_post_order(&self, node_id: &NodeId)
-        -> Result<PostOrderTraversal<T>, NodeIdError> {
+        -> Result<PostOrderTraversal<T>, NodeIdError>
+    {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
