@@ -1093,6 +1093,16 @@ impl<T> Tree<T> {
         Ok(ChildrenIds::new(self, node_id.clone()))
     }
 
+    pub fn pre_order_traversal(&self, node_id: &NodeId) -> Result<PreOrderTraversal<T>, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::pre_order_traversal: Missing an error value but found an invalid NodeId."));
+        }
+
+        Ok(PreOrderTraversal::new(self, node_id.clone()))
+    }
+
     // Nothing should make it past this function.
     // If there is a way for a NodeId to be invalid, it should be caught here.
     fn is_valid_node_id(&self, node_id: &NodeId) -> (bool, Option<NodeIdError>) {
