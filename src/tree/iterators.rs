@@ -131,6 +131,12 @@ impl<'a> Iterator for ChildrenIds<'a> {
     }
 }
 
+///
+/// An Iterator over the sub-tree relative to a given `Node`.
+///
+/// Iterates over all of the `Node`s in the sub-tree of a given `Node` in the `Tree`.  Each call to
+/// `next` will return an immutable reference to the next `Node` in Pre-Order Traversal order.
+///
 pub struct PreOrderTraversal<'a, T: 'a> {
     tree: &'a Tree<T>,
     node_id: Option<NodeId>,
@@ -176,6 +182,12 @@ impl<'a, T> Iterator for PreOrderTraversal<'a, T> {
     }
 }
 
+///
+/// An Iterator over the sub-tree relative to a given `Node`.
+///
+/// Iterates over all of the `Node`s in the sub-tree of a given `Node` in the `Tree`.  Each call to
+/// `next` will return an immutable reference to the next `Node` in Post-Order Traversal order.
+///
 pub struct PostOrderTraversal<'a, T: 'a> {
     tree: &'a Tree<T>,
     index: usize,
