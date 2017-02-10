@@ -1093,7 +1093,6 @@ impl<T> Tree<T> {
         Ok(ChildrenIds::new(self, node_id.clone()))
     }
 
-    ///
     /// Returns a `PreOrderTraversal` iterator (or a `NodeIdError` if one occurred).
     ///
     /// Allows iteration over all of the `Node`s in the sub-tree below a given `Node`.  This
@@ -1128,7 +1127,6 @@ impl<T> Tree<T> {
         Ok(PreOrderTraversal::new(self, node_id.clone()))
     }
 
-    ///
     /// Returns a `PostOrderTraversal` iterator (or a `NodeIdError` if one occurred).
     ///
     /// Allows iteration over all of the `Node`s in the sub-tree below a given `Node`.  This
