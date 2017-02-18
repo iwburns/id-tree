@@ -1,4 +1,5 @@
 use std::slice::Iter;
+use std::vec::IntoIter;
 
 use Tree;
 use Node;
@@ -190,33 +191,33 @@ impl<'a, T> Iterator for PreOrderTraversal<'a, T> {
 ///
 pub struct PostOrderTraversal<'a, T: 'a> {
     tree: &'a Tree<T>,
-    index: usize,
-    data: Vec<NodeId>,
+    ids: IntoIter<NodeId>,
 }
 
 impl<'a, T> PostOrderTraversal<'a, T> {
-    fn process_nodes(&mut self, starting_id: NodeId) {
-        let node = self.tree.get_unsafe(&starting_id);
+    fn process_nodes(starting_id: NodeId, tree: &Tree<T>, ids: &mut Vec<NodeId>) {
+        let node = tree.get_unsafe(&starting_id);
 
         for child_id in node.children() {
-            self.process_nodes(child_id.clone());
+            PostOrderTraversal::process_nodes(child_id.clone(), tree, ids);
         }
 
-        self.data.push(starting_id);
+        ids.push(starting_id);
     }
 }
 
 impl<'a, T> IteratorNew<'a, T, PostOrderTraversal<'a, T>> for PostOrderTraversal<'a, T> {
     fn new(tree: &'a Tree<T>, node_id: NodeId) -> PostOrderTraversal<T> {
-        let mut traversal = PostOrderTraversal {
-            tree: tree,
-            index: 0,
-            // over allocating, but all at once instead of re-sizing and re-allocating as we go
-            data: Vec::with_capacity(tree.nodes.capacity()),
-        };
 
-        traversal.process_nodes(node_id);
-        traversal
+        // over allocating, but all at once instead of re-sizing and re-allocating as we go
+        let mut ids = Vec::with_capacity(tree.nodes.capacity());
+
+        PostOrderTraversal::process_nodes(node_id, tree, &mut ids);
+
+        PostOrderTraversal {
+            tree: tree,
+            ids: ids.into_iter(),
+        }
     }
 }
 
@@ -224,11 +225,9 @@ impl<'a, T> Iterator for PostOrderTraversal<'a, T> {
     type Item = &'a Node<T>;
 
     fn next(&mut self) -> Option<&'a Node<T>> {
+        let id = self.ids.next();
 
-        let id = self.data.get(self.index);
-        self.index += 1;
-
-        if let Some(node_id) = id {
+        if let Some(ref node_id) = id {
             return Some(self.tree.get_unsafe(node_id));
         }
 
