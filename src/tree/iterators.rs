@@ -195,7 +195,7 @@ pub struct PostOrderTraversal<'a, T: 'a> {
 }
 
 impl<'a, T> PostOrderTraversal<'a, T> {
-    fn process_nodes<'b>(&mut self, starting_id: NodeId) {
+    fn process_nodes(&mut self, starting_id: NodeId) {
         let node = self.tree.get_unsafe(&starting_id);
 
         for child_id in node.children() {
