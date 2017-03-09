@@ -88,6 +88,7 @@ pub use tree::iterators::Children;
 pub use tree::iterators::ChildrenIds;
 pub use tree::iterators::PreOrderTraversal;
 pub use tree::iterators::PostOrderTraversal;
+pub use tree::iterators::LevelOrderTraversal;
 
 ///
 /// An identifier used to differentiate between `Node`s within a `Tree`.

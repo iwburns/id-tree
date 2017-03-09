@@ -1,5 +1,6 @@
 use std::slice::Iter;
 use std::vec::IntoIter;
+use std::collections::VecDeque;
 
 use Tree;
 use Node;
@@ -235,6 +236,62 @@ impl<'a, T> Iterator for PostOrderTraversal<'a, T> {
     }
 }
 
+///
+/// An Iterator over the sub-tree relative to a given `Node`.
+///
+/// Iterates over all of the `Node`s in the sub-tree of a given `Node` in the `Tree`.  Each call to
+/// `next` will return an immutable reference to the next `Node` in Level-Order Traversal order.
+///
+pub struct LevelOrderTraversal<'a, T: 'a> {
+    tree: &'a Tree<T>,
+    data: VecDeque<NodeId>,
+}
+
+impl<'a, T> LevelOrderTraversal<'a, T> {
+    fn process_nodes(&mut self, starting_id: NodeId) {
+
+        self.data.push_back(starting_id.clone());
+        let mut index: usize = 0;
+
+        while let Some(node_id) = self.data.get(index).cloned() {
+            let node = self.tree.get_unsafe(&node_id);
+
+            for child_id in node.children() {
+                self.data.push_back(child_id.clone());
+            }
+
+            index += 1;
+        }
+    }
+}
+
+impl<'a, T> IteratorNew<'a, T, LevelOrderTraversal<'a, T>> for LevelOrderTraversal<'a, T> {
+    fn new(tree: &'a Tree<T>, node_id: NodeId) -> LevelOrderTraversal<T> {
+        let mut traversal = LevelOrderTraversal {
+            tree: tree,
+            // over allocating, but all at once instead of re-sizing and re-allocating as we go
+            data: VecDeque::with_capacity(tree.nodes.capacity()),
+        };
+
+        traversal.process_nodes(node_id);
+        traversal
+    }
+}
+
+impl<'a, T> Iterator for LevelOrderTraversal<'a, T> {
+    type Item = &'a Node<T>;
+
+    fn next(&mut self) -> Option<&'a Node<T>> {
+        let id = self.data.pop_front();
+
+        if let Some(ref node_id_ref) = id {
+            return Some(self.tree.get_unsafe(node_id_ref));
+        }
+
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -354,17 +411,22 @@ mod tests {
     fn test_pre_order_traversal() {
         let mut tree = Tree::new();
 
+        //      0
+        //     / \
+        //    1   2
+        //   /
+        //  3
         let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
         let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
-        let node_2 = tree.insert(Node::new(2), UnderNode(&node_1)).unwrap();
+        let node_2 = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
         let node_3 = tree.insert(Node::new(3), UnderNode(&node_1)).unwrap();
 
-        let data = [0, 1, 2, 3];
+        let data = [0, 1, 3, 2];
         for (index, node) in tree.traverse_pre_order(&root_id).unwrap().enumerate() {
             assert_eq!(node.data(), &data[index]);
         }
 
-        let data = [1, 2, 3];
+        let data = [1, 3];
         for (index, node) in tree.traverse_pre_order(&node_1).unwrap().enumerate() {
             assert_eq!(node.data(), &data[index]);
         }
@@ -384,17 +446,22 @@ mod tests {
     fn test_post_order_traversal() {
         let mut tree = Tree::new();
 
+        //      0
+        //     / \
+        //    1   2
+        //   /
+        //  3
         let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
         let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
-        let node_2 = tree.insert(Node::new(2), UnderNode(&node_1)).unwrap();
+        let node_2 = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
         let node_3 = tree.insert(Node::new(3), UnderNode(&node_1)).unwrap();
 
-        let data = [2, 3, 1, 0];
+        let data = [3, 1, 2, 0];
         for (index, node) in tree.traverse_post_order(&root_id).unwrap().enumerate() {
             assert_eq!(node.data(), &data[index]);
         }
 
-        let data = [2, 3, 1];
+        let data = [3, 1];
         for (index, node) in tree.traverse_post_order(&node_1).unwrap().enumerate() {
             assert_eq!(node.data(), &data[index]);
         }
@@ -406,6 +473,41 @@ mod tests {
 
         let data = [3];
         for (index, node) in tree.traverse_post_order(&node_3).unwrap().enumerate() {
+            assert_eq!(node.data(), &data[index]);
+        }
+    }
+
+    #[test]
+    fn test_level_order_traversal() {
+        let mut tree = Tree::new();
+
+        //      0
+        //     / \
+        //    1   2
+        //   /
+        //  3
+        let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+        let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+        let node_2 = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+        let node_3 = tree.insert(Node::new(3), UnderNode(&node_1)).unwrap();
+
+        let data = [0, 1, 2, 3];
+        for (index, node) in tree.traverse_level_order(&root_id).unwrap().enumerate() {
+            assert_eq!(node.data(), &data[index]);
+        }
+
+        let data = [1, 3];
+        for (index, node) in tree.traverse_level_order(&node_1).unwrap().enumerate() {
+            assert_eq!(node.data(), &data[index]);
+        }
+
+        let data = [2];
+        for (index, node) in tree.traverse_level_order(&node_2).unwrap().enumerate() {
+            assert_eq!(node.data(), &data[index]);
+        }
+
+        let data = [3];
+        for (index, node) in tree.traverse_level_order(&node_3).unwrap().enumerate() {
             assert_eq!(node.data(), &data[index]);
         }
     }

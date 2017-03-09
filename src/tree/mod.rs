@@ -1161,6 +1161,40 @@ impl<T> Tree<T> {
         Ok(PostOrderTraversal::new(self, node_id.clone()))
     }
 
+    /// Returns a `LevelOrderTraversal` iterator (or a `NodeIdError` if one occurred).
+    ///
+    /// Allows iteration over all of the `Node`s in the sub-tree below a given `Node`.  This
+    /// iterator will always include that sub-tree "root" specified by the `NodeId` given.
+    ///
+    /// ```
+    /// use id_tree::*;
+    /// use id_tree::InsertBehavior::*;
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+    /// let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    ///
+    /// let mut nodes = tree.traverse_level_order(&root_id).unwrap();
+    ///
+    /// assert_eq!(nodes.next().unwrap().data(), &0);
+    /// assert_eq!(nodes.next().unwrap().data(), &1);
+    /// assert!(nodes.next().is_none());
+    /// ```
+    ///
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
+    pub fn traverse_level_order(&self, node_id: &NodeId)
+        -> Result<LevelOrderTraversal<T>, NodeIdError>
+    {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::traverse_level_order: Missing an error value but found an invalid NodeId."));
+        }
+
+        Ok(LevelOrderTraversal::new(self, node_id.clone()))
+    }
+
     // Nothing should make it past this function.
     // If there is a way for a NodeId to be invalid, it should be caught here.
     fn is_valid_node_id(&self, node_id: &NodeId) -> (bool, Option<NodeIdError>) {
