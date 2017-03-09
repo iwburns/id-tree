@@ -1189,7 +1189,8 @@ impl<T> Tree<T> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
-                "Tree::traverse_level_order: Missing an error value but found an invalid NodeId."));
+                "Tree::traverse_level_order: Missing an error value but found an invalid NodeId.")
+            );
         }
 
         Ok(LevelOrderTraversal::new(self, node_id.clone()))
