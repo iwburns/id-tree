@@ -168,7 +168,7 @@ impl<'a, T> Iterator for PreOrderTraversal<'a, T> {
         if let Some(ref node_id) = id {
             let node_ref = self.tree.get_unsafe(node_id);
 
-            //prepend child_ids
+            // prepend child_ids
             for child_id in node_ref.children().iter().rev() {
                 self.data.push_front(child_id.clone());
             }
