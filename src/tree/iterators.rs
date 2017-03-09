@@ -1,7 +1,6 @@
 use std::slice::Iter;
 use std::vec::IntoIter;
 use std::collections::VecDeque;
-use std::collections::vec_deque;
 
 use Tree;
 use Node;
@@ -245,38 +244,20 @@ impl<'a, T> Iterator for PostOrderTraversal<'a, T> {
 ///
 pub struct LevelOrderTraversal<'a, T: 'a> {
     tree: &'a Tree<T>,
-    data: vec_deque::IntoIter<NodeId>,
-}
-
-impl<'a, T> LevelOrderTraversal<'a, T> {
-    fn process_nodes(starting_id: NodeId, tree: &Tree<T>, ids: &mut VecDeque<NodeId>) {
-
-        ids.push_back(starting_id);
-        let mut index: usize = 0;
-
-        while let Some(node_id) = ids.get(index).cloned() {
-            let node = tree.get_unsafe(&node_id);
-
-            for child_id in node.children() {
-                ids.push_back(child_id.clone());
-            }
-
-            index += 1;
-        }
-    }
+    data: VecDeque<NodeId>,
 }
 
 impl<'a, T> IteratorNew<'a, T, LevelOrderTraversal<'a, T>> for LevelOrderTraversal<'a, T> {
     fn new(tree: &'a Tree<T>, node_id: NodeId) -> LevelOrderTraversal<T> {
 
         // over allocating, but all at once instead of re-sizing and re-allocating as we go
-        let mut ids = VecDeque::with_capacity(tree.nodes.capacity());
+        let mut data = VecDeque::with_capacity(tree.nodes.capacity());
 
-        LevelOrderTraversal::process_nodes(node_id, tree, &mut ids);
+        data.push_back(node_id);
 
         LevelOrderTraversal {
             tree: tree,
-            data: ids.into_iter(),
+            data: data,
         }
     }
 }
@@ -285,10 +266,17 @@ impl<'a, T> Iterator for LevelOrderTraversal<'a, T> {
     type Item = &'a Node<T>;
 
     fn next(&mut self) -> Option<&'a Node<T>> {
-        let id = self.data.next();
+        let id = self.data.pop_front();
 
         if let Some(ref node_id_ref) = id {
-            return Some(self.tree.get_unsafe(node_id_ref));
+
+            let node_ref = self.tree.get_unsafe(node_id_ref);
+
+            for child_id in node_ref.children() {
+                self.data.push_back(child_id.clone());
+            }
+
+            return Some(node_ref);
         }
 
         None
