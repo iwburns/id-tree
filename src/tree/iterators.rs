@@ -141,17 +141,20 @@ impl<'a> Iterator for ChildrenIds<'a> {
 ///
 pub struct PreOrderTraversal<'a, T: 'a> {
     tree: &'a Tree<T>,
-    node_id: Option<NodeId>,
-    future_data: Vec<&'a NodeId>,
+    data: VecDeque<NodeId>,
 }
 
 impl<'a, T> IteratorNew<'a, T, PreOrderTraversal<'a, T>> for PreOrderTraversal<'a, T> {
     fn new(tree: &'a Tree<T>, node_id: NodeId) -> PreOrderTraversal<T> {
+
+        // over allocating, but all at once instead of re-sizing and re-allocating as we go
+        let mut data = VecDeque::with_capacity(tree.nodes.capacity());
+
+        data.push_front(node_id);
+
         PreOrderTraversal {
             tree: tree,
-            node_id: Some(node_id),
-            // over allocating, but all at once instead of re-sizing and re-allocating as we go
-            future_data: Vec::with_capacity(tree.nodes.capacity()),
+            data: data,
         }
     }
 }
@@ -160,25 +163,17 @@ impl<'a, T> Iterator for PreOrderTraversal<'a, T> {
     type Item = &'a Node<T>;
 
     fn next(&mut self) -> Option<&'a Node<T>> {
-        if let Some(node_id) = self.node_id.clone() {
+        let id = self.data.pop_front();
 
-            let node = self.tree.get_unsafe(&node_id);
+        if let Some(ref node_id) = id {
+            let node_ref = self.tree.get_unsafe(node_id);
 
-            if !node.children().is_empty() {
-                let mut children_ids = node.children().iter();
-
-                // take the first child and set it as the next one to be processed
-                self.node_id = children_ids.next().cloned();
-
-                // reverse it because we will pop to get the next one later.
-                let mut new_ids: Vec<&NodeId> = children_ids.rev().collect();
-
-                self.future_data.append(&mut new_ids);
-            } else {
-                self.node_id = self.future_data.pop().cloned();
+            //prepend child_ids
+            for child_id in node_ref.children().iter().rev() {
+                self.data.push_front(child_id.clone());
             }
 
-            return Some(node);
+            return Some(node_ref);
         }
         None
     }
