@@ -1,14 +1,10 @@
+pub mod iterators;
+
 use std::cmp::Ordering;
 
-use super::behaviors::RemoveBehavior;
-use super::behaviors::MoveBehavior;
-use super::behaviors::InsertBehavior;
-use super::behaviors::SwapBehavior;
+use super::*;
 use super::snowflake::ProcessUniqueId;
-use super::Node;
-use super::NodeId;
 use super::MutableNode;
-use super::NodeIdError;
 
 ///
 /// A `Tree` builder that provides more control over how a `Tree` is created.
@@ -979,6 +975,227 @@ impl<T> Tree<T> {
         self.root.as_ref()
     }
 
+    ///
+    /// Returns an `Ancestors` iterator (or a `NodeIdError` if one occurred).
+    ///
+    /// Allows iteration over the ancestor `Node`s of a given `NodeId` directly instead of having
+    /// to call `tree.get(...)` with a `NodeId` each time.
+    ///
+    /// ```
+    /// use id_tree::*;
+    /// use id_tree::InsertBehavior::*;
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+    /// let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    ///
+    /// let mut ancestors = tree.ancestors(&node_1).unwrap();
+    ///
+    /// assert_eq!(ancestors.next().unwrap().data(), &0);
+    /// assert!(ancestors.next().is_none());
+    /// ```
+    ///
+    pub fn ancestors(&self, node_id: &NodeId) -> Result<Ancestors<T>, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::ancestors: Missing an error value but found an invalid NodeId."));
+        }
+
+        Ok(Ancestors::new(self, node_id.clone()))
+    }
+
+    ///
+    /// Returns an `AncestorIds` iterator (or a `NodeIdError` if one occurred).
+    ///
+    /// Allows iteration over the ancestor `NodeId`s of a given `NodeId`.
+    ///
+    /// ```
+    /// use id_tree::*;
+    /// use id_tree::InsertBehavior::*;
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+    /// let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    ///
+    /// let mut ancestor_ids = tree.ancestor_ids(&node_1).unwrap();
+    ///
+    /// assert_eq!(ancestor_ids.next().unwrap(), &root_id);
+    /// assert!(ancestor_ids.next().is_none());
+    /// ```
+    ///
+    pub fn ancestor_ids(&self, node_id: &NodeId) -> Result<AncestorIds<T>, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::ancestor_ids: Missing an error value but found an invalid NodeId."));
+        }
+
+        Ok(AncestorIds::new(self, node_id.clone()))
+    }
+
+    ///
+    /// Returns a `Children` iterator (or a `NodeIdError` if one occurred).
+    ///
+    /// Allows iteration over the child `Node`s of a given `NodeId` directly instead of having
+    /// to call `tree.get(...)` with a `NodeId` each time.
+    ///
+    /// ```
+    /// use id_tree::*;
+    /// use id_tree::InsertBehavior::*;
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+    /// tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    ///
+    /// let mut children = tree.children(&root_id).unwrap();
+    ///
+    /// assert_eq!(children.next().unwrap().data(), &1);
+    /// assert!(children.next().is_none());
+    /// ```
+    ///
+    pub fn children(&self, node_id: &NodeId) -> Result<Children<T>, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::children: Missing an error value but found an invalid NodeId."));
+        }
+
+        Ok(Children::new(self, node_id.clone()))
+    }
+
+    ///
+    /// Returns a `ChildrenIds` iterator (or a `NodeIdError` if one occurred).
+    ///
+    /// Allows iteration over the child `NodeId`s of a given `NodeId`.
+    ///
+    /// ```
+    /// use id_tree::*;
+    /// use id_tree::InsertBehavior::*;
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+    /// let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    ///
+    /// let mut children_ids = tree.children_ids(&root_id).unwrap();
+    ///
+    /// assert_eq!(children_ids.next().unwrap(), &node_1);
+    /// assert!(children_ids.next().is_none());
+    /// ```
+    ///
+    pub fn children_ids(&self, node_id: &NodeId) -> Result<ChildrenIds, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::children_ids: Missing an error value but found an invalid NodeId."));
+        }
+
+        Ok(ChildrenIds::new(self, node_id.clone()))
+    }
+
+    /// Returns a `PreOrderTraversal` iterator (or a `NodeIdError` if one occurred).
+    ///
+    /// Allows iteration over all of the `Node`s in the sub-tree below a given `Node`.  This
+    /// iterator will always include that sub-tree "root" specified by the `NodeId` given.
+    ///
+    /// ```
+    /// use id_tree::*;
+    /// use id_tree::InsertBehavior::*;
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+    /// let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    ///
+    /// let mut nodes = tree.traverse_pre_order(&root_id).unwrap();
+    ///
+    /// assert_eq!(nodes.next().unwrap().data(), &0);
+    /// assert_eq!(nodes.next().unwrap().data(), &1);
+    /// assert!(nodes.next().is_none());
+    /// ```
+    ///
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
+    pub fn traverse_pre_order(&self, node_id: &NodeId)
+        -> Result<PreOrderTraversal<T>, NodeIdError>
+    {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::traverse_pre_order: Missing an error value but found an invalid NodeId."));
+        }
+
+        Ok(PreOrderTraversal::new(self, node_id.clone()))
+    }
+
+    /// Returns a `PostOrderTraversal` iterator (or a `NodeIdError` if one occurred).
+    ///
+    /// Allows iteration over all of the `Node`s in the sub-tree below a given `Node`.  This
+    /// iterator will always include that sub-tree "root" specified by the `NodeId` given.
+    ///
+    /// ```
+    /// use id_tree::*;
+    /// use id_tree::InsertBehavior::*;
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+    /// let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    ///
+    /// let mut nodes = tree.traverse_post_order(&root_id).unwrap();
+    ///
+    /// assert_eq!(nodes.next().unwrap().data(), &1);
+    /// assert_eq!(nodes.next().unwrap().data(), &0);
+    /// assert!(nodes.next().is_none());
+    /// ```
+    ///
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
+    pub fn traverse_post_order(&self, node_id: &NodeId)
+        -> Result<PostOrderTraversal<T>, NodeIdError>
+    {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::traverse_post_order: Missing an error value but found an invalid NodeId."));
+        }
+
+        Ok(PostOrderTraversal::new(self, node_id.clone()))
+    }
+
+    /// Returns a `LevelOrderTraversal` iterator (or a `NodeIdError` if one occurred).
+    ///
+    /// Allows iteration over all of the `Node`s in the sub-tree below a given `Node`.  This
+    /// iterator will always include that sub-tree "root" specified by the `NodeId` given.
+    ///
+    /// ```
+    /// use id_tree::*;
+    /// use id_tree::InsertBehavior::*;
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+    /// let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    ///
+    /// let mut nodes = tree.traverse_level_order(&root_id).unwrap();
+    ///
+    /// assert_eq!(nodes.next().unwrap().data(), &0);
+    /// assert_eq!(nodes.next().unwrap().data(), &1);
+    /// assert!(nodes.next().is_none());
+    /// ```
+    ///
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
+    pub fn traverse_level_order(&self, node_id: &NodeId)
+        -> Result<LevelOrderTraversal<T>, NodeIdError>
+    {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::traverse_level_order: Missing an error value but found an invalid NodeId.")
+            );
+        }
+
+        Ok(LevelOrderTraversal::new(self, node_id.clone()))
+    }
+
     // Nothing should make it past this function.
     // If there is a way for a NodeId to be invalid, it should be caught here.
     fn is_valid_node_id(&self, node_id: &NodeId) -> (bool, Option<NodeIdError>) {
@@ -1132,6 +1349,10 @@ impl<T> Tree<T> {
                     checks.  Please report this issue!")
         }
     }
+}
+
+trait IteratorNew<'a, T, I> {
+    fn new(tree: &'a Tree<T>, node_id: NodeId) -> I;
 }
 
 #[cfg(test)]

@@ -36,19 +36,11 @@
 //!     tree.insert(Node::new(3), UnderNode(&child_id)).unwrap();
 //!     tree.insert(Node::new(4), UnderNode(&child_id)).unwrap();
 //!
-//!     println!("Pre-order:");
-//!     print_pre_order(&tree, &root_id);
-//!     // results in the output "0, 1, 3, 4, 2, "
-//! }
-//!
-//! fn print_pre_order(tree: &Tree<i32>, node_id: &NodeId) {
-//!     let node_ref = tree.get(node_id).unwrap();
-//!
-//!     print!("{}, ", node_ref.data());
-//!
-//!     for child_id in node_ref.children() {
-//!         print_pre_order(tree, &child_id);
+//!     println!("Post-order:");
+//!     for node in tree.traverse_pre_order(&root_id).unwrap() {
+//!         print!("{}, ", node.data());
 //!     }
+//!     // results in the output "0, 1, 3, 4, 2, "
 //! }
 //! ```
 //!
@@ -90,6 +82,13 @@ pub use node::NodeBuilder;
 pub use node::Node;
 pub use tree::TreeBuilder;
 pub use tree::Tree;
+pub use tree::iterators::Ancestors;
+pub use tree::iterators::AncestorIds;
+pub use tree::iterators::Children;
+pub use tree::iterators::ChildrenIds;
+pub use tree::iterators::PreOrderTraversal;
+pub use tree::iterators::PostOrderTraversal;
+pub use tree::iterators::LevelOrderTraversal;
 
 ///
 /// An identifier used to differentiate between `Node`s within a `Tree`.

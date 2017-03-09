@@ -21,30 +21,17 @@ fn main() {
     tree.insert(Node::new(4), UnderNode(&child_id)).unwrap();
 
     println!("Post-order:");
-    print_post_order(&tree, &root_id);
-    println!();
 
+    for node in tree.traverse_post_order(&root_id).unwrap() {
+        print!("{}, ", node.data());
+    }
+
+    println!();
     println!("Pre-order:");
-    print_pre_order(&tree, &root_id);
+
+    for node in tree.traverse_pre_order(&root_id).unwrap() {
+        print!("{}, ", node.data());
+    }
+
     println!();
-}
-
-fn print_pre_order(tree: &Tree<i32>, node_id: &NodeId) {
-    let node_ref = tree.get(node_id).unwrap();
-
-    print!("{}, ", node_ref.data());
-
-    for child_id in node_ref.children() {
-        print_pre_order(tree, &child_id);
-    }
-}
-
-fn print_post_order(tree: &Tree<i32>, node_id: &NodeId) {
-    let node_ref = tree.get(node_id).unwrap();
-
-    for child_id in node_ref.children() {
-        print_post_order(tree, &child_id);
-    }
-
-    print!("{}, ", node_ref.data());
 }
