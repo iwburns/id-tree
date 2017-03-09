@@ -1,6 +1,7 @@
 use std::slice::Iter;
 use std::vec::IntoIter;
 use std::collections::VecDeque;
+use std::collections::vec_deque;
 
 use Tree;
 use Node;
@@ -244,20 +245,20 @@ impl<'a, T> Iterator for PostOrderTraversal<'a, T> {
 ///
 pub struct LevelOrderTraversal<'a, T: 'a> {
     tree: &'a Tree<T>,
-    data: VecDeque<NodeId>,
+    data: vec_deque::IntoIter<NodeId>,
 }
 
 impl<'a, T> LevelOrderTraversal<'a, T> {
-    fn process_nodes(&mut self, starting_id: NodeId) {
+    fn process_nodes(starting_id: NodeId, tree: &Tree<T>, ids: &mut VecDeque<NodeId>) {
 
-        self.data.push_back(starting_id.clone());
+        ids.push_back(starting_id);
         let mut index: usize = 0;
 
-        while let Some(node_id) = self.data.get(index).cloned() {
-            let node = self.tree.get_unsafe(&node_id);
+        while let Some(node_id) = ids.get(index).cloned() {
+            let node = tree.get_unsafe(&node_id);
 
             for child_id in node.children() {
-                self.data.push_back(child_id.clone());
+                ids.push_back(child_id.clone());
             }
 
             index += 1;
@@ -267,14 +268,16 @@ impl<'a, T> LevelOrderTraversal<'a, T> {
 
 impl<'a, T> IteratorNew<'a, T, LevelOrderTraversal<'a, T>> for LevelOrderTraversal<'a, T> {
     fn new(tree: &'a Tree<T>, node_id: NodeId) -> LevelOrderTraversal<T> {
-        let mut traversal = LevelOrderTraversal {
-            tree: tree,
-            // over allocating, but all at once instead of re-sizing and re-allocating as we go
-            data: VecDeque::with_capacity(tree.nodes.capacity()),
-        };
 
-        traversal.process_nodes(node_id);
-        traversal
+        // over allocating, but all at once instead of re-sizing and re-allocating as we go
+        let mut ids = VecDeque::with_capacity(tree.nodes.capacity());
+
+        LevelOrderTraversal::process_nodes(node_id, tree, &mut ids);
+
+        LevelOrderTraversal {
+            tree: tree,
+            data: ids.into_iter(),
+        }
     }
 }
 
@@ -282,7 +285,7 @@ impl<'a, T> Iterator for LevelOrderTraversal<'a, T> {
     type Item = &'a Node<T>;
 
     fn next(&mut self) -> Option<&'a Node<T>> {
-        let id = self.data.pop_front();
+        let id = self.data.next();
 
         if let Some(ref node_id_ref) = id {
             return Some(self.tree.get_unsafe(node_id_ref));
