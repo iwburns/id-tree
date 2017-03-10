@@ -29,7 +29,7 @@ messages are being returned when necessary.
 - Make sure you run `cargo fmt` (found [here](https://github.com/rust-lang-nursery/rustfmt))
 on your changes or the travis build will likely fail.
 - It is not required to run `cargo clippy` (found [here](https://github.com/Manishearth/rust-clippy/))
-on your changes, but I would greatly appreciate it. Please don't worry about making `clippy`
+on your changes, but I would greatly appreciate it. Please don't worry about making Clippy
 100% happy though, especially if you think a particular suggestion makes your code harder to
 read for some reason.
 - Don't forget to add yourself to the to the list of Contributors in the Readme! This is
