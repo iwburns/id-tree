@@ -44,7 +44,7 @@ fn main() {
     tree.insert(Node::new(3), UnderNode(&child_id)).unwrap();
     tree.insert(Node::new(4), UnderNode(&child_id)).unwrap();
 
-    println!("Post-order:");
+    println!("Pre-order:");
     for node in tree.traverse_pre_order(&root_id).unwrap() {
         print!("{}, ", node.data());
     }
