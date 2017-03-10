@@ -700,7 +700,7 @@ impl<T> Tree<T> {
     {
         let lower_upper_test = self.find_subtree_root_between_ids(first_id, second_id)
             .map(|_| (first_id, second_id))
-            .or(self.find_subtree_root_between_ids(second_id, first_id)
+            .or_else(|| self.find_subtree_root_between_ids(second_id, first_id)
                 .map(|_| (second_id, first_id)));
 
         if let Some((lower_id, upper_id)) = lower_upper_test {
@@ -897,7 +897,7 @@ impl<T> Tree<T> {
     {
         let lower_upper_test = self.find_subtree_root_between_ids(first_id, second_id)
             .map(|_| (first_id, second_id))
-            .or(self.find_subtree_root_between_ids(second_id, first_id)
+            .or_else(|| self.find_subtree_root_between_ids(second_id, first_id)
                 .map(|_| (second_id, first_id)));
 
         // todo: lots of repetition in here
