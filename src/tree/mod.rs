@@ -413,7 +413,7 @@ impl<T> Tree<T> {
     pub fn move_node(&mut self, node_id: &NodeId, behavior: MoveBehavior)
         -> Result<(), NodeIdError>
     {
-        let (is_valid, error) = self.is_valid_node_id(&node_id);
+        let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect("Tree::move_node: Missing an error value on finding an \
                 invalid NodeId."));
@@ -1283,7 +1283,7 @@ impl<T> Tree<T> {
         // This Node's children's parent will be handled in different ways depending upon how this
         // method is called.
         if let Some(parent_id) = node.parent() {
-            self.get_mut_unsafe(&parent_id)
+            self.get_mut_unsafe(parent_id)
                 .children_mut()
                 .retain(|child_id| child_id != &node_id);
         }
