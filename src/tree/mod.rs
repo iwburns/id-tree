@@ -1259,13 +1259,13 @@ impl<T> Tree<T> {
 
             self.nodes.push(Some(new_node));
             self.nodes.swap_remove(new_node_id.index);
-            return new_node_id;
 
+            new_node_id
         } else {
             let new_node_index = self.nodes.len();
             self.nodes.push(Some(new_node));
 
-            return self.new_node_id(new_node_index);
+            self.new_node_id(new_node_index)
         }
     }
 
