@@ -1252,9 +1252,10 @@ impl<T> Tree<T> {
     fn insert_new_node(&mut self, new_node: Node<T>) -> NodeId {
 
         if self.free_ids.len() > 0 {
-            let new_node_id: NodeId = self.free_ids
-                .pop()
-                .expect("Tree::insert_new_node: Couldn't pop from Vec with len() > 0.");
+            let new_node_id: NodeId =
+                self.free_ids
+                    .pop()
+                    .expect("Tree::insert_new_node: Couldn't pop from Vec with len() > 0.");
 
             self.nodes.push(Some(new_node));
             self.nodes.swap_remove(new_node_id.index);
