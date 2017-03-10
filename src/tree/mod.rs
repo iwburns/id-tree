@@ -707,7 +707,7 @@ impl<T> Tree<T> {
             let upper_parent_id = self.get_unsafe(upper_id).parent().cloned();
 
             let lower_parent_id = {
-                let lower = self.get_mut_unsafe(&lower_id);
+                let lower = self.get_mut_unsafe(lower_id);
                 // lower is lower, so it has a parent for sure
                 let lower_parent_id = lower.parent().unwrap().clone();
 
@@ -919,10 +919,10 @@ impl<T> Tree<T> {
                 lower_children = first_children;
             }
 
-            for child in upper_children.iter() {
+            for child in &upper_children {
                 self.get_mut_unsafe(child).set_parent(Some(lower_id.clone()));
             }
-            for child in lower_children.iter() {
+            for child in &lower_children {
                 self.get_mut_unsafe(child).set_parent(Some(upper_id.clone()));
             }
 
@@ -942,10 +942,10 @@ impl<T> Tree<T> {
             //just across
 
             //take care of these nodes' children's parent values
-            for child in first_children.iter() {
+            for child in &first_children {
                 self.get_mut_unsafe(child).set_parent(Some(second_id.clone()));
             }
-            for child in second_children.iter() {
+            for child in &second_children {
                 self.get_mut_unsafe(child).set_parent(Some(first_id.clone()));
             }
 
@@ -1251,7 +1251,7 @@ impl<T> Tree<T> {
 
     fn insert_new_node(&mut self, new_node: Node<T>) -> NodeId {
 
-        if self.free_ids.len() > 0 {
+        if !self.free_ids.is_empty() {
             let new_node_id: NodeId =
                 self.free_ids
                     .pop()
