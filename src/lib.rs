@@ -1,6 +1,6 @@
 //! A library for creating and modifying Tree structures.
 //!
-//! # Overview
+//! ## Overview
 //! In this implementation, the `Tree` owns all of the `Node`s and all inter-`Node` relationships
 //! are managed with `NodeId`s.
 //!

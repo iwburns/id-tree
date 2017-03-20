@@ -1,4 +1,4 @@
-#id_tree
+# id_tree
 
 [![Build Status](https://travis-ci.org/iwburns/id-tree.svg?branch=master)](https://travis-ci.org/iwburns/id-tree)
 [![Build status](https://ci.appveyor.com/api/projects/status/rw42btsa1i7bqcx9/branch/master?svg=true)](https://ci.appveyor.com/project/iwburns/id-tree/branch/master)
@@ -8,7 +8,7 @@
 
 A library for creating and modifying Tree structures.
 
-# Overview
+## Overview
 In this implementation, the `Tree` owns all of the `Node`s and all inter-`Node` relationships are
 managed with `NodeId`s.
 
