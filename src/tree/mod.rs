@@ -1428,9 +1428,6 @@ mod tree_tests {
     use super::TreeBuilder;
     use super::super::NodeId;
     use super::super::Node;
-    use super::super::InsertBehavior;
-    use super::super::RemoveBehavior;
-    use super::super::MoveBehavior;
 
     #[test]
     fn test_new() {
@@ -1440,7 +1437,6 @@ mod tree_tests {
         assert_eq!(tree.nodes.len(), 0);
         assert_eq!(tree.free_ids.len(), 0);
     }
-
 
     #[test]
     fn test_get() {
@@ -1474,6 +1470,8 @@ mod tree_tests {
 
     #[test]
     fn test_set_root() {
+        use InsertBehavior::*;
+
         let a = 5;
         let b = 6;
         let node_a = Node::new(a);
@@ -1481,7 +1479,7 @@ mod tree_tests {
 
         let mut tree = TreeBuilder::new().build();
 
-        let node_a_id = tree.insert(node_a, InsertBehavior::AsRoot).unwrap();
+        let node_a_id = tree.insert(node_a, AsRoot).unwrap();
         let root_id = tree.root.clone().unwrap();
         assert_eq!(node_a_id, root_id);
 
@@ -1492,7 +1490,7 @@ mod tree_tests {
             assert_eq!(root_ref.data(), &a);
         }
 
-        let node_b_id = tree.insert(node_b, InsertBehavior::AsRoot).unwrap();
+        let node_b_id = tree.insert(node_b, AsRoot).unwrap();
         let root_id = tree.root.clone().unwrap();
         assert_eq!(node_b_id, root_id);
 
@@ -1520,6 +1518,8 @@ mod tree_tests {
 
     #[test]
     fn test_insert_with_parent() {
+        use InsertBehavior::*;
+
         let a = 1;
         let b = 2;
         let r = 5;
@@ -1532,8 +1532,8 @@ mod tree_tests {
         let node_b = Node::new(b);
 
         let root_id = tree.root.clone().unwrap();
-        let node_a_id = tree.insert(node_a, InsertBehavior::UnderNode(&root_id)).unwrap();
-        let node_b_id = tree.insert(node_b, InsertBehavior::UnderNode(&root_id)).unwrap();
+        let node_a_id = tree.insert(node_a, UnderNode(&root_id)).unwrap();
+        let node_b_id = tree.insert(node_b, UnderNode(&root_id)).unwrap();
 
         let node_a_ref = tree.get(&node_a_id).unwrap();
         let node_b_ref = tree.get(&node_b_id).unwrap();
@@ -1558,6 +1558,8 @@ mod tree_tests {
 
     #[test]
     fn test_remove_node_lift_children() {
+        use InsertBehavior::*;
+        use RemoveBehavior::*;
 
         let mut tree = TreeBuilder::new()
             .with_root(Node::new(5))
@@ -1565,11 +1567,11 @@ mod tree_tests {
 
         let root_id = tree.root.clone().unwrap();
 
-        let node_1_id = tree.insert(Node::new(1), InsertBehavior::UnderNode(&root_id)).unwrap();
-        let node_2_id = tree.insert(Node::new(2), InsertBehavior::UnderNode(&node_1_id)).unwrap();
-        let node_3_id = tree.insert(Node::new(3), InsertBehavior::UnderNode(&node_1_id)).unwrap();
+        let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+        let node_2_id = tree.insert(Node::new(2), UnderNode(&node_1_id)).unwrap();
+        let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
 
-        let node_1 = tree.remove_node(node_1_id.clone(), RemoveBehavior::LiftChildren).unwrap();
+        let node_1 = tree.remove_node(node_1_id.clone(), LiftChildren).unwrap();
 
         assert_eq!(Some(&root_id), tree.root_node_id());
 
@@ -1594,6 +1596,8 @@ mod tree_tests {
 
     #[test]
     fn test_remove_node_orphan_children() {
+        use InsertBehavior::*;
+        use RemoveBehavior::*;
 
         let mut tree = TreeBuilder::new()
             .with_root(Node::new(5))
@@ -1601,11 +1605,11 @@ mod tree_tests {
 
         let root_id = tree.root.clone().unwrap();
 
-        let node_1_id = tree.insert(Node::new(1), InsertBehavior::UnderNode(&root_id)).unwrap();
-        let node_2_id = tree.insert(Node::new(2), InsertBehavior::UnderNode(&node_1_id)).unwrap();
-        let node_3_id = tree.insert(Node::new(3), InsertBehavior::UnderNode(&node_1_id)).unwrap();
+        let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+        let node_2_id = tree.insert(Node::new(2), UnderNode(&node_1_id)).unwrap();
+        let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
 
-        let node_1 = tree.remove_node(node_1_id.clone(), RemoveBehavior::OrphanChildren).unwrap();
+        let node_1 = tree.remove_node(node_1_id.clone(), OrphanChildren).unwrap();
 
         assert_eq!(Some(&root_id), tree.root_node_id());
 
@@ -1626,12 +1630,14 @@ mod tree_tests {
 
     #[test]
     fn test_remove_root() {
+        use RemoveBehavior::*;
+
         let mut tree = TreeBuilder::new()
             .with_root(Node::new(5))
             .build();
 
         let root_id = tree.root.clone().unwrap();
-        tree.remove_node(root_id.clone(), RemoveBehavior::OrphanChildren).unwrap();
+        tree.remove_node(root_id.clone(), OrphanChildren).unwrap();
         assert_eq!(None, tree.root_node_id());
 
         let mut tree = TreeBuilder::new()
@@ -1639,49 +1645,52 @@ mod tree_tests {
             .build();
 
         let root_id = tree.root.clone().unwrap();
-        tree.remove_node(root_id.clone(), RemoveBehavior::LiftChildren).unwrap();
+        tree.remove_node(root_id.clone(), LiftChildren).unwrap();
         assert_eq!(None, tree.root_node_id());
     }
 
     #[test]
     fn test_move_node_to_parent() {
+        use InsertBehavior::*;
+        use MoveBehavior::*;
+
         let mut tree = Tree::new();
 
-        let root_id = tree.insert(Node::new(0), InsertBehavior::AsRoot).unwrap();
-        let node_1_id = tree.insert(Node::new(1), InsertBehavior::UnderNode(&root_id)).unwrap();
-        let node_2_id = tree.insert(Node::new(2), InsertBehavior::UnderNode(&root_id)).unwrap();
-        let node_3_id = tree.insert(Node::new(3), InsertBehavior::UnderNode(&node_1_id)).unwrap();
+        let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+        let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+        let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+        let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
 
         // move 3 "across" the tree
-        tree.move_node(&node_3_id, MoveBehavior::ToParent(&node_2_id)).unwrap();
+        tree.move_node(&node_3_id, ToParent(&node_2_id)).unwrap();
         assert!(tree.get(&root_id).unwrap().children().contains(&node_1_id));
         assert!(tree.get(&root_id).unwrap().children().contains(&node_2_id));
         assert!(tree.get(&node_2_id).unwrap().children().contains(&node_3_id));
 
         // move 3 "up" the tree
-        tree.move_node(&node_3_id, MoveBehavior::ToParent(&root_id)).unwrap();
+        tree.move_node(&node_3_id, ToParent(&root_id)).unwrap();
         assert!(tree.get(&root_id).unwrap().children().contains(&node_1_id));
         assert!(tree.get(&root_id).unwrap().children().contains(&node_2_id));
         assert!(tree.get(&root_id).unwrap().children().contains(&node_3_id));
 
         // move 3 "down" (really this is across though) the tree
-        tree.move_node(&node_3_id, MoveBehavior::ToParent(&node_1_id)).unwrap();
+        tree.move_node(&node_3_id, ToParent(&node_1_id)).unwrap();
         assert!(tree.get(&root_id).unwrap().children().contains(&node_1_id));
         assert!(tree.get(&root_id).unwrap().children().contains(&node_2_id));
         assert!(tree.get(&node_1_id).unwrap().children().contains(&node_3_id));
 
         // move 1 "down" the tree
-        tree.move_node(&node_1_id, MoveBehavior::ToParent(&node_3_id)).unwrap();
+        tree.move_node(&node_1_id, ToParent(&node_3_id)).unwrap();
         assert!(tree.get(&root_id).unwrap().children().contains(&node_2_id));
         assert!(tree.get(&root_id).unwrap().children().contains(&node_3_id));
         assert!(tree.get(&node_3_id).unwrap().children().contains(&node_1_id));
 
         // note: node_1 is at the lowest point in the tree before these insertions.
-        let node_4_id = tree.insert(Node::new(4), InsertBehavior::UnderNode(&node_1_id)).unwrap();
-        let node_5_id = tree.insert(Node::new(5), InsertBehavior::UnderNode(&node_4_id)).unwrap();
+        let node_4_id = tree.insert(Node::new(4), UnderNode(&node_1_id)).unwrap();
+        let node_5_id = tree.insert(Node::new(5), UnderNode(&node_4_id)).unwrap();
 
         // move 3 "down" the tree
-        tree.move_node(&node_3_id, MoveBehavior::ToParent(&node_5_id)).unwrap();
+        tree.move_node(&node_3_id, ToParent(&node_5_id)).unwrap();
         assert!(tree.get(&root_id).unwrap().children().contains(&node_2_id));
         assert!(tree.get(&root_id).unwrap().children().contains(&node_1_id));
         assert!(tree.get(&node_1_id).unwrap().children().contains(&node_4_id));
@@ -1689,24 +1698,25 @@ mod tree_tests {
         assert!(tree.get(&node_5_id).unwrap().children().contains(&node_3_id));
 
         // move root "down" the tree
-        tree.move_node(&root_id, MoveBehavior::ToParent(&node_2_id)).unwrap();
+        tree.move_node(&root_id, ToParent(&node_2_id)).unwrap();
         assert!(tree.get(&node_2_id).unwrap().children().contains(&root_id));
         assert!(tree.get(&root_id).unwrap().children().contains(&node_1_id));
         assert!(tree.get(&node_1_id).unwrap().children().contains(&node_4_id));
         assert!(tree.get(&node_4_id).unwrap().children().contains(&node_5_id));
         assert!(tree.get(&node_5_id).unwrap().children().contains(&node_3_id));
         assert_eq!(tree.root_node_id(), Some(&node_2_id));
-
     }
 
     #[test]
     fn test_move_node_to_root() {
+        use InsertBehavior::*;
+
         // test move with existing root
         {
             let mut tree = Tree::new();
-            let root_id = tree.insert(Node::new(0), InsertBehavior::AsRoot).unwrap();
-            let node_1_id = tree.insert(Node::new(1), InsertBehavior::UnderNode(&root_id)).unwrap();
-            let node_2_id = tree.insert(Node::new(2), InsertBehavior::UnderNode(&node_1_id))
+            let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+            let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            let node_2_id = tree.insert(Node::new(2), UnderNode(&node_1_id))
                 .unwrap();
 
             tree.move_node_to_root(&node_2_id).unwrap();
@@ -1719,9 +1729,9 @@ mod tree_tests {
         // test move with existing root and with orphan
         {
             let mut tree = Tree::new();
-            let root_id = tree.insert(Node::new(0), InsertBehavior::AsRoot).unwrap();
-            let node_1_id = tree.insert(Node::new(1), InsertBehavior::UnderNode(&root_id)).unwrap();
-            let node_2_id = tree.insert(Node::new(2), InsertBehavior::UnderNode(&node_1_id))
+            let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+            let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            let node_2_id = tree.insert(Node::new(2), UnderNode(&node_1_id))
                 .unwrap();
 
             tree.remove_node_orphan_children(node_1_id).unwrap();
@@ -1735,9 +1745,9 @@ mod tree_tests {
         // test move without root and with orphan
         {
             let mut tree = Tree::new();
-            let root_id = tree.insert(Node::new(0), InsertBehavior::AsRoot).unwrap();
-            let node_1_id = tree.insert(Node::new(1), InsertBehavior::UnderNode(&root_id)).unwrap();
-            let node_2_id = tree.insert(Node::new(2), InsertBehavior::UnderNode(&node_1_id))
+            let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+            let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            let node_2_id = tree.insert(Node::new(2), UnderNode(&node_1_id))
                 .unwrap();
 
             tree.remove_node_orphan_children(root_id).unwrap();
@@ -1751,13 +1761,15 @@ mod tree_tests {
 
     #[test]
     fn test_find_subtree_root_below_upper_id() {
+        use InsertBehavior::*;
+
         let mut tree = Tree::new();
 
-        let root_id = tree.insert(Node::new(0), InsertBehavior::AsRoot).unwrap();
-        let node_1_id = tree.insert(Node::new(1), InsertBehavior::UnderNode(&root_id)).unwrap();
-        let node_2_id = tree.insert(Node::new(2), InsertBehavior::UnderNode(&node_1_id)).unwrap();
-        let node_3_id = tree.insert(Node::new(3), InsertBehavior::UnderNode(&node_1_id)).unwrap();
-        let node_4_id = tree.insert(Node::new(4), InsertBehavior::UnderNode(&node_2_id)).unwrap();
+        let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+        let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+        let node_2_id = tree.insert(Node::new(2), UnderNode(&node_1_id)).unwrap();
+        let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
+        let node_4_id = tree.insert(Node::new(4), UnderNode(&node_2_id)).unwrap();
 
         let sub_root = tree.find_subtree_root_between_ids(&node_1_id, &root_id);
         assert_eq!(sub_root, Some(&node_1_id));
