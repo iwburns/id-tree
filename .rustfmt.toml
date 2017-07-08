@@ -1,5 +1,4 @@
-fn_return_indent = "WithWhereClause"
 fn_args_layout = "Visual"
-where_layout = "HorizontalVertical"
+#fn_return_indent = "WithWhereClause"
 where_style = "Legacy"
-format_strings = false
+where_layout = "HorizontalVertical"
