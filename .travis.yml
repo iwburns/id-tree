@@ -9,12 +9,10 @@ matrix:
     - rust: nightly
 
 before_script:
-- |
-  (cargo install rustfmt || true) &&
-  export PATH=$HOME/.cargo/bin:$PATH
+- export PATH="$PATH:$HOME/.cargo/bin"
+- which rustfmt || cargo install rustfmt
 
 script:
-- |
-  cargo fmt -- --write-mode=diff &&
-  cargo build &&
-  cargo test
+- cargo fmt -- --write-mode=diff
+- cargo build
+- cargo test
