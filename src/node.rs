@@ -1,5 +1,4 @@
 use NodeId;
-use MutableNode;
 
 ///
 /// A `Node` builder that provides more control over how a `Node` is created.
@@ -185,18 +184,16 @@ impl<T> Node<T> {
     pub fn children(&self) -> &Vec<NodeId> {
         &self.children
     }
-}
 
-impl<T> MutableNode for Node<T> {
-    fn set_parent(&mut self, parent: Option<NodeId>) {
+    pub(crate) fn set_parent(&mut self, parent: Option<NodeId>) {
         self.parent = parent;
     }
 
-    fn add_child(&mut self, child: NodeId) {
+    pub(crate) fn add_child(&mut self, child: NodeId) {
         self.children.push(child);
     }
 
-    fn replace_child(&mut self, old: NodeId, new: NodeId) {
+    pub(crate) fn replace_child(&mut self, old: NodeId, new: NodeId) {
         let index = self.children()
             .iter()
             .enumerate()
@@ -209,15 +206,15 @@ impl<T> MutableNode for Node<T> {
         children.swap_remove(index);
     }
 
-    fn children_mut(&mut self) -> &mut Vec<NodeId> {
+    pub(crate) fn children_mut(&mut self) -> &mut Vec<NodeId> {
         &mut self.children
     }
 
-    fn set_children(&mut self, children: Vec<NodeId>) {
+    pub(crate) fn set_children(&mut self, children: Vec<NodeId>) {
         self.children = children;
     }
 
-    fn take_children(&mut self) -> Vec<NodeId> {
+    pub(crate) fn take_children(&mut self) -> Vec<NodeId> {
         use std::mem;
 
         let mut empty = Vec::with_capacity(0);
@@ -252,7 +249,6 @@ mod node_tests {
     use super::Node;
     use super::super::NodeId;
     use super::super::snowflake::ProcessUniqueId;
-    use super::super::MutableNode;
 
     #[test]
     fn test_new() {
