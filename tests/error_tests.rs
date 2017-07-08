@@ -210,7 +210,7 @@ fn test_sort_by_key_invalid_id() {
     let root_node_b = Node::new(1);
     let root_node_id_b = tree_b.insert(root_node_b, InsertBehavior::AsRoot).unwrap();
 
-    let result = tree_a.sort_children_by_key(&root_node_id_b, |x| x.data().clone());
+    let result = tree_a.sort_children_by_key(&root_node_id_b, |x| *x.data());
     assert!(result.is_err());
 
     let error = result.err().unwrap();

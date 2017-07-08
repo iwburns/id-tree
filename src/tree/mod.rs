@@ -412,7 +412,7 @@ impl<T> Tree<T> {
     pub fn move_node(&mut self, node_id: &NodeId, behavior: MoveBehavior)
         -> Result<(), NodeIdError>
     {
-        let (is_valid, error) = self.is_valid_node_id(&node_id);
+        let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect("Tree::move_node: Missing an error value on finding an \
                 invalid NodeId."));
@@ -699,14 +699,14 @@ impl<T> Tree<T> {
     {
         let lower_upper_test = self.find_subtree_root_between_ids(first_id, second_id)
             .map(|_| (first_id, second_id))
-            .or(self.find_subtree_root_between_ids(second_id, first_id)
+            .or_else(|| self.find_subtree_root_between_ids(second_id, first_id)
                 .map(|_| (second_id, first_id)));
 
         if let Some((lower_id, upper_id)) = lower_upper_test {
             let upper_parent_id = self.get_unsafe(upper_id).parent().cloned();
 
             let lower_parent_id = {
-                let lower = self.get_mut_unsafe(&lower_id);
+                let lower = self.get_mut_unsafe(lower_id);
                 // lower is lower, so it has a parent for sure
                 let lower_parent_id = lower.parent().unwrap().clone();
 
@@ -896,7 +896,7 @@ impl<T> Tree<T> {
     {
         let lower_upper_test = self.find_subtree_root_between_ids(first_id, second_id)
             .map(|_| (first_id, second_id))
-            .or(self.find_subtree_root_between_ids(second_id, first_id)
+            .or_else(|| self.find_subtree_root_between_ids(second_id, first_id)
                 .map(|_| (second_id, first_id)));
 
         // todo: lots of repetition in here
@@ -918,10 +918,10 @@ impl<T> Tree<T> {
                 lower_children = first_children;
             }
 
-            for child in upper_children.iter() {
+            for child in &upper_children {
                 self.get_mut_unsafe(child).set_parent(Some(lower_id.clone()));
             }
-            for child in lower_children.iter() {
+            for child in &lower_children {
                 self.get_mut_unsafe(child).set_parent(Some(upper_id.clone()));
             }
 
@@ -941,10 +941,10 @@ impl<T> Tree<T> {
             //just across
 
             //take care of these nodes' children's parent values
-            for child in first_children.iter() {
+            for child in &first_children {
                 self.get_mut_unsafe(child).set_parent(Some(second_id.clone()));
             }
-            for child in second_children.iter() {
+            for child in &second_children {
                 self.get_mut_unsafe(child).set_parent(Some(first_id.clone()));
             }
 
@@ -1250,7 +1250,7 @@ impl<T> Tree<T> {
 
     fn insert_new_node(&mut self, new_node: Node<T>) -> NodeId {
 
-        if self.free_ids.len() > 0 {
+        if !self.free_ids.is_empty() {
             let new_node_id: NodeId =
                 self.free_ids
                     .pop()
@@ -1258,13 +1258,13 @@ impl<T> Tree<T> {
 
             self.nodes.push(Some(new_node));
             self.nodes.swap_remove(new_node_id.index);
-            return new_node_id;
 
+            new_node_id
         } else {
             let new_node_index = self.nodes.len();
             self.nodes.push(Some(new_node));
 
-            return self.new_node_id(new_node_index);
+            self.new_node_id(new_node_index)
         }
     }
 
@@ -1282,7 +1282,7 @@ impl<T> Tree<T> {
         // This Node's children's parent will be handled in different ways depending upon how this
         // method is called.
         if let Some(parent_id) = node.parent() {
-            self.get_mut_unsafe(&parent_id)
+            self.get_mut_unsafe(parent_id)
                 .children_mut()
                 .retain(|child_id| child_id != &node_id);
         }
