@@ -1103,7 +1103,7 @@ impl<T> Tree<T> {
     ///
     /// let mut tree: Tree<i32> = Tree::new();
     /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
-    /// let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    /// tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
     ///
     /// let mut nodes = tree.traverse_pre_order(&root_id).unwrap();
     ///
@@ -1137,7 +1137,7 @@ impl<T> Tree<T> {
     ///
     /// let mut tree: Tree<i32> = Tree::new();
     /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
-    /// let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    /// tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
     ///
     /// let mut nodes = tree.traverse_post_order(&root_id).unwrap();
     ///
@@ -1171,7 +1171,7 @@ impl<T> Tree<T> {
     ///
     /// let mut tree: Tree<i32> = Tree::new();
     /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
-    /// let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    /// tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
     ///
     /// let mut nodes = tree.traverse_level_order(&root_id).unwrap();
     ///
