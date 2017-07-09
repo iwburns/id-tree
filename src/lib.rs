@@ -70,6 +70,7 @@ use self::snowflake::ProcessUniqueId;
 
 mod behaviors;
 mod error;
+mod iterators;
 mod node;
 mod tree;
 
@@ -82,13 +83,13 @@ pub use node::NodeBuilder;
 pub use node::Node;
 pub use tree::TreeBuilder;
 pub use tree::Tree;
-pub use tree::iterators::Ancestors;
-pub use tree::iterators::AncestorIds;
-pub use tree::iterators::Children;
-pub use tree::iterators::ChildrenIds;
-pub use tree::iterators::PreOrderTraversal;
-pub use tree::iterators::PostOrderTraversal;
-pub use tree::iterators::LevelOrderTraversal;
+pub use iterators::Ancestors;
+pub use iterators::AncestorIds;
+pub use iterators::Children;
+pub use iterators::ChildrenIds;
+pub use iterators::PreOrderTraversal;
+pub use iterators::PostOrderTraversal;
+pub use iterators::LevelOrderTraversal;
 
 ///
 /// An identifier used to differentiate between `Node`s within a `Tree`.

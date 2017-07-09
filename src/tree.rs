@@ -1,5 +1,3 @@
-pub mod iterators;
-
 use std::cmp::Ordering;
 
 use super::*;
@@ -160,7 +158,7 @@ impl<T> TreeBuilder<T> {
 pub struct Tree<T> {
     id: ProcessUniqueId,
     root: Option<NodeId>,
-    nodes: Vec<Option<Node<T>>>,
+    pub(crate) nodes: Vec<Option<Node<T>>>,
     free_ids: Vec<NodeId>,
 }
 
@@ -1416,7 +1414,7 @@ impl<T> Tree<T> {
         }
     }
 
-    fn get_unsafe(&self, node_id: &NodeId) -> &Node<T> {
+    pub(crate) fn get_unsafe(&self, node_id: &NodeId) -> &Node<T> {
         unsafe {
             self.nodes.get_unchecked(node_id.index).as_ref().expect(
                 "Tree::get_unsafe: An invalid NodeId made it past id_tree's internal \
@@ -1433,10 +1431,6 @@ impl<T> Tree<T> {
             )
         }
     }
-}
-
-trait IteratorNew<'a, T, I> {
-    fn new(tree: &'a Tree<T>, node_id: NodeId) -> I;
 }
 
 #[cfg(test)]

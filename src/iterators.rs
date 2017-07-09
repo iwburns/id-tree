@@ -5,7 +5,6 @@ use std::collections::VecDeque;
 use Tree;
 use Node;
 use NodeId;
-use tree::IteratorNew;
 
 ///
 /// An Iterator over the ancestors of a `Node`.
@@ -18,8 +17,8 @@ pub struct Ancestors<'a, T: 'a> {
     node_id: Option<NodeId>,
 }
 
-impl<'a, T> IteratorNew<'a, T, Ancestors<'a, T>> for Ancestors<'a, T> {
-    fn new(tree: &'a Tree<T>, node_id: NodeId) -> Ancestors<'a, T> {
+impl<'a, T> Ancestors<'a, T> {
+    pub(crate) fn new(tree: &'a Tree<T>, node_id: NodeId) -> Ancestors<'a, T> {
         Ancestors {
             tree: tree,
             node_id: Some(node_id),
@@ -54,8 +53,8 @@ pub struct AncestorIds<'a, T: 'a> {
     node_id: Option<NodeId>,
 }
 
-impl<'a, T> IteratorNew<'a, T, AncestorIds<'a, T>> for AncestorIds<'a, T> {
-    fn new(tree: &'a Tree<T>, node_id: NodeId) -> AncestorIds<'a, T> {
+impl<'a, T> AncestorIds<'a, T> {
+    pub(crate) fn new(tree: &'a Tree<T>, node_id: NodeId) -> AncestorIds<'a, T> {
         AncestorIds {
             tree: tree,
             node_id: Some(node_id),
@@ -90,8 +89,8 @@ pub struct Children<'a, T: 'a> {
     child_ids: Iter<'a, NodeId>,
 }
 
-impl<'a, T> IteratorNew<'a, T, Children<'a, T>> for Children<'a, T> {
-    fn new(tree: &'a Tree<T>, node_id: NodeId) -> Children<'a, T> {
+impl<'a, T> Children<'a, T> {
+    pub(crate) fn new(tree: &'a Tree<T>, node_id: NodeId) -> Children<'a, T> {
         Children {
             tree: tree,
             child_ids: tree.get_unsafe(&node_id).children().as_slice().iter(),
@@ -119,8 +118,8 @@ pub struct ChildrenIds<'a> {
     child_ids: Iter<'a, NodeId>,
 }
 
-impl<'a, T> IteratorNew<'a, T, ChildrenIds<'a>> for ChildrenIds<'a> {
-    fn new(tree: &'a Tree<T>, node_id: NodeId) -> ChildrenIds<'a> {
+impl<'a> ChildrenIds<'a> {
+    pub(crate) fn new<T>(tree: &'a Tree<T>, node_id: NodeId) -> ChildrenIds<'a> {
         ChildrenIds { child_ids: tree.get_unsafe(&node_id).children().as_slice().iter() }
     }
 }
@@ -144,8 +143,8 @@ pub struct PreOrderTraversal<'a, T: 'a> {
     data: VecDeque<NodeId>,
 }
 
-impl<'a, T> IteratorNew<'a, T, PreOrderTraversal<'a, T>> for PreOrderTraversal<'a, T> {
-    fn new(tree: &'a Tree<T>, node_id: NodeId) -> PreOrderTraversal<T> {
+impl<'a, T> PreOrderTraversal<'a, T> {
+    pub(crate) fn new(tree: &'a Tree<T>, node_id: NodeId) -> PreOrderTraversal<T> {
 
         // over allocating, but all at once instead of re-sizing and re-allocating as we go
         let mut data = VecDeque::with_capacity(tree.nodes.capacity());
@@ -191,19 +190,7 @@ pub struct PostOrderTraversal<'a, T: 'a> {
 }
 
 impl<'a, T> PostOrderTraversal<'a, T> {
-    fn process_nodes(starting_id: NodeId, tree: &Tree<T>, ids: &mut Vec<NodeId>) {
-        let node = tree.get_unsafe(&starting_id);
-
-        for child_id in node.children() {
-            PostOrderTraversal::process_nodes(child_id.clone(), tree, ids);
-        }
-
-        ids.push(starting_id);
-    }
-}
-
-impl<'a, T> IteratorNew<'a, T, PostOrderTraversal<'a, T>> for PostOrderTraversal<'a, T> {
-    fn new(tree: &'a Tree<T>, node_id: NodeId) -> PostOrderTraversal<T> {
+    pub(crate) fn new(tree: &'a Tree<T>, node_id: NodeId) -> PostOrderTraversal<T> {
 
         // over allocating, but all at once instead of re-sizing and re-allocating as we go
         let mut ids = Vec::with_capacity(tree.nodes.capacity());
@@ -214,6 +201,16 @@ impl<'a, T> IteratorNew<'a, T, PostOrderTraversal<'a, T>> for PostOrderTraversal
             tree: tree,
             ids: ids.into_iter(),
         }
+    }
+
+    fn process_nodes(starting_id: NodeId, tree: &Tree<T>, ids: &mut Vec<NodeId>) {
+        let node = tree.get_unsafe(&starting_id);
+
+        for child_id in node.children() {
+            PostOrderTraversal::process_nodes(child_id.clone(), tree, ids);
+        }
+
+        ids.push(starting_id);
     }
 }
 
@@ -242,8 +239,8 @@ pub struct LevelOrderTraversal<'a, T: 'a> {
     data: VecDeque<NodeId>,
 }
 
-impl<'a, T> IteratorNew<'a, T, LevelOrderTraversal<'a, T>> for LevelOrderTraversal<'a, T> {
-    fn new(tree: &'a Tree<T>, node_id: NodeId) -> LevelOrderTraversal<T> {
+impl<'a, T> LevelOrderTraversal<'a, T> {
+    pub(crate) fn new(tree: &'a Tree<T>, node_id: NodeId) -> LevelOrderTraversal<T> {
 
         // over allocating, but all at once instead of re-sizing and re-allocating as we go
         let mut data = VecDeque::with_capacity(tree.nodes.capacity());
