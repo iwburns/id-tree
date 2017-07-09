@@ -180,39 +180,6 @@ impl<T> MutNode for VecNode<T> {
     fn set_parent(&mut self, parent: Option<NodeId>) {
         self.parent = parent;
     }
-
-    fn add_child(&mut self, child: NodeId) {
-        self.children.push(child);
-    }
-
-    fn replace_child(&mut self, old: NodeId, new: NodeId) {
-        let index = self.children()
-            .iter()
-            .enumerate()
-            .find(|&(_, id)| id == &old)
-            .unwrap()
-            .0;
-
-        let children = self.children_mut();
-        children.push(new);
-        children.swap_remove(index);
-    }
-
-    fn children_mut(&mut self) -> &mut Vec<NodeId> {
-        &mut self.children
-    }
-
-    fn set_children(&mut self, children: Vec<NodeId>) {
-        self.children = children;
-    }
-
-    fn take_children(&mut self) -> Vec<NodeId> {
-        use std::mem;
-
-        let mut empty = Vec::with_capacity(0);
-        mem::swap(&mut self.children, &mut empty);
-        empty //not so empty anymore
-    }
 }
 
 impl<T> VecNode<T> {
@@ -233,6 +200,39 @@ impl<T> VecNode<T> {
     ///
     pub fn children(&self) -> &Vec<NodeId> {
         &self.children
+    }
+
+    pub(crate) fn add_child(&mut self, child: NodeId) {
+        self.children.push(child);
+    }
+
+    pub(crate) fn replace_child(&mut self, old: NodeId, new: NodeId) {
+        let index = self.children()
+            .iter()
+            .enumerate()
+            .find(|&(_, id)| id == &old)
+            .unwrap()
+            .0;
+
+        let children = self.children_mut();
+        children.push(new);
+        children.swap_remove(index);
+    }
+
+    pub(crate) fn children_mut(&mut self) -> &mut Vec<NodeId> {
+        &mut self.children
+    }
+
+    pub(crate) fn set_children(&mut self, children: Vec<NodeId>) {
+        self.children = children;
+    }
+
+    pub(crate) fn take_children(&mut self) -> Vec<NodeId> {
+        use std::mem;
+
+        let mut empty = Vec::with_capacity(0);
+        mem::swap(&mut self.children, &mut empty);
+        empty //not so empty anymore
     }
 }
 
