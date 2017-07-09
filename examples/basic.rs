@@ -10,9 +10,7 @@ fn main() {
     //    1   2
     //   / \
     //  3   4
-    let mut tree: Tree<i32> = TreeBuilder::new()
-        .with_node_capacity(5)
-        .build();
+    let mut tree: Tree<i32> = TreeBuilder::new().with_node_capacity(5).build();
 
     let root_id: NodeId = tree.insert(Node::new(0), AsRoot).unwrap();
     let child_id: NodeId = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();

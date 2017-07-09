@@ -70,6 +70,7 @@ use self::snowflake::ProcessUniqueId;
 
 mod behaviors;
 mod error;
+mod iterators;
 mod node;
 mod tree;
 
@@ -82,13 +83,13 @@ pub use node::NodeBuilder;
 pub use node::Node;
 pub use tree::TreeBuilder;
 pub use tree::Tree;
-pub use tree::iterators::Ancestors;
-pub use tree::iterators::AncestorIds;
-pub use tree::iterators::Children;
-pub use tree::iterators::ChildrenIds;
-pub use tree::iterators::PreOrderTraversal;
-pub use tree::iterators::PostOrderTraversal;
-pub use tree::iterators::LevelOrderTraversal;
+pub use iterators::Ancestors;
+pub use iterators::AncestorIds;
+pub use iterators::Children;
+pub use iterators::ChildrenIds;
+pub use iterators::PreOrderTraversal;
+pub use iterators::PostOrderTraversal;
+pub use iterators::LevelOrderTraversal;
 
 ///
 /// An identifier used to differentiate between `Node`s within a `Tree`.
@@ -140,13 +141,4 @@ pub use tree::iterators::LevelOrderTraversal;
 pub struct NodeId {
     tree_id: ProcessUniqueId,
     index: usize,
-}
-
-trait MutableNode {
-    fn set_parent(&mut self, parent: Option<NodeId>);
-    fn add_child(&mut self, child: NodeId);
-    fn replace_child(&mut self, old: NodeId, new: NodeId);
-    fn children_mut(&mut self) -> &mut Vec<NodeId>;
-    fn set_children(&mut self, children: Vec<NodeId>);
-    fn take_children(&mut self) -> Vec<NodeId>;
 }
