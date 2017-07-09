@@ -1,22 +1,6 @@
+use Node;
+use MutNode;
 use NodeId;
-
-pub trait Node<T> {
-    fn new(data: T) -> Self where Self: Sized;
-    fn data(&self) -> &T;
-    fn data_mut(&mut self) -> &mut T;
-    fn replace_data(&mut self, data: T) -> T;
-    fn parent(&self) -> Option<&NodeId>;
-    fn children(&self) -> &Vec<NodeId>;
-}
-
-pub(crate) trait MutNode {
-    fn set_parent(&mut self, parent: Option<NodeId>);
-    fn add_child(&mut self, child: NodeId);
-    fn replace_child(&mut self, old: NodeId, new: NodeId);
-    fn children_mut(&mut self) -> &mut Vec<NodeId>;
-    fn set_children(&mut self, children: Vec<NodeId>);
-    fn take_children(&mut self) -> Vec<NodeId>;
-}
 
 ///
 /// A `Node` builder that provides more control over how a `Node` is created.
@@ -190,25 +174,6 @@ impl<T> Node<T> for VecNode<T> {
     fn parent(&self) -> Option<&NodeId> {
         self.parent.as_ref()
     }
-
-    ///
-    /// Returns an immutable reference to a `Vec` containing the `NodeId`s of this `Node`'s
-    /// children.
-    ///
-    /// **Note:** A `Node` cannot have any children until after it has been inserted into a `Tree`.
-    ///
-    /// ```
-    /// use id_tree::Node;
-    /// use id_tree::VecNode;
-    ///
-    /// let six: VecNode<i32> = Node::new(6);
-    ///
-    /// assert_eq!(six.children().len(), 0);
-    /// ```
-    ///
-    fn children(&self) -> &Vec<NodeId> {
-        &self.children
-    }
 }
 
 impl<T> MutNode for VecNode<T> {
@@ -250,8 +215,29 @@ impl<T> MutNode for VecNode<T> {
     }
 }
 
+impl<T> VecNode<T> {
+    ///
+    /// Returns an immutable reference to a `Vec` containing the `NodeId`s of this `Node`'s
+    /// children.
+    ///
+    /// **Note:** A `Node` cannot have any children until after it has been inserted into a `Tree`.
+    ///
+    /// ```
+    /// use id_tree::Node;
+    /// use id_tree::VecNode;
+    ///
+    /// let six: VecNode<i32> = Node::new(6);
+    ///
+    /// assert_eq!(six.children().len(), 0);
+    /// ```
+    ///
+    pub fn children(&self) -> &Vec<NodeId> {
+        &self.children
+    }
+}
+
 #[cfg(test)]
-mod node_builder_tests {
+mod vec_node_builder_tests {
     use node::*;
 
     #[test]
@@ -272,7 +258,7 @@ mod node_builder_tests {
 }
 
 #[cfg(test)]
-mod node_tests {
+mod vec_node_tests {
     use node::*;
     use NodeId;
     use snowflake::ProcessUniqueId;
