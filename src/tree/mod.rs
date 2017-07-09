@@ -974,15 +974,11 @@ impl<T> Tree<T> {
 
             let lower_parent = self.get_unsafe(lower_id).parent().cloned().unwrap();
 
-            let mut upper_children;
-            let lower_children;
-            if upper_id == first_id {
-                upper_children = first_children;
-                lower_children = second_children;
+            let (mut upper_children, lower_children) = if upper_id == first_id {
+                (first_children, second_children)
             } else {
-                upper_children = second_children;
-                lower_children = first_children;
-            }
+                (second_children, first_children)
+            };
 
             for child in &upper_children {
                 self.get_mut_unsafe(child).set_parent(
