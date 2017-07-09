@@ -5,6 +5,8 @@ use NodeId;
 pub use self::vec_node::*;
 pub use self::opt_node::*;
 
+//todo: add documentation here and remove from opt_node + vec_node
+
 pub trait Node<T> {
     fn new(data: T) -> Self where Self: Sized;
     fn data(&self) -> &T;
