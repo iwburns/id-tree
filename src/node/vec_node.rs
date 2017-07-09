@@ -3,80 +3,13 @@ use MutNode;
 use NodeId;
 
 ///
-/// A `Node` builder that provides more control over how a `Node` is created.
+/// A `Node` implementation for use in a `VecTree`.
 ///
-pub struct VecNodeBuilder<T> {
-    data: T,
-    child_capacity: usize,
-}
-
-impl<T> VecNodeBuilder<T> {
-    ///
-    /// Creates a new `VecNodeBuilder` with the required data.
-    ///
-    /// ```
-    /// use id_tree::VecNodeBuilder;
-    ///
-    /// let _node_builder = VecNodeBuilder::new(5);
-    /// ```
-    ///
-    pub fn new(data: T) -> VecNodeBuilder<T> {
-        VecNodeBuilder {
-            data: data,
-            child_capacity: 0,
-        }
-    }
-
-    ///
-    /// Set the child capacity of the `VecNodeBuilder`.
-    ///
-    /// As `Node`s are added to a `Tree`, parent and child references must be maintained. To do
-    /// this, an allocation must be made every time a child is added to a `Node`.  Using this
-    /// setting allows the `Node` to pre-allocate space for its children so that the allocations
-    /// aren't made as children are added.
-    ///
-    /// _Use of this setting is recommended if you know the **maximum number** of children (not
-    /// including grandchildren, great-grandchildren, etc.) that a `Node` will have **at any given
-    /// time**_.
-    ///
-    /// ```
-    /// use id_tree::VecNodeBuilder;
-    ///
-    /// let _node_builder = VecNodeBuilder::new(5).with_child_capacity(3);
-    /// ```
-    ///
-    pub fn with_child_capacity(mut self, child_capacity: usize) -> VecNodeBuilder<T> {
-        self.child_capacity = child_capacity;
-        self
-    }
-
-    ///
-    /// Build a `Node` based upon the current settings in the `VecNodeBuilder`.
-    ///
-    /// ```
-    /// use id_tree::VecNodeBuilder;
-    /// use id_tree::VecNode;
-    /// use id_tree::Node;
-    ///
-    /// let node: VecNode<i32> = VecNodeBuilder::new(5)
-    ///         .with_child_capacity(3)
-    ///         .build();
-    ///
-    /// assert_eq!(node.data(), &5);
-    /// assert_eq!(node.children().capacity(), 3);
-    /// ```
-    ///
-    pub fn build(self) -> VecNode<T> {
-        VecNode {
-            data: self.data,
-            parent: None,
-            children: Vec::with_capacity(self.child_capacity),
-        }
-    }
-}
-
+/// `VecNode`s store their children in a `Vec<NodeId>` and only use an `Option<NodeId>` to
+/// reference their parent.
 ///
-/// A container that wraps data in a given `Tree`.
+/// More information on the implications of this (vs. the way `OptNode`s are implemented) can be
+/// found in the documentation for `VecTree` and `OptTree`.
 ///
 pub struct VecNode<T> {
     data: T,
@@ -85,92 +18,27 @@ pub struct VecNode<T> {
 }
 
 impl<T> Node<T> for VecNode<T> {
-    ///
-    /// Creates a new `Node` with the data provided.
-    ///
-    /// ```
-    /// use id_tree::Node;
-    /// use id_tree::VecNode;
-    ///
-    /// let _one: VecNode<i32> = Node::new(1);
-    /// ```
-    ///
     fn new(data: T) -> VecNode<T> {
-        VecNodeBuilder::new(data).build()
+        VecNode {
+            data: data,
+            parent: None,
+            children: Vec::new(),
+        }
     }
 
-    ///
-    /// Returns an immutable reference to the data contained within the `Node`.
-    ///
-    /// ```
-    /// use id_tree::Node;
-    /// use id_tree::VecNode;
-    ///
-    /// let node_three: VecNode<i32> = Node::new(3);
-    /// let three = 3;
-    ///
-    /// assert_eq!(node_three.data(), &three);
-    /// ```
-    ///
     fn data(&self) -> &T {
         &self.data
     }
 
-    ///
-    /// Returns a mutable reference to the data contained within the `Node`.
-    ///
-    /// ```
-    /// use id_tree::Node;
-    /// use id_tree::VecNode;
-    ///
-    /// let mut node_four: VecNode<i32> = Node::new(4);
-    /// let mut four = 4;
-    ///
-    /// assert_eq!(node_four.data_mut(), &mut four);
-    /// ```
-    ///
     fn data_mut(&mut self) -> &mut T {
         &mut self.data
     }
 
-    ///
-    /// Replaces this `Node`s data with the data provided.
-    ///
-    /// Returns the old value of data.
-    ///
-    /// ```
-    /// use id_tree::Node;
-    /// use id_tree::VecNode;
-    ///
-    /// let mut node_four: VecNode<i32> = Node::new(3);
-    ///
-    /// // ops! lets correct this
-    /// let three = node_four.replace_data(4);
-    ///
-    /// assert_eq!(node_four.data(), &4);
-    /// assert_eq!(three, 3);
-    /// ```
-    ///
     fn replace_data(&mut self, mut data: T) -> T {
         ::std::mem::swap(&mut data, self.data_mut());
         data
     }
 
-    ///
-    /// Returns a `Some` value containing the `NodeId` of this `Node`'s parent if it exists; returns
-    /// `None` if it does not.
-    ///
-    /// **Note:** A `Node` cannot have a parent until after it has been inserted into a `Tree`.
-    ///
-    /// ```
-    /// use id_tree::Node;
-    /// use id_tree::VecNode;
-    ///
-    /// let five: VecNode<i32> = Node::new(5);
-    ///
-    /// assert!(five.parent().is_none());
-    /// ```
-    ///
     fn parent(&self) -> Option<&NodeId> {
         self.parent.as_ref()
     }
@@ -184,6 +52,25 @@ impl<T> MutNode for VecNode<T> {
 
 impl<T> VecNode<T> {
     ///
+    /// Creates a new `Node` with the data provided and pre-allocates enough space for the given
+    /// child_capacity.
+    ///
+    /// ```
+    /// use id_tree::Node;
+    /// use id_tree::VecNode;
+    ///
+    /// let _one: VecNode<i32> = VecNode::new_with_child_capacity(1, 5);
+    /// ```
+    ///
+    pub fn new_with_child_capacity(data: T, child_capacity: usize) -> VecNode<T> {
+        VecNode {
+            data: data,
+            parent: None,
+            children: Vec::with_capacity(child_capacity),
+        }
+    }
+
+    ///
     /// Returns an immutable reference to a `Vec` containing the `NodeId`s of this `Node`'s
     /// children.
     ///
@@ -193,7 +80,7 @@ impl<T> VecNode<T> {
     /// use id_tree::Node;
     /// use id_tree::VecNode;
     ///
-    /// let six: VecNode<i32> = Node::new(6);
+    /// let six: VecNode<i32> = VecNode::new(6);
     ///
     /// assert_eq!(six.children().len(), 0);
     /// ```
@@ -237,27 +124,6 @@ impl<T> VecNode<T> {
 }
 
 #[cfg(test)]
-mod vec_node_builder_tests {
-    use node::*;
-
-    #[test]
-    fn test_new() {
-        let five = 5;
-        let node = VecNodeBuilder::new(5).build();
-        assert_eq!(node.data(), &five);
-        assert_eq!(node.children.capacity(), 0);
-    }
-
-    #[test]
-    fn test_with_child_capacity() {
-        let five = 5;
-        let node = VecNodeBuilder::new(5).with_child_capacity(10).build();
-        assert_eq!(node.data(), &five);
-        assert_eq!(node.children.capacity(), 10);
-    }
-}
-
-#[cfg(test)]
 mod vec_node_tests {
     use node::*;
     use NodeId;
@@ -267,6 +133,12 @@ mod vec_node_tests {
     fn test_new() {
         let node = VecNode::new(5);
         assert_eq!(node.children.capacity(), 0);
+    }
+
+    #[test]
+    fn test_new_with_child_capacity() {
+        let node = VecNode::new_with_child_capacity(5, 6);
+        assert_eq!(node.children.capacity(), 6);
     }
 
     #[test]

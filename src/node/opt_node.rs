@@ -3,7 +3,12 @@ use MutNode;
 use NodeId;
 
 ///
-/// A container that wraps data in a given `Tree`.
+/// A `Node` implementation for use in an `OptTree`.
+///
+/// `OptNode`s use `Option<NodeId>`s to reference all nearby `OptNode`s.
+///
+/// More information on the implications of this (vs. the way `VecNode`s are implemented) can be
+/// found in the documentation for `VecTree` and `OptTree`.
 ///
 pub struct OptNode<T> {
     data: T,
@@ -15,16 +20,6 @@ pub struct OptNode<T> {
 }
 
 impl<T> Node<T> for OptNode<T> {
-    ///
-    /// Creates a new `Node` with the data provided.
-    ///
-    /// ```
-    /// use id_tree::Node;
-    /// use id_tree::OptNode;
-    ///
-    /// let _one: OptNode<i32> = Node::new(1);
-    /// ```
-    ///
     fn new(data: T) -> OptNode<T> {
         OptNode {
             data: data,
@@ -36,78 +31,19 @@ impl<T> Node<T> for OptNode<T> {
         }
     }
 
-    ///
-    /// Returns an immutable reference to the data contained within the `Node`.
-    ///
-    /// ```
-    /// use id_tree::Node;
-    /// use id_tree::OptNode;
-    ///
-    /// let node_three: OptNode<i32> = Node::new(3);
-    /// let three = 3;
-    ///
-    /// assert_eq!(node_three.data(), &three);
-    /// ```
-    ///
     fn data(&self) -> &T {
         &self.data
     }
 
-    ///
-    /// Returns a mutable reference to the data contained within the `Node`.
-    ///
-    /// ```
-    /// use id_tree::Node;
-    /// use id_tree::OptNode;
-    ///
-    /// let mut node_four: OptNode<i32> = Node::new(4);
-    /// let mut four = 4;
-    ///
-    /// assert_eq!(node_four.data_mut(), &mut four);
-    /// ```
-    ///
     fn data_mut(&mut self) -> &mut T {
         &mut self.data
     }
 
-    ///
-    /// Replaces this `Node`s data with the data provided.
-    ///
-    /// Returns the old value of data.
-    ///
-    /// ```
-    /// use id_tree::Node;
-    /// use id_tree::OptNode;
-    ///
-    /// let mut node_four: OptNode<i32> = Node::new(3);
-    ///
-    /// // ops! lets correct this
-    /// let three = node_four.replace_data(4);
-    ///
-    /// assert_eq!(node_four.data(), &4);
-    /// assert_eq!(three, 3);
-    /// ```
-    ///
     fn replace_data(&mut self, mut data: T) -> T {
         ::std::mem::swap(&mut data, self.data_mut());
         data
     }
 
-    ///
-    /// Returns a `Some` value containing the `NodeId` of this `Node`'s parent if it exists; returns
-    /// `None` if it does not.
-    ///
-    /// **Note:** A `Node` cannot have a parent until after it has been inserted into a `Tree`.
-    ///
-    /// ```
-    /// use id_tree::Node;
-    /// use id_tree::OptNode;
-    ///
-    /// let five: OptNode<i32> = Node::new(5);
-    ///
-    /// assert!(five.parent().is_none());
-    /// ```
-    ///
     fn parent(&self) -> Option<&NodeId> {
         self.parent.as_ref()
     }
@@ -131,7 +67,7 @@ impl<T> OptNode<T> {
     /// use id_tree::Node;
     /// use id_tree::OptNode;
     ///
-    /// let five: OptNode<i32> = Node::new(5);
+    /// let five: OptNode<i32> = OptNode::new(5);
     ///
     /// assert!(five.prev_sibling().is_none());
     /// ```
@@ -151,7 +87,7 @@ impl<T> OptNode<T> {
     /// use id_tree::Node;
     /// use id_tree::OptNode;
     ///
-    /// let five: OptNode<i32> = Node::new(5);
+    /// let five: OptNode<i32> = OptNode::new(5);
     ///
     /// assert!(five.next_sibling().is_none());
     /// ```
@@ -171,7 +107,7 @@ impl<T> OptNode<T> {
     /// use id_tree::Node;
     /// use id_tree::OptNode;
     ///
-    /// let five: OptNode<i32> = Node::new(5);
+    /// let five: OptNode<i32> = OptNode::new(5);
     ///
     /// assert!(five.first_child().is_none());
     /// ```
@@ -191,7 +127,7 @@ impl<T> OptNode<T> {
     /// use id_tree::Node;
     /// use id_tree::OptNode;
     ///
-    /// let five: OptNode<i32> = Node::new(5);
+    /// let five: OptNode<i32> = OptNode::new(5);
     ///
     /// assert!(five.last_child().is_none());
     /// ```
@@ -221,7 +157,7 @@ impl<T> OptNode<T> {
 }
 
 #[cfg(test)]
-mod vec_node_tests {
+mod opt_node_tests {
     use node::*;
     use NodeId;
     use snowflake::ProcessUniqueId;
