@@ -1,7 +1,9 @@
 mod vec_node;
+mod opt_node;
 
 use NodeId;
 pub use self::vec_node::*;
+pub use self::opt_node::*;
 
 pub trait Node<T> {
     fn new(data: T) -> Self where Self: Sized;
