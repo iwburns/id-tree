@@ -3,7 +3,7 @@ use std::vec::IntoIter;
 use std::collections::VecDeque;
 
 use Tree;
-use Node;
+use node::*;
 use NodeId;
 
 ///
@@ -279,7 +279,7 @@ impl<'a, T> Iterator for LevelOrderTraversal<'a, T> {
 mod tests {
 
     use Tree;
-    use Node;
+    use node::*;
     use InsertBehavior::*;
 
     #[test]

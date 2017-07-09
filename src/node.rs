@@ -1,32 +1,50 @@
 use NodeId;
 
+pub trait Node<T> {
+    fn new(data: T) -> Self where Self: Sized;
+    fn data(&self) -> &T;
+    fn data_mut(&mut self) -> &mut T;
+    fn replace_data(&mut self, data: T) -> T;
+    fn parent(&self) -> Option<&NodeId>;
+    fn children(&self) -> &Vec<NodeId>;
+}
+
+pub(crate) trait MutNode {
+    fn set_parent(&mut self, parent: Option<NodeId>);
+    fn add_child(&mut self, child: NodeId);
+    fn replace_child(&mut self, old: NodeId, new: NodeId);
+    fn children_mut(&mut self) -> &mut Vec<NodeId>;
+    fn set_children(&mut self, children: Vec<NodeId>);
+    fn take_children(&mut self) -> Vec<NodeId>;
+}
+
 ///
 /// A `Node` builder that provides more control over how a `Node` is created.
 ///
-pub struct NodeBuilder<T> {
+pub struct VecNodeBuilder<T> {
     data: T,
     child_capacity: usize,
 }
 
-impl<T> NodeBuilder<T> {
+impl<T> VecNodeBuilder<T> {
     ///
-    /// Creates a new `NodeBuilder` with the required data.
+    /// Creates a new `VecNodeBuilder` with the required data.
     ///
     /// ```
-    /// use id_tree::NodeBuilder;
+    /// use id_tree::VecNodeBuilder;
     ///
-    /// let _node_builder = NodeBuilder::new(5);
+    /// let _node_builder = VecNodeBuilder::new(5);
     /// ```
     ///
-    pub fn new(data: T) -> NodeBuilder<T> {
-        NodeBuilder {
+    pub fn new(data: T) -> VecNodeBuilder<T> {
+        VecNodeBuilder {
             data: data,
             child_capacity: 0,
         }
     }
 
     ///
-    /// Set the child capacity of the `NodeBuilder`.
+    /// Set the child capacity of the `VecNodeBuilder`.
     ///
     /// As `Node`s are added to a `Tree`, parent and child references must be maintained. To do
     /// this, an allocation must be made every time a child is added to a `Node`.  Using this
@@ -38,24 +56,25 @@ impl<T> NodeBuilder<T> {
     /// time**_.
     ///
     /// ```
-    /// use id_tree::NodeBuilder;
+    /// use id_tree::VecNodeBuilder;
     ///
-    /// let _node_builder = NodeBuilder::new(5).with_child_capacity(3);
+    /// let _node_builder = VecNodeBuilder::new(5).with_child_capacity(3);
     /// ```
     ///
-    pub fn with_child_capacity(mut self, child_capacity: usize) -> NodeBuilder<T> {
+    pub fn with_child_capacity(mut self, child_capacity: usize) -> VecNodeBuilder<T> {
         self.child_capacity = child_capacity;
         self
     }
 
     ///
-    /// Build a `Node` based upon the current settings in the `NodeBuilder`.
+    /// Build a `Node` based upon the current settings in the `VecNodeBuilder`.
     ///
     /// ```
-    /// use id_tree::NodeBuilder;
+    /// use id_tree::VecNodeBuilder;
+    /// use id_tree::VecNode;
     /// use id_tree::Node;
     ///
-    /// let node: Node<i32> = NodeBuilder::new(5)
+    /// let node: VecNode<i32> = VecNodeBuilder::new(5)
     ///         .with_child_capacity(3)
     ///         .build();
     ///
@@ -63,8 +82,8 @@ impl<T> NodeBuilder<T> {
     /// assert_eq!(node.children().capacity(), 3);
     /// ```
     ///
-    pub fn build(self) -> Node<T> {
-        Node {
+    pub fn build(self) -> VecNode<T> {
+        VecNode {
             data: self.data,
             parent: None,
             children: Vec::with_capacity(self.child_capacity),
@@ -75,24 +94,25 @@ impl<T> NodeBuilder<T> {
 ///
 /// A container that wraps data in a given `Tree`.
 ///
-pub struct Node<T> {
+pub struct VecNode<T> {
     data: T,
     parent: Option<NodeId>,
     children: Vec<NodeId>,
 }
 
-impl<T> Node<T> {
+impl<T> Node<T> for VecNode<T> {
     ///
     /// Creates a new `Node` with the data provided.
     ///
     /// ```
     /// use id_tree::Node;
+    /// use id_tree::VecNode;
     ///
-    /// let _one: Node<i32> = Node::new(1);
+    /// let _one: VecNode<i32> = Node::new(1);
     /// ```
     ///
-    pub fn new(data: T) -> Node<T> {
-        NodeBuilder::new(data).build()
+    fn new(data: T) -> VecNode<T> {
+        VecNodeBuilder::new(data).build()
     }
 
     ///
@@ -100,14 +120,15 @@ impl<T> Node<T> {
     ///
     /// ```
     /// use id_tree::Node;
+    /// use id_tree::VecNode;
     ///
-    /// let node_three: Node<i32> = Node::new(3);
+    /// let node_three: VecNode<i32> = Node::new(3);
     /// let three = 3;
     ///
     /// assert_eq!(node_three.data(), &three);
     /// ```
     ///
-    pub fn data(&self) -> &T {
+    fn data(&self) -> &T {
         &self.data
     }
 
@@ -116,14 +137,15 @@ impl<T> Node<T> {
     ///
     /// ```
     /// use id_tree::Node;
+    /// use id_tree::VecNode;
     ///
-    /// let mut node_four: Node<i32> = Node::new(4);
+    /// let mut node_four: VecNode<i32> = Node::new(4);
     /// let mut four = 4;
     ///
     /// assert_eq!(node_four.data_mut(), &mut four);
     /// ```
     ///
-    pub fn data_mut(&mut self) -> &mut T {
+    fn data_mut(&mut self) -> &mut T {
         &mut self.data
     }
 
@@ -134,8 +156,9 @@ impl<T> Node<T> {
     ///
     /// ```
     /// use id_tree::Node;
+    /// use id_tree::VecNode;
     ///
-    /// let mut node_four: Node<i32> = Node::new(3);
+    /// let mut node_four: VecNode<i32> = Node::new(3);
     ///
     /// // ops! lets correct this
     /// let three = node_four.replace_data(4);
@@ -144,7 +167,7 @@ impl<T> Node<T> {
     /// assert_eq!(three, 3);
     /// ```
     ///
-    pub fn replace_data(&mut self, mut data: T) -> T {
+    fn replace_data(&mut self, mut data: T) -> T {
         ::std::mem::swap(&mut data, self.data_mut());
         data
     }
@@ -157,13 +180,14 @@ impl<T> Node<T> {
     ///
     /// ```
     /// use id_tree::Node;
+    /// use id_tree::VecNode;
     ///
-    /// let five: Node<i32> = Node::new(5);
+    /// let five: VecNode<i32> = Node::new(5);
     ///
     /// assert!(five.parent().is_none());
     /// ```
     ///
-    pub fn parent(&self) -> Option<&NodeId> {
+    fn parent(&self) -> Option<&NodeId> {
         self.parent.as_ref()
     }
 
@@ -175,25 +199,28 @@ impl<T> Node<T> {
     ///
     /// ```
     /// use id_tree::Node;
+    /// use id_tree::VecNode;
     ///
-    /// let six: Node<i32> = Node::new(6);
+    /// let six: VecNode<i32> = Node::new(6);
     ///
     /// assert_eq!(six.children().len(), 0);
     /// ```
     ///
-    pub fn children(&self) -> &Vec<NodeId> {
+    fn children(&self) -> &Vec<NodeId> {
         &self.children
     }
+}
 
-    pub(crate) fn set_parent(&mut self, parent: Option<NodeId>) {
+impl<T> MutNode for VecNode<T> {
+    fn set_parent(&mut self, parent: Option<NodeId>) {
         self.parent = parent;
     }
 
-    pub(crate) fn add_child(&mut self, child: NodeId) {
+    fn add_child(&mut self, child: NodeId) {
         self.children.push(child);
     }
 
-    pub(crate) fn replace_child(&mut self, old: NodeId, new: NodeId) {
+    fn replace_child(&mut self, old: NodeId, new: NodeId) {
         let index = self.children()
             .iter()
             .enumerate()
@@ -206,15 +233,15 @@ impl<T> Node<T> {
         children.swap_remove(index);
     }
 
-    pub(crate) fn children_mut(&mut self) -> &mut Vec<NodeId> {
+    fn children_mut(&mut self) -> &mut Vec<NodeId> {
         &mut self.children
     }
 
-    pub(crate) fn set_children(&mut self, children: Vec<NodeId>) {
+    fn set_children(&mut self, children: Vec<NodeId>) {
         self.children = children;
     }
 
-    pub(crate) fn take_children(&mut self) -> Vec<NodeId> {
+    fn take_children(&mut self) -> Vec<NodeId> {
         use std::mem;
 
         let mut empty = Vec::with_capacity(0);
@@ -225,12 +252,12 @@ impl<T> Node<T> {
 
 #[cfg(test)]
 mod node_builder_tests {
-    use super::NodeBuilder;
+    use node::*;
 
     #[test]
     fn test_new() {
         let five = 5;
-        let node = NodeBuilder::new(5).build();
+        let node = VecNodeBuilder::new(5).build();
         assert_eq!(node.data(), &five);
         assert_eq!(node.children.capacity(), 0);
     }
@@ -238,7 +265,7 @@ mod node_builder_tests {
     #[test]
     fn test_with_child_capacity() {
         let five = 5;
-        let node = NodeBuilder::new(5).with_child_capacity(10).build();
+        let node = VecNodeBuilder::new(5).with_child_capacity(10).build();
         assert_eq!(node.data(), &five);
         assert_eq!(node.children.capacity(), 10);
     }
@@ -246,33 +273,33 @@ mod node_builder_tests {
 
 #[cfg(test)]
 mod node_tests {
-    use super::Node;
-    use super::super::NodeId;
-    use super::super::snowflake::ProcessUniqueId;
+    use node::*;
+    use NodeId;
+    use snowflake::ProcessUniqueId;
 
     #[test]
     fn test_new() {
-        let node = Node::new(5);
+        let node = VecNode::new(5);
         assert_eq!(node.children.capacity(), 0);
     }
 
     #[test]
     fn test_data() {
         let five = 5;
-        let node = Node::new(five);
+        let node = VecNode::new(five);
         assert_eq!(node.data(), &five);
     }
 
     #[test]
     fn test_data_mut() {
         let mut five = 5;
-        let mut node = Node::new(five);
+        let mut node = VecNode::new(five);
         assert_eq!(node.data_mut(), &mut five);
     }
 
     #[test]
     fn test_parent() {
-        let mut node = Node::new(5);
+        let mut node = VecNode::new(5);
         assert!(node.parent().is_none());
 
         let parent_id: NodeId = NodeId {
@@ -288,7 +315,7 @@ mod node_tests {
 
     #[test]
     fn test_children() {
-        let mut node = Node::new(5);
+        let mut node = VecNode::new(5);
         assert_eq!(node.children().len(), 0);
 
         let child_id: NodeId = NodeId {
@@ -300,7 +327,7 @@ mod node_tests {
         assert_eq!(node.children().len(), 1);
         assert_eq!(node.children().get(0).unwrap(), &child_id);
 
-        let mut node = Node::new(5);
+        let mut node = VecNode::new(5);
         assert_eq!(node.children().len(), 0);
 
         let child_id: NodeId = NodeId {

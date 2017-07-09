@@ -1,13 +1,14 @@
 use std::cmp::Ordering;
 
+use node::*;
 use super::*;
-use super::snowflake::ProcessUniqueId;
+use snowflake::ProcessUniqueId;
 
 ///
 /// A `Tree` builder that provides more control over how a `Tree` is created.
 ///
 pub struct TreeBuilder<T> {
-    root: Option<Node<T>>,
+    root: Option<VecNode<T>>,
     node_capacity: usize,
     swap_capacity: usize,
 }
@@ -40,7 +41,7 @@ impl<T> TreeBuilder<T> {
     /// let _tree_builder = TreeBuilder::new().with_root(Node::new(1));
     /// ```
     ///
-    pub fn with_root(mut self, root: Node<T>) -> TreeBuilder<T> {
+    pub fn with_root(mut self, root: VecNode<T>) -> TreeBuilder<T> {
         self.root = Some(root);
         self
     }
@@ -110,9 +111,10 @@ impl<T> TreeBuilder<T> {
     /// use id_tree::TreeBuilder;
     /// use id_tree::Tree;
     /// use id_tree::Node;
+    /// use id_tree::VecNode;
     ///
     /// let _tree: Tree<i32> = TreeBuilder::new()
-    ///         .with_root(Node::new(5))
+    ///         .with_root(VecNode::new(5))
     ///         .with_node_capacity(3)
     ///         .with_swap_capacity(2)
     ///         .build();
@@ -158,7 +160,7 @@ impl<T> TreeBuilder<T> {
 pub struct Tree<T> {
     id: ProcessUniqueId,
     root: Option<NodeId>,
-    pub(crate) nodes: Vec<Option<Node<T>>>,
+    pub(crate) nodes: Vec<Option<VecNode<T>>>,
     free_ids: Vec<NodeId>,
 }
 
@@ -197,7 +199,7 @@ impl<T> Tree<T> {
     ///
     pub fn insert(
         &mut self,
-        node: Node<T>,
+        node: VecNode<T>,
         behavior: InsertBehavior,
     ) -> Result<NodeId, NodeIdError> {
         match behavior {
@@ -218,7 +220,7 @@ impl<T> Tree<T> {
     ///
     /// Sets the root of the `Tree`.
     ///
-    fn set_root(&mut self, new_root: Node<T>) -> NodeId {
+    fn set_root(&mut self, new_root: VecNode<T>) -> NodeId {
         let new_root_id = self.insert_new_node(new_root);
 
         if let Some(current_root_node_id) = self.root.clone() {
@@ -233,7 +235,7 @@ impl<T> Tree<T> {
     ///
     fn insert_with_parent(
         &mut self,
-        child: Node<T>,
+        child: VecNode<T>,
         parent_id: &NodeId,
     ) -> Result<NodeId, NodeIdError> {
         let new_child_id = self.insert_new_node(child);
@@ -258,7 +260,7 @@ impl<T> Tree<T> {
     /// # assert_eq!(root_node.data(), &5);
     /// ```
     ///
-    pub fn get(&self, node_id: &NodeId) -> Result<&Node<T>, NodeIdError> {
+    pub fn get(&self, node_id: &NodeId) -> Result<&VecNode<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
             Err(error.expect(
@@ -286,7 +288,7 @@ impl<T> Tree<T> {
     /// # assert_eq!(root_node.data(), &5);
     /// ```
     ///
-    pub fn get_mut(&mut self, node_id: &NodeId) -> Result<&mut Node<T>, NodeIdError> {
+    pub fn get_mut(&mut self, node_id: &NodeId) -> Result<&mut VecNode<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
             Err(error.expect(
@@ -335,7 +337,7 @@ impl<T> Tree<T> {
         &mut self,
         node_id: NodeId,
         behavior: RemoveBehavior,
-    ) -> Result<Node<T>, NodeIdError> {
+    ) -> Result<VecNode<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(&node_id);
         if !is_valid {
             return Err(error.expect(
@@ -360,7 +362,7 @@ impl<T> Tree<T> {
     /// its own children.  If this `Node` has no parent, then calling this function is the
     /// equivalent of calling `remove_node_orphan_children`.
     ///
-    fn remove_node_lift_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
+    fn remove_node_lift_children(&mut self, node_id: NodeId) -> Result<VecNode<T>, NodeIdError> {
         if let Some(parent_id) = self.get_unsafe(&node_id).parent().cloned() {
             // attach children to parent
             for child_id in self.get_unsafe(&node_id).children().clone() {
@@ -377,7 +379,7 @@ impl<T> Tree<T> {
     ///
     /// Remove a `Node` from the `Tree` and leave all of its children in the `Tree`.
     ///
-    fn remove_node_orphan_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
+    fn remove_node_orphan_children(&mut self, node_id: NodeId) -> Result<VecNode<T>, NodeIdError> {
         self.clear_parent_of_children(&node_id);
         Ok(self.remove_node_internal(node_id))
     }
@@ -385,7 +387,7 @@ impl<T> Tree<T> {
     ///
     /// Remove a `Node` from the `Tree` including all its children recursively.
     ///
-    fn remove_node_drop_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
+    fn remove_node_drop_children(&mut self, node_id: NodeId) -> Result<VecNode<T>, NodeIdError> {
         let mut children = self.get_mut_unsafe(&node_id).take_children();
         for child in children.drain(..) {
             try!(self.remove_node_drop_children(child));
@@ -552,7 +554,7 @@ impl<T> Tree<T> {
         mut compare: F,
     ) -> Result<(), NodeIdError>
     where
-        F: FnMut(&Node<T>, &Node<T>) -> Ordering,
+        F: FnMut(&VecNode<T>, &VecNode<T>) -> Ordering,
     {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
@@ -646,7 +648,7 @@ impl<T> Tree<T> {
     ) -> Result<(), NodeIdError>
     where
         B: Ord,
-        F: FnMut(&Node<T>) -> B,
+        F: FnMut(&VecNode<T>) -> B,
     {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
@@ -1162,7 +1164,7 @@ impl<T> Tree<T> {
     /// use id_tree::InsertBehavior::*;
     ///
     /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+    /// let root_id = tree.insert(VecNode::new(0), AsRoot).unwrap();
     /// tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
     ///
     /// let mut nodes = tree.traverse_pre_order(&root_id).unwrap();
@@ -1311,7 +1313,7 @@ impl<T> Tree<T> {
         );
     }
 
-    fn insert_new_node(&mut self, new_node: Node<T>) -> NodeId {
+    fn insert_new_node(&mut self, new_node: VecNode<T>) -> NodeId {
 
         if !self.free_ids.is_empty() {
             let new_node_id: NodeId = self.free_ids.pop().expect(
@@ -1330,7 +1332,7 @@ impl<T> Tree<T> {
         }
     }
 
-    fn remove_node_internal(&mut self, node_id: NodeId) -> Node<T> {
+    fn remove_node_internal(&mut self, node_id: NodeId) -> VecNode<T> {
 
         if let Some(root_id) = self.root.clone() {
             if node_id == root_id {
@@ -1358,7 +1360,7 @@ impl<T> Tree<T> {
         node
     }
 
-    fn take_node(&mut self, node_id: NodeId) -> Node<T> {
+    fn take_node(&mut self, node_id: NodeId) -> VecNode<T> {
         self.nodes.push(None);
         let node = self.nodes.swap_remove(node_id.index).expect(
             "Tree::take_node: An invalid NodeId made it past id_tree's internal checks. \
@@ -1394,7 +1396,7 @@ impl<T> Tree<T> {
         }
     }
 
-    pub(crate) fn get_unsafe(&self, node_id: &NodeId) -> &Node<T> {
+    pub(crate) fn get_unsafe(&self, node_id: &NodeId) -> &VecNode<T> {
         unsafe {
             self.nodes.get_unchecked(node_id.index).as_ref().expect(
                 "Tree::get_unsafe: An invalid NodeId made it past id_tree's internal \
@@ -1403,7 +1405,7 @@ impl<T> Tree<T> {
         }
     }
 
-    fn get_mut_unsafe(&mut self, node_id: &NodeId) -> &mut Node<T> {
+    fn get_mut_unsafe(&mut self, node_id: &NodeId) -> &mut VecNode<T> {
         unsafe {
             self.nodes.get_unchecked_mut(node_id.index).as_mut().expect(
                 "Tree::get_mut_unsafe: An invalid NodeId made it past id_tree's internal \
@@ -1416,7 +1418,7 @@ impl<T> Tree<T> {
 #[cfg(test)]
 mod tree_builder_tests {
     use super::TreeBuilder;
-    use super::super::Node;
+    use node::*;
 
     #[test]
     fn test_new() {
@@ -1486,7 +1488,7 @@ mod tree_tests {
     use super::Tree;
     use super::TreeBuilder;
     use super::super::NodeId;
-    use super::super::Node;
+    use node::*;
 
     #[test]
     fn test_new() {
