@@ -195,13 +195,11 @@ impl<T> Tree<T> {
     /// tree.insert(child_node, UnderNode(&root_id)).unwrap();
     /// ```
     ///
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
-    pub fn insert(&mut self,
-                  node: Node<T>,
-                  behavior: InsertBehavior)
-                  -> Result<NodeId, NodeIdError>
-    {
+    pub fn insert(
+        &mut self,
+        node: Node<T>,
+        behavior: InsertBehavior,
+    ) -> Result<NodeId, NodeIdError> {
         match behavior {
             InsertBehavior::UnderNode(parent_id) => {
                 let (is_valid, error) = self.is_valid_node_id(parent_id);
@@ -233,13 +231,11 @@ impl<T> Tree<T> {
 
     /// Add a new `Node` to the tree as the child of a `Node` specified by the given `NodeId`.
     ///
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
-    fn insert_with_parent(&mut self,
-                          child: Node<T>,
-                          parent_id: &NodeId)
-                          -> Result<NodeId, NodeIdError>
-    {
+    fn insert_with_parent(
+        &mut self,
+        child: Node<T>,
+        parent_id: &NodeId,
+    ) -> Result<NodeId, NodeIdError> {
         let new_child_id = self.insert_new_node(child);
         self.set_as_parent_and_child(parent_id, &new_child_id);
         Ok(new_child_id)
@@ -335,13 +331,11 @@ impl<T> Tree<T> {
     /// # assert_eq!(child.parent(), None);
     /// ```
     ///
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
-    pub fn remove_node(&mut self,
-                       node_id: NodeId,
-                       behavior: RemoveBehavior)
-                       -> Result<Node<T>, NodeIdError>
-    {
+    pub fn remove_node(
+        &mut self,
+        node_id: NodeId,
+        behavior: RemoveBehavior,
+    ) -> Result<Node<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(&node_id);
         if !is_valid {
             return Err(error.expect(
@@ -419,13 +413,11 @@ impl<T> Tree<T> {
     /// # assert!(!tree.get(&child_id).unwrap().children().contains(&grandchild_id));
     /// ```
     ///
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
-    pub fn move_node(&mut self,
-                     node_id: &NodeId,
-                     behavior: MoveBehavior)
-                     -> Result<(), NodeIdError>
-    {
+    pub fn move_node(
+        &mut self,
+        node_id: &NodeId,
+        behavior: MoveBehavior,
+    ) -> Result<(), NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
@@ -451,13 +443,11 @@ impl<T> Tree<T> {
 
     /// Moves a `Node` inside a `Tree` to a new parent leaving all children in their place.
     ///
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
-    fn move_node_to_parent(&mut self,
-                           node_id: &NodeId,
-                           parent_id: &NodeId)
-                           -> Result<(), NodeIdError>
-    {
+    fn move_node_to_parent(
+        &mut self,
+        node_id: &NodeId,
+        parent_id: &NodeId,
+    ) -> Result<(), NodeIdError> {
         if let Some(subtree_root_id) =
             self.find_subtree_root_between_ids(parent_id, node_id)
                 .cloned()
@@ -556,11 +546,13 @@ impl<T> Tree<T> {
     /// # }
     /// ```
     ///
-    pub fn sort_children_by<F>(&mut self,
-                               node_id: &NodeId,
-                               mut compare: F)
-                               -> Result<(), NodeIdError>
-        where F: FnMut(&Node<T>, &Node<T>) -> Ordering
+    pub fn sort_children_by<F>(
+        &mut self,
+        node_id: &NodeId,
+        mut compare: F,
+    ) -> Result<(), NodeIdError>
+    where
+        F: FnMut(&Node<T>, &Node<T>) -> Ordering,
     {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
@@ -603,7 +595,8 @@ impl<T> Tree<T> {
     /// ```
     ///
     pub fn sort_children_by_data(&mut self, node_id: &NodeId) -> Result<(), NodeIdError>
-        where T: Ord
+    where
+        T: Ord,
     {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
@@ -646,11 +639,14 @@ impl<T> Tree<T> {
     /// # }
     /// ```
     ///
-    pub fn sort_children_by_key<B, F>(&mut self,
-                                      node_id: &NodeId,
-                                      mut f: F)
-                                      -> Result<(), NodeIdError>
-        where B: Ord, F: FnMut(&Node<T>) -> B
+    pub fn sort_children_by_key<B, F>(
+        &mut self,
+        node_id: &NodeId,
+        mut f: F,
+    ) -> Result<(), NodeIdError>
+    where
+        B: Ord,
+        F: FnMut(&Node<T>) -> B,
     {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
@@ -695,14 +691,12 @@ impl<T> Tree<T> {
     /// assert!(tree.get(&root_id).unwrap().children().contains(&grandchild_id));
     /// ```
     ///
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
-    pub fn swap_nodes(&mut self,
-                      first_id: &NodeId,
-                      second_id: &NodeId,
-                      behavior: SwapBehavior)
-                      -> Result<(), NodeIdError>
-    {
+    pub fn swap_nodes(
+        &mut self,
+        first_id: &NodeId,
+        second_id: &NodeId,
+        behavior: SwapBehavior,
+    ) -> Result<(), NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(first_id);
         if !is_valid {
             return Err(error.expect(
@@ -726,13 +720,11 @@ impl<T> Tree<T> {
 
     /// Swaps two `Node`s including their children given their `NodeId`s.
     ///
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
-    fn swap_nodes_take_children(&mut self,
-                                first_id: &NodeId,
-                                second_id: &NodeId)
-                                -> Result<(), NodeIdError>
-    {
+    fn swap_nodes_take_children(
+        &mut self,
+        first_id: &NodeId,
+        second_id: &NodeId,
+    ) -> Result<(), NodeIdError> {
         let lower_upper_test = self.find_subtree_root_between_ids(first_id, second_id)
             .map(|_| (first_id, second_id))
             .or_else(|| {
@@ -830,13 +822,11 @@ impl<T> Tree<T> {
         Ok(())
     }
 
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
-    fn swap_nodes_leave_children(&mut self,
-                                 first_id: &NodeId,
-                                 second_id: &NodeId)
-                                 -> Result<(), NodeIdError>
-    {
+    fn swap_nodes_leave_children(
+        &mut self,
+        first_id: &NodeId,
+        second_id: &NodeId,
+    ) -> Result<(), NodeIdError> {
         //take care of these nodes' children's parent values
         self.set_parent_of_children(first_id, Some(second_id.clone()));
         self.set_parent_of_children(second_id, Some(first_id.clone()));
@@ -949,13 +939,11 @@ impl<T> Tree<T> {
         Ok(())
     }
 
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
-    fn swap_nodes_children_only(&mut self,
-                                first_id: &NodeId,
-                                second_id: &NodeId)
-                                -> Result<(), NodeIdError>
-    {
+    fn swap_nodes_children_only(
+        &mut self,
+        first_id: &NodeId,
+        second_id: &NodeId,
+    ) -> Result<(), NodeIdError> {
         let lower_upper_test = self.find_subtree_root_between_ids(first_id, second_id)
             .map(|_| (first_id, second_id))
             .or_else(|| {
@@ -1184,12 +1172,10 @@ impl<T> Tree<T> {
     /// assert!(nodes.next().is_none());
     /// ```
     ///
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
-    pub fn traverse_pre_order(&self,
-                              node_id: &NodeId)
-                              -> Result<PreOrderTraversal<T>, NodeIdError>
-    {
+    pub fn traverse_pre_order(
+        &self,
+        node_id: &NodeId,
+    ) -> Result<PreOrderTraversal<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
@@ -1220,12 +1206,10 @@ impl<T> Tree<T> {
     /// assert!(nodes.next().is_none());
     /// ```
     ///
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
-    pub fn traverse_post_order(&self,
-                               node_id: &NodeId)
-                               -> Result<PostOrderTraversal<T>, NodeIdError>
-    {
+    pub fn traverse_post_order(
+        &self,
+        node_id: &NodeId,
+    ) -> Result<PostOrderTraversal<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
@@ -1256,12 +1240,10 @@ impl<T> Tree<T> {
     /// assert!(nodes.next().is_none());
     /// ```
     ///
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
-    pub fn traverse_level_order(&self,
-                                node_id: &NodeId)
-                                -> Result<LevelOrderTraversal<T>, NodeIdError>
-    {
+    pub fn traverse_level_order(
+        &self,
+        node_id: &NodeId,
+    ) -> Result<LevelOrderTraversal<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
@@ -1296,13 +1278,11 @@ impl<T> Tree<T> {
         (true, None)
     }
 
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    // todo: remove this if https://github.com/rust-lang-nursery/rustfmt/issues/1260 is resolved
-    fn find_subtree_root_between_ids<'a>(&'a self,
-                                         lower_id: &'a NodeId,
-                                         upper_id: &'a NodeId)
-                                         -> Option<&'a NodeId>
-    {
+    fn find_subtree_root_between_ids<'a>(
+        &'a self,
+        lower_id: &'a NodeId,
+        upper_id: &'a NodeId,
+    ) -> Option<&'a NodeId> {
         if let Some(lower_parent) = self.get_unsafe(lower_id).parent() {
             if lower_parent == upper_id {
                 return Some(lower_id);
