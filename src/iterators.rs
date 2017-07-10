@@ -2,7 +2,7 @@ use std::slice::Iter;
 use std::vec::IntoIter;
 use std::collections::VecDeque;
 
-use VecTree;
+use tree::*;
 use node::*;
 use NodeId;
 
