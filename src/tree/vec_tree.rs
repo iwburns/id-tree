@@ -163,41 +163,21 @@ pub struct VecTree<T> {
     free_ids: Vec<NodeId>,
 }
 
-impl<T> VecTree<T> {
-    ///
-    /// Creates a new `VecTree` with default settings (no root `VecNode` and no space
-    /// pre-allocation).
-    ///
-    /// ```
-    /// use id_tree::VecTree;
-    ///
-    /// let _tree: VecTree<i32> = VecTree::new();
-    /// ```
-    ///
-    pub fn new() -> VecTree<T> {
+impl<'a, T: 'a> Tree<'a, T> for VecTree<T> {
+    type NodeType = VecNode<T>;
+    type AncestorsIter = Ancestors<'a, T>;
+    type AncestorIdsIter = AncestorIds<'a, T>;
+    type ChildrenIter = Children<'a, T>;
+    type ChildrenIdsIter = ChildrenIds<'a>;
+    type PreOrderIter = PreOrderTraversal<'a, T>;
+    type PostOrderIter = PostOrderTraversal<'a, T>;
+    type LevelOrderIter = LevelOrderTraversal<'a, T>;
+
+    fn new() -> VecTree<T> {
         VecTreeBuilder::new().build()
     }
 
-    /// Inserts a new `VecNode` into the `Tree`.  The `InsertBehavior` provided will determine
-    /// where the `VecNode` is inserted.
-    ///
-    /// Returns a `Result` containing the `NodeId` of the `VecNode` that was inserted or a
-    /// `NodeIdError` if one occurred.
-    ///
-    /// ```
-    /// use id_tree::*;
-    /// use id_tree::InsertBehavior::*;
-    ///
-    /// let root_node = VecNode::new(1);
-    /// let child_node = VecNode::new(2);
-    ///
-    /// let mut tree: VecTree<i32> = VecTree::new();
-    /// let root_id = tree.insert(root_node, AsRoot).unwrap();
-    ///
-    /// tree.insert(child_node, UnderNode(&root_id)).unwrap();
-    /// ```
-    ///
-    pub fn insert(
+    fn insert(
         &mut self,
         node: VecNode<T>,
         behavior: InsertBehavior,
@@ -217,6 +197,245 @@ impl<T> VecTree<T> {
         }
     }
 
+    fn get(&self, node_id: &NodeId) -> Result<&VecNode<T>, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            Err(error.expect(
+                "Tree::get: Missing an error value on finding an invalid NodeId.",
+            ))
+        } else {
+            Ok(self.get_unsafe(node_id))
+        }
+    }
+
+    fn get_mut(&mut self, node_id: &NodeId) -> Result<&mut VecNode<T>, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            Err(error.expect(
+                "Tree::get_mut: Missing an error value on finding an invalid NodeId.",
+            ))
+        } else {
+            Ok(self.get_mut_unsafe(node_id))
+        }
+    }
+
+    fn remove(
+        &mut self,
+        node_id: NodeId,
+        behavior: RemoveBehavior,
+    ) -> Result<VecNode<T>, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(&node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::remove: Missing an error value but found an invalid NodeId.",
+            ));
+        }
+
+        match behavior {
+            RemoveBehavior::DropChildren => self.remove_node_drop_children(node_id),
+            RemoveBehavior::LiftChildren => self.remove_node_lift_children(node_id),
+            RemoveBehavior::OrphanChildren => self.remove_node_orphan_children(node_id),
+        }
+    }
+
+    fn move_node(&mut self, node_id: &NodeId, behavior: MoveBehavior) -> Result<(), NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::move_node: Missing an error value on finding an \
+                invalid NodeId.",
+            ));
+        }
+
+        match behavior {
+            MoveBehavior::ToRoot => self.move_node_to_root(node_id),
+            MoveBehavior::ToParent(parent_id) => {
+                let (is_valid, error) = self.is_valid_node_id(parent_id);
+                if !is_valid {
+                    return Err(error.expect(
+                        "Tree::move_node: Missing an error value on finding \
+                        an invalid NodeId.",
+                    ));
+                }
+                self.move_node_to_parent(node_id, parent_id)
+            }
+        }
+    }
+
+    fn sort_children_by<F>(&mut self, node_id: &NodeId, mut compare: F) -> Result<(), NodeIdError>
+    where
+        F: FnMut(&VecNode<T>, &VecNode<T>) -> Ordering,
+    {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::sort_children_by: Missing an error value but found an invalid NodeId.",
+            ));
+        }
+
+        let mut children = self.get_mut_unsafe(node_id).take_children();
+        children.sort_by(|a, b| compare(self.get_unsafe(a), self.get_unsafe(b)));
+        self.get_mut_unsafe(node_id).set_children(children);
+
+        Ok(())
+    }
+
+    fn sort_children_by_data(&mut self, node_id: &NodeId) -> Result<(), NodeIdError>
+    where
+        T: Ord,
+    {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::sort_children: Missing an error value but found an invalid NodeId.",
+            ));
+        }
+
+        let mut children = self.get_mut_unsafe(node_id).take_children();
+        children.sort_by_key(|a| self.get_unsafe(a).data());
+        self.get_mut_unsafe(node_id).set_children(children);
+
+        Ok(())
+    }
+
+    fn sort_children_by_key<B, F>(&mut self, node_id: &NodeId, mut f: F) -> Result<(), NodeIdError>
+    where
+        B: Ord,
+        F: FnMut(&VecNode<T>) -> B,
+    {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::sort_children_by_key: Missing an error value but found an invalid NodeId.",
+            ));
+        }
+
+        let mut children = self.get_mut_unsafe(node_id).take_children();
+        children.sort_by_key(|a| f(self.get_unsafe(a)));
+        self.get_mut_unsafe(node_id).set_children(children);
+
+        Result::Ok(())
+    }
+
+    fn swap_nodes(
+        &mut self,
+        first_id: &NodeId,
+        second_id: &NodeId,
+        behavior: SwapBehavior,
+    ) -> Result<(), NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(first_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::swap_nodes: Missing an error value but found an invalid NodeId.",
+            ));
+        }
+
+        let (is_valid, error) = self.is_valid_node_id(second_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::swap_nodes: Missing an error value but found an invalid NodeId.",
+            ));
+        }
+
+        match behavior {
+            SwapBehavior::TakeChildren => self.swap_nodes_take_children(first_id, second_id),
+            SwapBehavior::LeaveChildren => self.swap_nodes_leave_children(first_id, second_id),
+            SwapBehavior::ChildrenOnly => self.swap_nodes_children_only(first_id, second_id),
+        }
+    }
+
+    fn root_node_id(&self) -> Option<&NodeId> {
+        self.root.as_ref()
+    }
+
+    fn ancestors<'b>(&'a self, node_id: &'a NodeId) -> Result<Ancestors<T>, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::ancestors: Missing an error value but found an invalid NodeId.",
+            ));
+        }
+
+        Ok(Ancestors::new(self, node_id.clone()))
+    }
+
+    fn ancestor_ids<'b>(&'a self, node_id: &'a NodeId) -> Result<AncestorIds<T>, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::ancestor_ids: Missing an error value but found an invalid NodeId.",
+            ));
+        }
+
+        Ok(AncestorIds::new(self, node_id.clone()))
+    }
+
+    fn children<'b>(&'a self, node_id: &'a NodeId) -> Result<Children<T>, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::children: Missing an error value but found an invalid NodeId.",
+            ));
+        }
+
+        Ok(Children::new(self, node_id.clone()))
+    }
+
+    fn children_ids<'b>(&'a self, node_id: &'a NodeId) -> Result<ChildrenIds, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::children_ids: Missing an error value but found an invalid NodeId.",
+            ));
+        }
+
+        Ok(ChildrenIds::new(self, node_id.clone()))
+    }
+
+    fn traverse_pre_order<'b>(
+        &'a self,
+        node_id: &'a NodeId,
+    ) -> Result<PreOrderTraversal<T>, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::traverse_pre_order: Missing an error value but found an invalid NodeId.",
+            ));
+        }
+
+        Ok(PreOrderTraversal::new(self, node_id.clone()))
+    }
+
+    fn traverse_post_order<'b>(
+        &'a self,
+        node_id: &'a NodeId,
+    ) -> Result<PostOrderTraversal<T>, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::traverse_post_order: Missing an error value but found an invalid NodeId.",
+            ));
+        }
+
+        Ok(PostOrderTraversal::new(self, node_id.clone()))
+    }
+
+    fn traverse_level_order<'b>(
+        &'a self,
+        node_id: &'a NodeId,
+    ) -> Result<LevelOrderTraversal<T>, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::traverse_level_order: Missing an error value but found an invalid NodeId.",
+            ));
+        }
+
+        Ok(LevelOrderTraversal::new(self, node_id.clone()))
+    }
+}
+
+impl<T> VecTree<T> {
     ///
     /// Sets the root of the `Tree`.
     ///
@@ -243,116 +462,6 @@ impl<T> VecTree<T> {
         let new_child_id = self.insert_new_node(child);
         self.set_as_parent_and_child(parent_id, &new_child_id);
         Ok(new_child_id)
-    }
-
-    ///
-    /// Get an immutable reference to a `VecNode`.
-    ///
-    /// Returns a `Result` containing the immutable reference or a `NodeIdError` if one occurred.
-    ///
-    /// ```
-    /// use id_tree::*;
-    /// use id_tree::InsertBehavior::*;
-    ///
-    /// let mut tree: VecTree<i32> = VecTree::new();
-    /// let root_id = tree.insert(VecNode::new(5), AsRoot).unwrap();
-    ///
-    /// let root_node: &Node<i32> = tree.get(&root_id).unwrap();
-    ///
-    /// # assert_eq!(root_node.data(), &5);
-    /// ```
-    ///
-    pub fn get(&self, node_id: &NodeId) -> Result<&VecNode<T>, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
-        if !is_valid {
-            Err(error.expect(
-                "Tree::get: Missing an error value on finding an invalid NodeId.",
-            ))
-        } else {
-            Ok(self.get_unsafe(node_id))
-        }
-    }
-
-    ///
-    /// Get a mutable reference to a `VecNode`.
-    ///
-    /// Returns a `Result` containing the mutable reference or a `NodeIdError` if one occurred.
-    ///
-    /// ```
-    /// use id_tree::*;
-    /// use id_tree::InsertBehavior::*;
-    ///
-    /// let mut tree: VecTree<i32> = VecTree::new();
-    /// let root_id = tree.insert(VecNode::new(5), AsRoot).unwrap();
-    ///
-    /// let root_node: &mut VecNode<i32> = tree.get_mut(&root_id).unwrap();
-    ///
-    /// # assert_eq!(root_node.data(), &5);
-    /// ```
-    ///
-    pub fn get_mut(&mut self, node_id: &NodeId) -> Result<&mut VecNode<T>, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
-        if !is_valid {
-            Err(error.expect(
-                "Tree::get_mut: Missing an error value on finding an invalid NodeId.",
-            ))
-        } else {
-            Ok(self.get_mut_unsafe(node_id))
-        }
-    }
-
-    /// Remove a `VecNode` from the `VecTree`.  The `RemoveBehavior` provided determines what
-    /// happens to the removed `VecNode`'s children.
-    ///
-    /// Returns a `Result` containing the removed `VecNode` or a `NodeIdError` if one occurred.
-    ///
-    /// **NOTE:** The `VecNode` that is returned will have its parent and child values cleared to
-    /// avoid providing the caller with extra copies of `NodeId`s should the corresponding
-    /// `VecNode`s be removed from the `VecTree` at a later time.
-    ///
-    /// If the caller needs a copy of the parent or child `NodeId`s, they must `Clone` them before
-    /// this `VecNode` is removed from the `VecTree`.  Please see the
-    /// [Potential `NodeId` Issues](struct.NodeId.html#potential-nodeid-issues) section
-    /// of the `NodeId` documentation for more information on the implications of calling `Clone`
-    /// on a `NodeId`.
-    ///
-    /// ```
-    /// use id_tree::*;
-    /// use id_tree::InsertBehavior::*;
-    /// use id_tree::RemoveBehavior::*;
-    ///
-    /// let mut tree: VecTree<i32> = VecTree::new();
-    /// let root_id = tree.insert(VecNode::new(0), AsRoot).unwrap();
-    ///
-    /// let child_id = tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
-    /// let grandchild_id = tree.insert(VecNode::new(2), UnderNode(&child_id)).unwrap();
-    ///
-    /// let child = tree.remove_node(child_id, DropChildren).unwrap();
-    ///
-    /// # assert!(tree.get(&grandchild_id).is_err());
-    /// # assert_eq!(tree.get(&root_id).unwrap().children().len(), 0);
-    /// # assert_eq!(child.children().len(), 0);
-    /// # assert_eq!(child.parent(), None);
-    /// ```
-    ///
-    pub fn remove_node(
-        &mut self,
-        node_id: NodeId,
-        behavior: RemoveBehavior,
-    ) -> Result<VecNode<T>, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(&node_id);
-        if !is_valid {
-            return Err(error.expect(
-                "Tree::remove_node: Missing an error value but found an \
-                invalid NodeId.",
-            ));
-        }
-
-        match behavior {
-            RemoveBehavior::DropChildren => self.remove_node_drop_children(node_id),
-            RemoveBehavior::LiftChildren => self.remove_node_lift_children(node_id),
-            RemoveBehavior::OrphanChildren => self.remove_node_orphan_children(node_id),
-        }
     }
 
     ///
@@ -395,56 +504,6 @@ impl<T> VecTree<T> {
             try!(self.remove_node_drop_children(child));
         }
         Ok(self.remove_node_internal(node_id))
-    }
-
-    ///
-    /// Moves a `VecNode` in the `VecTree` to a new location based upon the `MoveBehavior`
-    /// provided.
-    ///
-    /// ```
-    /// use id_tree::*;
-    /// use id_tree::InsertBehavior::*;
-    /// use id_tree::MoveBehavior::*;
-    ///
-    /// let mut tree: VecTree<i32> = VecTree::new();
-    ///
-    /// let root_id = tree.insert(VecNode::new(1), AsRoot).unwrap();
-    /// let child_id = tree.insert(VecNode::new(2),  UnderNode(&root_id)).unwrap();
-    /// let grandchild_id = tree.insert(Node::new(3), UnderNode(&child_id)).unwrap();
-    ///
-    /// tree.move_node(&grandchild_id, ToRoot).unwrap();
-    ///
-    /// assert_eq!(tree.root_node_id(), Some(&grandchild_id));
-    /// # assert!(tree.get(&grandchild_id).unwrap().children().contains(&root_id));
-    /// # assert!(!tree.get(&child_id).unwrap().children().contains(&grandchild_id));
-    /// ```
-    ///
-    pub fn move_node(
-        &mut self,
-        node_id: &NodeId,
-        behavior: MoveBehavior,
-    ) -> Result<(), NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
-        if !is_valid {
-            return Err(error.expect(
-                "Tree::move_node: Missing an error value on finding an \
-                invalid NodeId.",
-            ));
-        }
-
-        match behavior {
-            MoveBehavior::ToRoot => self.move_node_to_root(node_id),
-            MoveBehavior::ToParent(parent_id) => {
-                let (is_valid, error) = self.is_valid_node_id(parent_id);
-                if !is_valid {
-                    return Err(error.expect(
-                        "Tree::move_node: Missing an error value on finding \
-                        an invalid NodeId.",
-                    ));
-                }
-                self.move_node_to_parent(node_id, parent_id)
-            }
-        }
     }
 
     ///
@@ -526,204 +585,6 @@ impl<T> VecTree<T> {
         }
 
         Ok(())
-    }
-
-    ///
-    /// Sorts the children of one node, in-place, using compare to compare the nodes
-    ///
-    /// This sort is stable and O(n log n) worst-case but allocates approximately 2 * n where n is
-    /// the length of children
-    ///
-    /// Returns an empty `Result` containing a `NodeIdError` if one occurred.
-    ///
-    /// ```
-    /// use id_tree::*;
-    /// use id_tree::InsertBehavior::*;
-    ///
-    /// let mut tree: VecTree<i32> = VecTree::new();
-    ///
-    /// let root_id = tree.insert(VecNode::new(100), AsRoot).unwrap();
-    /// tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
-    /// tree.insert(VecNode::new(2), UnderNode(&root_id)).unwrap();
-    /// tree.insert(VecNode::new(0), UnderNode(&root_id)).unwrap();
-    ///
-    /// tree.sort_children_by(&root_id, |a, b| a.data().cmp(b.data())).unwrap();
-    ///
-    /// # for (i, id) in tree.get(&root_id).unwrap().children().iter().enumerate() {
-    /// #   assert_eq!(*tree.get(&id).unwrap().data(), i as i32);
-    /// # }
-    /// ```
-    ///
-    pub fn sort_children_by<F>(
-        &mut self,
-        node_id: &NodeId,
-        mut compare: F,
-    ) -> Result<(), NodeIdError>
-    where
-        F: FnMut(&VecNode<T>, &VecNode<T>) -> Ordering,
-    {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
-        if !is_valid {
-            return Err(error.expect(
-                "Tree::sort_children_by: Missing an error value but found an invalid NodeId.",
-            ));
-        }
-
-        let mut children = self.get_mut_unsafe(node_id).take_children();
-        children.sort_by(|a, b| compare(self.get_unsafe(a), self.get_unsafe(b)));
-        self.get_mut_unsafe(node_id).set_children(children);
-
-        Ok(())
-    }
-
-    ///
-    /// Sorts the children of one node, in-place, comparing their data
-    ///
-    /// This sort is stable and O(n log n) worst-case but allocates approximately 2 * n where n is
-    /// the length of children
-    ///
-    /// Returns an empty `Result` containing a `NodeIdError` if one occurred.
-    ///
-    /// ```
-    /// use id_tree::*;
-    /// use id_tree::InsertBehavior::*;
-    ///
-    /// let mut tree: VecTree<i32> = VecTree::new();
-    ///
-    /// let root_id = tree.insert(VecNode::new(100), AsRoot).unwrap();
-    /// tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
-    /// tree.insert(VecNode::new(2), UnderNode(&root_id)).unwrap();
-    /// tree.insert(VecNode::new(0), UnderNode(&root_id)).unwrap();
-    ///
-    /// tree.sort_children_by_data(&root_id).unwrap();
-    ///
-    /// # for (i, id) in tree.get(&root_id).unwrap().children().iter().enumerate() {
-    /// #   assert_eq!(*tree.get(&id).unwrap().data(), i as i32);
-    /// # }
-    /// ```
-    ///
-    pub fn sort_children_by_data(&mut self, node_id: &NodeId) -> Result<(), NodeIdError>
-    where
-        T: Ord,
-    {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
-        if !is_valid {
-            return Err(error.expect(
-                "Tree::sort_children: Missing an error value but found an invalid NodeId.",
-            ));
-        }
-
-        let mut children = self.get_mut_unsafe(node_id).take_children();
-        children.sort_by_key(|a| self.get_unsafe(a).data());
-        self.get_mut_unsafe(node_id).set_children(children);
-
-        Ok(())
-    }
-
-    ///
-    /// Sorts the children of one node, in-place, using f to extract a key by which to order the
-    /// sort by.
-    ///
-    /// This sort is stable and O(n log n) worst-case but allocates approximately 2 * n where n is
-    /// the length of children
-    ///
-    /// Returns an empty `Result` containing a `NodeIdError` if one occurred.
-    ///
-    /// ```
-    /// use id_tree::*;
-    /// use id_tree::InsertBehavior::*;
-    ///
-    /// let mut tree: VecTree<i32> = VecTree::new();
-    ///
-    /// let root_id = tree.insert(VecNode::new(100), AsRoot).unwrap();
-    /// tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
-    /// tree.insert(VecNode::new(2), UnderNode(&root_id)).unwrap();
-    /// tree.insert(VecNode::new(0), UnderNode(&root_id)).unwrap();
-    ///
-    /// tree.sort_children_by_key(&root_id, |x| x.data().clone()).unwrap();
-    ///
-    /// # for (i, id) in tree.get(&root_id).unwrap().children().iter().enumerate() {
-    /// #   assert_eq!(*tree.get(&id).unwrap().data(), i as i32);
-    /// # }
-    /// ```
-    ///
-    pub fn sort_children_by_key<B, F>(
-        &mut self,
-        node_id: &NodeId,
-        mut f: F,
-    ) -> Result<(), NodeIdError>
-    where
-        B: Ord,
-        F: FnMut(&VecNode<T>) -> B,
-    {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
-        if !is_valid {
-            return Err(error.expect(
-                "Tree::sort_children_by_key: Missing an error value but found an invalid NodeId.",
-            ));
-        }
-
-        let mut children = self.get_mut_unsafe(node_id).take_children();
-        children.sort_by_key(|a| f(self.get_unsafe(a)));
-        self.get_mut_unsafe(node_id).set_children(children);
-
-        Result::Ok(())
-    }
-
-
-    /// Swap `VecNode`s in the `VecTree` based upon the `SwapBehavior` provided.
-    ///
-    /// Both `NodeId`s are still valid after this process and are not swapped.
-    ///
-    /// This keeps the positions of the `VecNode`s in their parents' children collection.
-    ///
-    /// Returns an empty `Result` containing a `NodeIdError` if one occurred on either provided
-    /// `NodeId`.
-    ///
-    /// ```
-    /// use id_tree::*;
-    /// use id_tree::InsertBehavior::*;
-    /// use id_tree::SwapBehavior::*;
-    ///
-    /// let mut tree: VecTree<i32> = VecTree::new();
-    ///
-    /// let root_id = tree.insert(VecNode::new(1), AsRoot).unwrap();
-    ///
-    /// let first_child_id = tree.insert(VecNode::new(2), UnderNode(&root_id)).unwrap();
-    /// let second_child_id = tree.insert(VecNode::new(3), UnderNode(&root_id)).unwrap();
-    /// let grandchild_id = tree.insert(VecNode::new(4), UnderNode(&second_child_id)).unwrap();
-    ///
-    /// tree.swap_nodes(&first_child_id, &grandchild_id, TakeChildren).unwrap();
-    ///
-    /// assert!(tree.get(&second_child_id).unwrap().children().contains(&first_child_id));
-    /// assert!(tree.get(&root_id).unwrap().children().contains(&grandchild_id));
-    /// ```
-    ///
-    pub fn swap_nodes(
-        &mut self,
-        first_id: &NodeId,
-        second_id: &NodeId,
-        behavior: SwapBehavior,
-    ) -> Result<(), NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(first_id);
-        if !is_valid {
-            return Err(error.expect(
-                "Tree::swap_nodes: Missing an error value but found an invalid NodeId.",
-            ));
-        }
-
-        let (is_valid, error) = self.is_valid_node_id(second_id);
-        if !is_valid {
-            return Err(error.expect(
-                "Tree::swap_nodes: Missing an error value but found an invalid NodeId.",
-            ));
-        }
-
-        match behavior {
-            SwapBehavior::TakeChildren => self.swap_nodes_take_children(first_id, second_id),
-            SwapBehavior::LeaveChildren => self.swap_nodes_leave_children(first_id, second_id),
-            SwapBehavior::ChildrenOnly => self.swap_nodes_children_only(first_id, second_id),
-        }
     }
 
     /// Swaps two `VecNode`s including their children given their `NodeId`s.
@@ -1018,248 +879,6 @@ impl<T> VecTree<T> {
         }
 
         Ok(())
-    }
-
-    ///
-    /// Returns a `Some` value containing the `NodeId` of the root `VecNode` if it exists.
-    /// Otherwise a `None` value is returned.
-    ///
-    /// ```
-    /// use id_tree::*;
-    /// use id_tree::InsertBehavior::*;
-    ///
-    /// let mut tree: VecTree<i32> = VecTree::new();
-    /// let root_id = tree.insert(VecNode::new(5), AsRoot).unwrap();
-    ///
-    /// assert_eq!(&root_id, tree.root_node_id().unwrap());
-    /// ```
-    ///
-    pub fn root_node_id(&self) -> Option<&NodeId> {
-        self.root.as_ref()
-    }
-
-    ///
-    /// Returns an `Ancestors` iterator (or a `NodeIdError` if one occurred).
-    ///
-    /// Allows iteration over the ancestor `VecNode`s of a given `NodeId` directly instead of
-    /// having to call `tree.get(...)` with a `NodeId` each time.
-    ///
-    /// ```
-    /// use id_tree::*;
-    /// use id_tree::InsertBehavior::*;
-    ///
-    /// let mut tree: VecTree<i32> = VecTree::new();
-    /// let root_id = tree.insert(VecNode::new(0), AsRoot).unwrap();
-    /// let node_1 = tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
-    ///
-    /// let mut ancestors = tree.ancestors(&node_1).unwrap();
-    ///
-    /// assert_eq!(ancestors.next().unwrap().data(), &0);
-    /// assert!(ancestors.next().is_none());
-    /// ```
-    ///
-    pub fn ancestors(&self, node_id: &NodeId) -> Result<Ancestors<T>, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
-        if !is_valid {
-            return Err(error.expect(
-                "Tree::ancestors: Missing an error value but found an invalid NodeId.",
-            ));
-        }
-
-        Ok(Ancestors::new(self, node_id.clone()))
-    }
-
-    ///
-    /// Returns an `AncestorIds` iterator (or a `NodeIdError` if one occurred).
-    ///
-    /// Allows iteration over the ancestor `NodeId`s of a given `NodeId`.
-    ///
-    /// ```
-    /// use id_tree::*;
-    /// use id_tree::InsertBehavior::*;
-    ///
-    /// let mut tree: VecTree<i32> = VecTree::new();
-    /// let root_id = tree.insert(VecNode::new(0), AsRoot).unwrap();
-    /// let node_1 = tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
-    ///
-    /// let mut ancestor_ids = tree.ancestor_ids(&node_1).unwrap();
-    ///
-    /// assert_eq!(ancestor_ids.next().unwrap(), &root_id);
-    /// assert!(ancestor_ids.next().is_none());
-    /// ```
-    ///
-    pub fn ancestor_ids(&self, node_id: &NodeId) -> Result<AncestorIds<T>, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
-        if !is_valid {
-            return Err(error.expect(
-                "Tree::ancestor_ids: Missing an error value but found an invalid NodeId.",
-            ));
-        }
-
-        Ok(AncestorIds::new(self, node_id.clone()))
-    }
-
-    ///
-    /// Returns a `Children` iterator (or a `NodeIdError` if one occurred).
-    ///
-    /// Allows iteration over the child `VecNode`s of a given `NodeId` directly instead of having
-    /// to call `tree.get(...)` with a `NodeId` each time.
-    ///
-    /// ```
-    /// use id_tree::*;
-    /// use id_tree::InsertBehavior::*;
-    ///
-    /// let mut tree: VecTree<i32> = VecTree::new();
-    /// let root_id = tree.insert(VecNode::new(0), AsRoot).unwrap();
-    /// tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
-    ///
-    /// let mut children = tree.children(&root_id).unwrap();
-    ///
-    /// assert_eq!(children.next().unwrap().data(), &1);
-    /// assert!(children.next().is_none());
-    /// ```
-    ///
-    pub fn children(&self, node_id: &NodeId) -> Result<Children<T>, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
-        if !is_valid {
-            return Err(error.expect(
-                "Tree::children: Missing an error value but found an invalid NodeId.",
-            ));
-        }
-
-        Ok(Children::new(self, node_id.clone()))
-    }
-
-    ///
-    /// Returns a `ChildrenIds` iterator (or a `NodeIdError` if one occurred).
-    ///
-    /// Allows iteration over the child `NodeId`s of a given `NodeId`.
-    ///
-    /// ```
-    /// use id_tree::*;
-    /// use id_tree::InsertBehavior::*;
-    ///
-    /// let mut tree: VecTree<i32> = VecTree::new();
-    /// let root_id = tree.insert(VecNode::new(0), AsRoot).unwrap();
-    /// let node_1 = tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
-    ///
-    /// let mut children_ids = tree.children_ids(&root_id).unwrap();
-    ///
-    /// assert_eq!(children_ids.next().unwrap(), &node_1);
-    /// assert!(children_ids.next().is_none());
-    /// ```
-    ///
-    pub fn children_ids(&self, node_id: &NodeId) -> Result<ChildrenIds, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
-        if !is_valid {
-            return Err(error.expect(
-                "Tree::children_ids: Missing an error value but found an invalid NodeId.",
-            ));
-        }
-
-        Ok(ChildrenIds::new(self, node_id.clone()))
-    }
-
-    /// Returns a `PreOrderTraversal` iterator (or a `NodeIdError` if one occurred).
-    ///
-    /// Allows iteration over all of the `VecNode`s in the sub-tree below a given `VecNode`.  This
-    /// iterator will always include that sub-tree "root" specified by the `NodeId` given.
-    ///
-    /// ```
-    /// use id_tree::*;
-    /// use id_tree::InsertBehavior::*;
-    ///
-    /// let mut tree: VecTree<i32> = VecTree::new();
-    /// let root_id = tree.insert(VecNode::new(0), AsRoot).unwrap();
-    /// tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
-    ///
-    /// let mut nodes = tree.traverse_pre_order(&root_id).unwrap();
-    ///
-    /// assert_eq!(nodes.next().unwrap().data(), &0);
-    /// assert_eq!(nodes.next().unwrap().data(), &1);
-    /// assert!(nodes.next().is_none());
-    /// ```
-    ///
-    pub fn traverse_pre_order(
-        &self,
-        node_id: &NodeId,
-    ) -> Result<PreOrderTraversal<T>, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
-        if !is_valid {
-            return Err(error.expect(
-                "Tree::traverse_pre_order: Missing an error value but found an invalid NodeId.",
-            ));
-        }
-
-        Ok(PreOrderTraversal::new(self, node_id.clone()))
-    }
-
-    /// Returns a `PostOrderTraversal` iterator (or a `NodeIdError` if one occurred).
-    ///
-    /// Allows iteration over all of the `VecNode`s in the sub-tree below a given `Node`.  This
-    /// iterator will always include that sub-tree "root" specified by the `NodeId` given.
-    ///
-    /// ```
-    /// use id_tree::*;
-    /// use id_tree::InsertBehavior::*;
-    ///
-    /// let mut tree: VecTree<i32> = VecTree::new();
-    /// let root_id = tree.insert(VecNode::new(0), AsRoot).unwrap();
-    /// tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
-    ///
-    /// let mut nodes = tree.traverse_post_order(&root_id).unwrap();
-    ///
-    /// assert_eq!(nodes.next().unwrap().data(), &1);
-    /// assert_eq!(nodes.next().unwrap().data(), &0);
-    /// assert!(nodes.next().is_none());
-    /// ```
-    ///
-    pub fn traverse_post_order(
-        &self,
-        node_id: &NodeId,
-    ) -> Result<PostOrderTraversal<T>, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
-        if !is_valid {
-            return Err(error.expect(
-                "Tree::traverse_post_order: Missing an error value but found an invalid NodeId.",
-            ));
-        }
-
-        Ok(PostOrderTraversal::new(self, node_id.clone()))
-    }
-
-    /// Returns a `LevelOrderTraversal` iterator (or a `NodeIdError` if one occurred).
-    ///
-    /// Allows iteration over all of the `VecNode`s in the sub-tree below a given `VecNode`.  This
-    /// iterator will always include that sub-tree "root" specified by the `NodeId` given.
-    ///
-    /// ```
-    /// use id_tree::*;
-    /// use id_tree::InsertBehavior::*;
-    ///
-    /// let mut tree: VecTree<i32> = VecTree::new();
-    /// let root_id = tree.insert(VecNode::new(0), AsRoot).unwrap();
-    /// tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
-    ///
-    /// let mut nodes = tree.traverse_level_order(&root_id).unwrap();
-    ///
-    /// assert_eq!(nodes.next().unwrap().data(), &0);
-    /// assert_eq!(nodes.next().unwrap().data(), &1);
-    /// assert!(nodes.next().is_none());
-    /// ```
-    ///
-    pub fn traverse_level_order(
-        &self,
-        node_id: &NodeId,
-    ) -> Result<LevelOrderTraversal<T>, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
-        if !is_valid {
-            return Err(error.expect(
-                "Tree::traverse_level_order: Missing an error value but found an invalid NodeId.",
-            ));
-        }
-
-        Ok(LevelOrderTraversal::new(self, node_id.clone()))
     }
 
     // Nothing should make it past this function.
@@ -1618,7 +1237,7 @@ mod tree_tests {
     }
 
     #[test]
-    fn test_remove_node_lift_children() {
+    fn test_remove_lift_children() {
         use InsertBehavior::*;
         use RemoveBehavior::*;
 
@@ -1630,7 +1249,7 @@ mod tree_tests {
         let node_2_id = tree.insert(Node::new(2), UnderNode(&node_1_id)).unwrap();
         let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
 
-        let node_1 = tree.remove_node(node_1_id.clone(), LiftChildren).unwrap();
+        let node_1 = tree.remove(node_1_id.clone(), LiftChildren).unwrap();
 
         assert_eq!(Some(&root_id), tree.root_node_id());
 
@@ -1654,7 +1273,7 @@ mod tree_tests {
     }
 
     #[test]
-    fn test_remove_node_orphan_children() {
+    fn test_remove_orphan_children() {
         use InsertBehavior::*;
         use RemoveBehavior::*;
 
@@ -1666,7 +1285,7 @@ mod tree_tests {
         let node_2_id = tree.insert(Node::new(2), UnderNode(&node_1_id)).unwrap();
         let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
 
-        let node_1 = tree.remove_node(node_1_id.clone(), OrphanChildren).unwrap();
+        let node_1 = tree.remove(node_1_id.clone(), OrphanChildren).unwrap();
 
         assert_eq!(Some(&root_id), tree.root_node_id());
 
@@ -1692,13 +1311,13 @@ mod tree_tests {
         let mut tree = VecTreeBuilder::new().with_root(Node::new(5)).build();
 
         let root_id = tree.root.clone().unwrap();
-        tree.remove_node(root_id.clone(), OrphanChildren).unwrap();
+        tree.remove(root_id.clone(), OrphanChildren).unwrap();
         assert_eq!(None, tree.root_node_id());
 
         let mut tree = VecTreeBuilder::new().with_root(Node::new(5)).build();
 
         let root_id = tree.root.clone().unwrap();
-        tree.remove_node(root_id.clone(), LiftChildren).unwrap();
+        tree.remove(root_id.clone(), LiftChildren).unwrap();
         assert_eq!(None, tree.root_node_id());
     }
 
@@ -2127,7 +1746,7 @@ mod tree_tests {
             let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
             let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
             let node_4_id = tree.insert(Node::new(4), UnderNode(&node_2_id)).unwrap();
-            tree.remove_node(root_id, OrphanChildren).unwrap();
+            tree.remove(root_id, OrphanChildren).unwrap();
 
             tree.swap_nodes(&node_1_id, &node_2_id, LeaveChildren)
                 .unwrap();
@@ -2161,7 +1780,7 @@ mod tree_tests {
             let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
             let node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
             let node_4_id = tree.insert(Node::new(4), UnderNode(&node_2_id)).unwrap();
-            tree.remove_node(root_id, OrphanChildren).unwrap();
+            tree.remove(root_id, OrphanChildren).unwrap();
             tree.move_node(&node_1_id, ToRoot).unwrap();
 
             tree.swap_nodes(&node_1_id, &node_2_id, LeaveChildren)

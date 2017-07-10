@@ -277,10 +277,8 @@ impl<'a, T> Iterator for LevelOrderTraversal<'a, T> {
 
 #[cfg(test)]
 mod tests {
-
-    use VecTree;
-    use node::*;
-    use InsertBehavior::*;
+    use ::*;
+    use behaviors::InsertBehavior::*;
 
     #[test]
     fn test_ancestors() {

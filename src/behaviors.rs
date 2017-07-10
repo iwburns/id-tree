@@ -1,7 +1,7 @@
 use NodeId;
 
 ///
-/// Describes the possible behaviors of the `VecTree::remove_node` method.
+/// Describes the possible behaviors of the `VecTree::remove` method.
 ///
 pub enum RemoveBehavior {
     ///
@@ -23,7 +23,7 @@ pub enum RemoveBehavior {
     /// let child_id = tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
     /// let grandchild_id = tree.insert(VecNode::new(2), UnderNode(&child_id)).unwrap();
     ///
-    /// let child = tree.remove_node(child_id, DropChildren).ok().unwrap();
+    /// let child = tree.remove(child_id, DropChildren).ok().unwrap();
     ///
     /// assert!(tree.get(&grandchild_id).is_err());
     /// assert_eq!(tree.get(&root_id).unwrap().children().len(), 0);
@@ -51,7 +51,7 @@ pub enum RemoveBehavior {
     /// let child_id = tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
     /// let grandchild_id = tree.insert(VecNode::new(2), UnderNode(&child_id)).unwrap();
     ///
-    /// let child = tree.remove_node(child_id, LiftChildren).ok().unwrap();
+    /// let child = tree.remove(child_id, LiftChildren).ok().unwrap();
     ///
     /// assert!(tree.get(&grandchild_id).is_ok());
     /// assert!(tree.get(&root_id).unwrap().children().contains(&grandchild_id));
@@ -77,7 +77,7 @@ pub enum RemoveBehavior {
     /// let child_id = tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
     /// let grandchild_id = tree.insert(VecNode::new(2), UnderNode(&child_id)).unwrap();
     ///
-    /// let child = tree.remove_node(child_id, OrphanChildren).ok().unwrap();
+    /// let child = tree.remove(child_id, OrphanChildren).ok().unwrap();
     ///
     /// assert!(tree.get(&grandchild_id).is_ok());
     /// assert_eq!(tree.get(&root_id).unwrap().children().len(), 0);

@@ -18,10 +18,10 @@ fn test_old_node_id() {
     let root_id = tree.insert(root_node, AsRoot).ok().unwrap();
     let root_id_copy = root_id.clone(); // this is essential to getting the Result::Err()
 
-    let root_node = tree.remove_node(root_id, OrphanChildren);
+    let root_node = tree.remove(root_id, OrphanChildren);
     assert!(root_node.is_ok());
 
-    let root_node_again = tree.remove_node(root_id_copy, OrphanChildren);
+    let root_node_again = tree.remove(root_id_copy, OrphanChildren);
     assert!(root_node_again.is_err());
 
     let error = root_node_again.err().unwrap();
@@ -61,14 +61,14 @@ fn test_get_mut_node_from_other_tree() {
 }
 
 #[test]
-fn test_remove_node_lift_children_from_other_tree() {
+fn test_remove_lift_children_from_other_tree() {
     let mut tree_a: VecTree<i32> = VecTreeBuilder::new().build();
     let mut tree_b: VecTree<i32> = VecTreeBuilder::new().build();
 
     let root_node_id_a = tree_a.insert(VecNode::new(1), AsRoot).unwrap();
 
     // note use of wrong tree
-    let root_node_b = tree_b.remove_node(root_node_id_a, LiftChildren);
+    let root_node_b = tree_b.remove(root_node_id_a, LiftChildren);
     assert!(root_node_b.is_err());
 
     let error = root_node_b.err().unwrap();
@@ -76,14 +76,14 @@ fn test_remove_node_lift_children_from_other_tree() {
 }
 
 #[test]
-fn test_remove_node_orphan_children_from_other_tree() {
+fn test_remove_orphan_children_from_other_tree() {
     let mut tree_a: VecTree<i32> = VecTreeBuilder::new().build();
     let mut tree_b: VecTree<i32> = VecTreeBuilder::new().build();
 
     let root_node_id_a = tree_a.insert(VecNode::new(1), AsRoot).unwrap();
 
     // note use of wrong tree
-    let root_node_b = tree_b.remove_node(root_node_id_a, OrphanChildren);
+    let root_node_b = tree_b.remove(root_node_id_a, OrphanChildren);
     assert!(root_node_b.is_err());
 
     let error = root_node_b.err().unwrap();
@@ -91,14 +91,14 @@ fn test_remove_node_orphan_children_from_other_tree() {
 }
 
 #[test]
-fn test_remove_node_remove_children_from_other_tree() {
+fn test_remove_drop_children_from_other_tree() {
     let mut tree_a: VecTree<i32> = VecTreeBuilder::new().build();
     let mut tree_b: VecTree<i32> = VecTreeBuilder::new().build();
 
     let root_node_id_a = tree_a.insert(VecNode::new(1), AsRoot).unwrap();
 
     // note use of wrong tree
-    let root_node_b = tree_b.remove_node(root_node_id_a, DropChildren);
+    let root_node_b = tree_b.remove(root_node_id_a, DropChildren);
     assert!(root_node_b.is_err());
 
     let error = root_node_b.err().unwrap();
@@ -256,7 +256,7 @@ fn test_ancestors_old_id() {
     let root_id = a.insert(VecNode::new(1), AsRoot).unwrap();
     // `.clone()` required to get this error
     let root_id_clone = root_id.clone();
-    let _ = a.remove_node(root_id, DropChildren).unwrap();
+    let _ = a.remove(root_id, DropChildren).unwrap();
 
     // note usage of cloned `NodeId`
     let ancestors = a.ancestors(&root_id_clone);
@@ -288,7 +288,7 @@ fn test_ancestor_ids_old_id() {
     let root_id = a.insert(VecNode::new(1), AsRoot).unwrap();
     // `.clone()` required to get this error
     let root_id_clone = root_id.clone();
-    let _ = a.remove_node(root_id, DropChildren).unwrap();
+    let _ = a.remove(root_id, DropChildren).unwrap();
 
     // note usage of cloned `NodeId`
     let ancestors = a.ancestor_ids(&root_id_clone);
@@ -320,7 +320,7 @@ fn test_children_old_id() {
     let root_id = a.insert(VecNode::new(1), AsRoot).unwrap();
     // `.clone()` required to get this error
     let root_id_clone = root_id.clone();
-    let _ = a.remove_node(root_id, DropChildren).unwrap();
+    let _ = a.remove(root_id, DropChildren).unwrap();
 
     // note usage of cloned `NodeId`
     let ancestors = a.children(&root_id_clone);
@@ -352,7 +352,7 @@ fn test_children_ids_old_id() {
     let root_id = a.insert(VecNode::new(1), AsRoot).unwrap();
     // `.clone()` required to get this error
     let root_id_clone = root_id.clone();
-    let _ = a.remove_node(root_id, DropChildren).unwrap();
+    let _ = a.remove(root_id, DropChildren).unwrap();
 
     // note usage of cloned `NodeId`
     let ancestors = a.children_ids(&root_id_clone);
