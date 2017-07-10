@@ -2,8 +2,8 @@ extern crate id_tree;
 
 use id_tree::NodeIdError::*;
 use id_tree::*;
-use id_tree::TreeBuilder;
-use id_tree::Tree;
+use id_tree::VecTreeBuilder;
+use id_tree::VecTree;
 use id_tree::RemoveBehavior::*;
 use id_tree::MoveBehavior::*;
 use id_tree::InsertBehavior::*;
@@ -11,7 +11,7 @@ use id_tree::SwapBehavior::*;
 
 #[test]
 fn test_old_node_id() {
-    let mut tree: Tree<i32> = TreeBuilder::new().build();
+    let mut tree: VecTree<i32> = VecTreeBuilder::new().build();
 
     let root_node = VecNode::new(1);
 
@@ -30,8 +30,8 @@ fn test_old_node_id() {
 
 #[test]
 fn test_get_node_from_other_tree() {
-    let mut tree_a: Tree<i32> = TreeBuilder::new().build();
-    let tree_b: Tree<i32> = TreeBuilder::new().build();
+    let mut tree_a: VecTree<i32> = VecTreeBuilder::new().build();
+    let tree_b: VecTree<i32> = VecTreeBuilder::new().build();
 
     let root_node_a = VecNode::new(1);
     let root_node_id_a = tree_a.insert(root_node_a, AsRoot).unwrap();
@@ -46,8 +46,8 @@ fn test_get_node_from_other_tree() {
 
 #[test]
 fn test_get_mut_node_from_other_tree() {
-    let mut tree_a: Tree<i32> = TreeBuilder::new().build();
-    let mut tree_b: Tree<i32> = TreeBuilder::new().build();
+    let mut tree_a: VecTree<i32> = VecTreeBuilder::new().build();
+    let mut tree_b: VecTree<i32> = VecTreeBuilder::new().build();
 
     let root_node_a = VecNode::new(1);
     let root_node_id_a = tree_a.insert(root_node_a, AsRoot).unwrap();
@@ -62,8 +62,8 @@ fn test_get_mut_node_from_other_tree() {
 
 #[test]
 fn test_remove_node_lift_children_from_other_tree() {
-    let mut tree_a: Tree<i32> = TreeBuilder::new().build();
-    let mut tree_b: Tree<i32> = TreeBuilder::new().build();
+    let mut tree_a: VecTree<i32> = VecTreeBuilder::new().build();
+    let mut tree_b: VecTree<i32> = VecTreeBuilder::new().build();
 
     let root_node_id_a = tree_a.insert(VecNode::new(1), AsRoot).unwrap();
 
@@ -77,8 +77,8 @@ fn test_remove_node_lift_children_from_other_tree() {
 
 #[test]
 fn test_remove_node_orphan_children_from_other_tree() {
-    let mut tree_a: Tree<i32> = TreeBuilder::new().build();
-    let mut tree_b: Tree<i32> = TreeBuilder::new().build();
+    let mut tree_a: VecTree<i32> = VecTreeBuilder::new().build();
+    let mut tree_b: VecTree<i32> = VecTreeBuilder::new().build();
 
     let root_node_id_a = tree_a.insert(VecNode::new(1), AsRoot).unwrap();
 
@@ -92,8 +92,8 @@ fn test_remove_node_orphan_children_from_other_tree() {
 
 #[test]
 fn test_remove_node_remove_children_from_other_tree() {
-    let mut tree_a: Tree<i32> = TreeBuilder::new().build();
-    let mut tree_b: Tree<i32> = TreeBuilder::new().build();
+    let mut tree_a: VecTree<i32> = VecTreeBuilder::new().build();
+    let mut tree_b: VecTree<i32> = VecTreeBuilder::new().build();
 
     let root_node_id_a = tree_a.insert(VecNode::new(1), AsRoot).unwrap();
 
@@ -107,8 +107,8 @@ fn test_remove_node_remove_children_from_other_tree() {
 
 #[test]
 fn test_move_node_into_other_tree() {
-    let mut tree_a: Tree<i32> = TreeBuilder::new().build();
-    let mut tree_b: Tree<i32> = TreeBuilder::new().build();
+    let mut tree_a: VecTree<i32> = VecTreeBuilder::new().build();
+    let mut tree_b: VecTree<i32> = VecTreeBuilder::new().build();
 
     let root_node_a = VecNode::new(1);
     let root_node_id_a = tree_a.insert(root_node_a, AsRoot).unwrap();
@@ -126,8 +126,8 @@ fn test_move_node_into_other_tree() {
 
 #[test]
 fn test_move_node_from_other_tree() {
-    let mut tree_a: Tree<i32> = TreeBuilder::new().build();
-    let mut tree_b: Tree<i32> = TreeBuilder::new().build();
+    let mut tree_a: VecTree<i32> = VecTreeBuilder::new().build();
+    let mut tree_b: VecTree<i32> = VecTreeBuilder::new().build();
 
     let root_node_a = VecNode::new(1);
     let root_node_id_a = tree_a.insert(root_node_a, AsRoot).unwrap();
@@ -145,8 +145,8 @@ fn test_move_node_from_other_tree() {
 
 #[test]
 fn test_move_node_to_root_by_invalid_id() {
-    let mut tree_a: Tree<i32> = TreeBuilder::new().build();
-    let mut tree_b: Tree<i32> = TreeBuilder::new().build();
+    let mut tree_a: VecTree<i32> = VecTreeBuilder::new().build();
+    let mut tree_b: VecTree<i32> = VecTreeBuilder::new().build();
 
     let root_node_a = VecNode::new(1);
     let _ = tree_a.insert(root_node_a, AsRoot).unwrap();
@@ -163,8 +163,8 @@ fn test_move_node_to_root_by_invalid_id() {
 
 #[test]
 fn test_sort_by_invalid_id() {
-    let mut tree_a: Tree<i32> = TreeBuilder::new().build();
-    let mut tree_b: Tree<i32> = TreeBuilder::new().build();
+    let mut tree_a: VecTree<i32> = VecTreeBuilder::new().build();
+    let mut tree_b: VecTree<i32> = VecTreeBuilder::new().build();
 
     let root_node_a = VecNode::new(1);
     let _ = tree_a.insert(root_node_a, AsRoot).unwrap();
@@ -181,8 +181,8 @@ fn test_sort_by_invalid_id() {
 
 #[test]
 fn test_sort_by_data_invalid_id() {
-    let mut tree_a: Tree<i32> = TreeBuilder::new().build();
-    let mut tree_b: Tree<i32> = TreeBuilder::new().build();
+    let mut tree_a: VecTree<i32> = VecTreeBuilder::new().build();
+    let mut tree_b: VecTree<i32> = VecTreeBuilder::new().build();
 
     let root_node_a = VecNode::new(1);
     let _ = tree_a.insert(root_node_a, AsRoot).unwrap();
@@ -199,8 +199,8 @@ fn test_sort_by_data_invalid_id() {
 
 #[test]
 fn test_sort_by_key_invalid_id() {
-    let mut tree_a: Tree<i32> = TreeBuilder::new().build();
-    let mut tree_b: Tree<i32> = TreeBuilder::new().build();
+    let mut tree_a: VecTree<i32> = VecTreeBuilder::new().build();
+    let mut tree_b: VecTree<i32> = VecTreeBuilder::new().build();
 
     let root_node_a = VecNode::new(1);
     let _ = tree_a.insert(root_node_a, AsRoot).unwrap();
@@ -217,8 +217,8 @@ fn test_sort_by_key_invalid_id() {
 
 #[test]
 fn test_swap_sub_trees_of_different_trees() {
-    let mut tree_a: Tree<i32> = TreeBuilder::new().build();
-    let mut tree_b: Tree<i32> = TreeBuilder::new().build();
+    let mut tree_a: VecTree<i32> = VecTreeBuilder::new().build();
+    let mut tree_b: VecTree<i32> = VecTreeBuilder::new().build();
 
     let root_node_a = VecNode::new(1);
     let root_node_id_a = tree_a.insert(root_node_a, AsRoot).unwrap();
@@ -236,8 +236,8 @@ fn test_swap_sub_trees_of_different_trees() {
 
 #[test]
 fn test_ancestors_different_trees() {
-    let mut a = Tree::new();
-    let b = Tree::<i32>::new();
+    let mut a = VecTree::new();
+    let b = VecTree::<i32>::new();
 
     let root_id = a.insert(VecNode::new(1), AsRoot).unwrap();
 
@@ -251,7 +251,7 @@ fn test_ancestors_different_trees() {
 
 #[test]
 fn test_ancestors_old_id() {
-    let mut a = Tree::new();
+    let mut a = VecTree::new();
 
     let root_id = a.insert(VecNode::new(1), AsRoot).unwrap();
     // `.clone()` required to get this error
@@ -268,8 +268,8 @@ fn test_ancestors_old_id() {
 
 #[test]
 fn test_ancestor_ids_different_trees() {
-    let mut a = Tree::new();
-    let b = Tree::<i32>::new();
+    let mut a = VecTree::new();
+    let b = VecTree::<i32>::new();
 
     let root_id = a.insert(VecNode::new(1), AsRoot).unwrap();
 
@@ -283,7 +283,7 @@ fn test_ancestor_ids_different_trees() {
 
 #[test]
 fn test_ancestor_ids_old_id() {
-    let mut a = Tree::new();
+    let mut a = VecTree::new();
 
     let root_id = a.insert(VecNode::new(1), AsRoot).unwrap();
     // `.clone()` required to get this error
@@ -300,8 +300,8 @@ fn test_ancestor_ids_old_id() {
 
 #[test]
 fn test_children_different_trees() {
-    let mut a = Tree::new();
-    let b = Tree::<i32>::new();
+    let mut a = VecTree::new();
+    let b = VecTree::<i32>::new();
 
     let root_id = a.insert(VecNode::new(1), AsRoot).unwrap();
 
@@ -315,7 +315,7 @@ fn test_children_different_trees() {
 
 #[test]
 fn test_children_old_id() {
-    let mut a = Tree::new();
+    let mut a = VecTree::new();
 
     let root_id = a.insert(VecNode::new(1), AsRoot).unwrap();
     // `.clone()` required to get this error
@@ -332,8 +332,8 @@ fn test_children_old_id() {
 
 #[test]
 fn test_children_ids_different_trees() {
-    let mut a = Tree::new();
-    let b = Tree::<i32>::new();
+    let mut a = VecTree::new();
+    let b = VecTree::<i32>::new();
 
     let root_id = a.insert(VecNode::new(1), AsRoot).unwrap();
 
@@ -347,7 +347,7 @@ fn test_children_ids_different_trees() {
 
 #[test]
 fn test_children_ids_old_id() {
-    let mut a = Tree::new();
+    let mut a = VecTree::new();
 
     let root_id = a.insert(VecNode::new(1), AsRoot).unwrap();
     // `.clone()` required to get this error

@@ -1,7 +1,7 @@
 use NodeId;
 
 ///
-/// Describes the possible behaviors of the `Tree::remove_node` method.
+/// Describes the possible behaviors of the `VecTree::remove_node` method.
 ///
 pub enum RemoveBehavior {
     ///
@@ -17,11 +17,11 @@ pub enum RemoveBehavior {
     /// use id_tree::InsertBehavior::*;
     /// use id_tree::RemoveBehavior::*;
     ///
-    /// let mut tree: Tree<i32> = Tree::new();
+    /// let mut tree: VecTree<i32> = VecTree::new();
     ///
-    /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
-    /// let child_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
-    /// let grandchild_id = tree.insert(Node::new(2), UnderNode(&child_id)).unwrap();
+    /// let root_id = tree.insert(VecNode::new(0), AsRoot).unwrap();
+    /// let child_id = tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
+    /// let grandchild_id = tree.insert(VecNode::new(2), UnderNode(&child_id)).unwrap();
     ///
     /// let child = tree.remove_node(child_id, DropChildren).ok().unwrap();
     ///
@@ -35,7 +35,7 @@ pub enum RemoveBehavior {
 
     ///
     /// If the removed `Node` (let's call it `A`) has a parent, `A`'s parent will become the
-    /// parent of `A`'s children.  This effectively just shifts them up one level in the `Tree`.
+    /// parent of `A`'s children.  This effectively just shifts them up one level in the `VecTree`.
     ///
     /// If `A` doesn't have a parent, then this behaves exactly like
     /// `RemoveBehavior::OrphanChildren`.
@@ -45,11 +45,11 @@ pub enum RemoveBehavior {
     /// use id_tree::InsertBehavior::*;
     /// use id_tree::RemoveBehavior::*;
     ///
-    /// let mut tree: Tree<i32> = Tree::new();
+    /// let mut tree: VecTree<i32> = VecTree::new();
     ///
-    /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
-    /// let child_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
-    /// let grandchild_id = tree.insert(Node::new(2), UnderNode(&child_id)).unwrap();
+    /// let root_id = tree.insert(VecNode::new(0), AsRoot).unwrap();
+    /// let child_id = tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
+    /// let grandchild_id = tree.insert(VecNode::new(2), UnderNode(&child_id)).unwrap();
     ///
     /// let child = tree.remove_node(child_id, LiftChildren).ok().unwrap();
     ///
@@ -71,11 +71,11 @@ pub enum RemoveBehavior {
     /// use id_tree::InsertBehavior::*;
     /// use id_tree::RemoveBehavior::*;
     ///
-    /// let mut tree: Tree<i32> = Tree::new();
+    /// let mut tree: VecTree<i32> = VecTree::new();
     ///
-    /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
-    /// let child_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
-    /// let grandchild_id = tree.insert(Node::new(2), UnderNode(&child_id)).unwrap();
+    /// let root_id = tree.insert(VecNode::new(0), AsRoot).unwrap();
+    /// let child_id = tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
+    /// let grandchild_id = tree.insert(VecNode::new(2), UnderNode(&child_id)).unwrap();
     ///
     /// let child = tree.remove_node(child_id, OrphanChildren).ok().unwrap();
     ///
@@ -89,7 +89,7 @@ pub enum RemoveBehavior {
 }
 
 ///
-/// Describes the possible behaviors of the `Tree::move_node` method.
+/// Describes the possible behaviors of the `VecTree::move_node` method.
 ///
 pub enum MoveBehavior<'a> {
     ///
@@ -104,11 +104,11 @@ pub enum MoveBehavior<'a> {
     /// use id_tree::InsertBehavior::*;
     /// use id_tree::MoveBehavior::*;
     ///
-    /// let mut tree: Tree<i32> = Tree::new();
+    /// let mut tree: VecTree<i32> = VecTree::new();
     ///
-    /// let root_id = tree.insert(Node::new(1), AsRoot).unwrap();
-    /// let child_id = tree.insert(Node::new(2),  UnderNode(&root_id)).unwrap();
-    /// let grandchild_id = tree.insert(Node::new(3), UnderNode(&child_id)).unwrap();
+    /// let root_id = tree.insert(VecNode::new(1), AsRoot).unwrap();
+    /// let child_id = tree.insert(VecNode::new(2),  UnderNode(&root_id)).unwrap();
+    /// let grandchild_id = tree.insert(VecNode::new(3), UnderNode(&child_id)).unwrap();
     ///
     /// tree.move_node(&grandchild_id, ToRoot).unwrap();
     ///
@@ -120,12 +120,12 @@ pub enum MoveBehavior<'a> {
     ToRoot,
 
     ///
-    /// Moves a `Node` inside the `Tree` to a new parent leaving all children in their place.
+    /// Moves a `Node` inside the `VecTree` to a new parent leaving all children in their place.
     ///
     /// If the new parent (let's call it `B`) is a descendant of the `Node` being moved (`A`), then
     /// the direct child of `A` on the path from `A` to `B` will be shifted upwards to take the
     /// place of its parent (`A`).  All other children of `A` will be left alone, meaning they will
-    /// travel with it down the `Tree`.
+    /// travel with it down the `VecTree`.
     ///
     /// Please note that during the "shift-up" part of the above scenario, the `Node` being shifted
     /// up will always be added as the last child of its new parent.
@@ -135,12 +135,12 @@ pub enum MoveBehavior<'a> {
     /// use id_tree::InsertBehavior::*;
     /// use id_tree::MoveBehavior::*;
     ///
-    /// let mut tree: Tree<i32> = Tree::new();
+    /// let mut tree: VecTree<i32> = VecTree::new();
     ///
-    /// let root_id = tree.insert(Node::new(1), AsRoot).ok().unwrap();
-    /// let first_child_id = tree.insert(Node::new(2),  UnderNode(&root_id)).unwrap();
-    /// let second_child_id = tree.insert(Node::new(3), UnderNode(&root_id)).unwrap();
-    /// let grandchild_id = tree.insert(Node::new(4), UnderNode(&first_child_id)).unwrap();
+    /// let root_id = tree.insert(VecNode::new(1), AsRoot).ok().unwrap();
+    /// let first_child_id = tree.insert(VecNode::new(2),  UnderNode(&root_id)).unwrap();
+    /// let second_child_id = tree.insert(VecNode::new(3), UnderNode(&root_id)).unwrap();
+    /// let grandchild_id = tree.insert(VecNode::new(4), UnderNode(&first_child_id)).unwrap();
     ///
     /// tree.move_node(&grandchild_id, ToParent(&second_child_id)).unwrap();
     ///
@@ -152,11 +152,11 @@ pub enum MoveBehavior<'a> {
 }
 
 ///
-/// Describes the possible behaviors of the `Tree::insert` method.
+/// Describes the possible behaviors of the `VecTree::insert` method.
 ///
 pub enum InsertBehavior<'a> {
     ///
-    /// Sets the root of the `Tree`.
+    /// Sets the root of the `VecTree`.
     ///
     /// If there is already a root `Node` present in the tree, that `Node` is set as the first child
     /// of the new root.
@@ -165,9 +165,9 @@ pub enum InsertBehavior<'a> {
     /// use id_tree::*;
     /// use id_tree::InsertBehavior::*;
     ///
-    /// let mut tree: Tree<i32> = Tree::new();
+    /// let mut tree: VecTree<i32> = VecTree::new();
     ///
-    /// tree.insert(Node::new(5), AsRoot).unwrap();
+    /// tree.insert(VecNode::new(5), AsRoot).unwrap();
     /// ```
     AsRoot,
 
@@ -181,10 +181,10 @@ pub enum InsertBehavior<'a> {
     /// use id_tree::*;
     /// use id_tree::InsertBehavior::*;
     ///
-    /// let root_node = Node::new(1);
-    /// let child_node = Node::new(2);
+    /// let root_node = VecNode::new(1);
+    /// let child_node = VecNode::new(2);
     ///
-    /// let mut tree: Tree<i32> = Tree::new();
+    /// let mut tree: VecTree<i32> = VecTree::new();
     /// let root_id = tree.insert(root_node, AsRoot).unwrap();
     ///
     /// tree.insert(child_node, UnderNode(&root_id)).unwrap();
@@ -193,7 +193,7 @@ pub enum InsertBehavior<'a> {
 }
 
 ///
-/// Describes the possible behaviors of the `Tree::swap_nodes` method.
+/// Describes the possible behaviors of the `VecTree::swap_nodes` method.
 ///
 pub enum SwapBehavior {
     ///
@@ -211,12 +211,12 @@ pub enum SwapBehavior {
     /// use id_tree::InsertBehavior::*;
     /// use id_tree::SwapBehavior::*;
     ///
-    /// let mut tree: Tree<i32> = Tree::new();
+    /// let mut tree: VecTree<i32> = VecTree::new();
     ///
-    /// let root_id = tree.insert(Node::new(1), AsRoot).unwrap();
-    /// let first_child_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
-    /// let second_child_id = tree.insert(Node::new(3), UnderNode(&root_id)).unwrap();
-    /// let grandchild_id = tree.insert(Node::new(4), UnderNode(&second_child_id)).unwrap();
+    /// let root_id = tree.insert(VecNode::new(1), AsRoot).unwrap();
+    /// let first_child_id = tree.insert(VecNode::new(2), UnderNode(&root_id)).unwrap();
+    /// let second_child_id = tree.insert(VecNode::new(3), UnderNode(&root_id)).unwrap();
+    /// let grandchild_id = tree.insert(VecNode::new(4), UnderNode(&second_child_id)).unwrap();
     ///
     /// tree.swap_nodes(&first_child_id, &grandchild_id, TakeChildren).unwrap();
     ///
@@ -240,12 +240,12 @@ pub enum SwapBehavior {
     /// use id_tree::InsertBehavior::*;
     /// use id_tree::SwapBehavior::*;
     ///
-    /// let mut tree: Tree<i32> = Tree::new();
+    /// let mut tree: VecTree<i32> = VecTree::new();
     ///
-    /// let root_id = tree.insert(Node::new(1), AsRoot).unwrap();
-    /// let first_child_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
-    /// let second_child_id = tree.insert(Node::new(3), UnderNode(&root_id)).unwrap();
-    /// let grandchild_id = tree.insert(Node::new(4), UnderNode(&second_child_id)).unwrap();
+    /// let root_id = tree.insert(VecNode::new(1), AsRoot).unwrap();
+    /// let first_child_id = tree.insert(VecNode::new(2), UnderNode(&root_id)).unwrap();
+    /// let second_child_id = tree.insert(VecNode::new(3), UnderNode(&root_id)).unwrap();
+    /// let grandchild_id = tree.insert(VecNode::new(4), UnderNode(&second_child_id)).unwrap();
     ///
     /// tree.swap_nodes(&first_child_id, &second_child_id, LeaveChildren).unwrap();
     ///
@@ -273,13 +273,13 @@ pub enum SwapBehavior {
     /// use id_tree::InsertBehavior::*;
     /// use id_tree::SwapBehavior::*;
     ///
-    /// let mut tree: Tree<i32> = Tree::new();
+    /// let mut tree: VecTree<i32> = VecTree::new();
     ///
-    /// let root_id = tree.insert(Node::new(1), AsRoot).unwrap();
-    /// let first_child_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
-    /// let second_child_id = tree.insert(Node::new(3), UnderNode(&root_id)).unwrap();
-    /// let grandchild_id = tree.insert(Node::new(4), UnderNode(&second_child_id)).unwrap();
-    /// let grandchild_id_2 = tree.insert(Node::new(5), UnderNode(&first_child_id)).unwrap();
+    /// let root_id = tree.insert(VecNode::new(1), AsRoot).unwrap();
+    /// let first_child_id = tree.insert(VecNode::new(2), UnderNode(&root_id)).unwrap();
+    /// let second_child_id = tree.insert(VecNode::new(3), UnderNode(&root_id)).unwrap();
+    /// let grandchild_id = tree.insert(VecNode::new(4), UnderNode(&second_child_id)).unwrap();
+    /// let grandchild_id_2 = tree.insert(VecNode::new(5), UnderNode(&first_child_id)).unwrap();
     ///
     /// tree.swap_nodes(&first_child_id, &second_child_id, ChildrenOnly).unwrap();
     ///

@@ -2,7 +2,7 @@ use std::slice::Iter;
 use std::vec::IntoIter;
 use std::collections::VecDeque;
 
-use Tree;
+use VecTree;
 use node::*;
 use NodeId;
 
@@ -13,12 +13,12 @@ use NodeId;
 /// return an immutable reference to the next `Node` up the `Tree`.
 ///
 pub struct Ancestors<'a, T: 'a> {
-    tree: &'a Tree<T>,
+    tree: &'a VecTree<T>,
     node_id: Option<NodeId>,
 }
 
 impl<'a, T> Ancestors<'a, T> {
-    pub(crate) fn new(tree: &'a Tree<T>, node_id: NodeId) -> Ancestors<'a, T> {
+    pub(crate) fn new(tree: &'a VecTree<T>, node_id: NodeId) -> Ancestors<'a, T> {
         Ancestors {
             tree: tree,
             node_id: Some(node_id),
@@ -49,12 +49,12 @@ impl<'a, T> Iterator for Ancestors<'a, T> {
 /// Iterates over `NodeId`s instead of over the `Node`s themselves.
 ///
 pub struct AncestorIds<'a, T: 'a> {
-    tree: &'a Tree<T>,
+    tree: &'a VecTree<T>,
     node_id: Option<NodeId>,
 }
 
 impl<'a, T> AncestorIds<'a, T> {
-    pub(crate) fn new(tree: &'a Tree<T>, node_id: NodeId) -> AncestorIds<'a, T> {
+    pub(crate) fn new(tree: &'a VecTree<T>, node_id: NodeId) -> AncestorIds<'a, T> {
         AncestorIds {
             tree: tree,
             node_id: Some(node_id),
@@ -85,12 +85,12 @@ impl<'a, T> Iterator for AncestorIds<'a, T> {
 /// return an immutable reference to the next child `Node`.
 ///
 pub struct Children<'a, T: 'a> {
-    tree: &'a Tree<T>,
+    tree: &'a VecTree<T>,
     child_ids: Iter<'a, NodeId>,
 }
 
 impl<'a, T> Children<'a, T> {
-    pub(crate) fn new(tree: &'a Tree<T>, node_id: NodeId) -> Children<'a, T> {
+    pub(crate) fn new(tree: &'a VecTree<T>, node_id: NodeId) -> Children<'a, T> {
         Children {
             tree: tree,
             child_ids: tree.get_unsafe(&node_id).children().as_slice().iter(),
@@ -119,7 +119,7 @@ pub struct ChildrenIds<'a> {
 }
 
 impl<'a> ChildrenIds<'a> {
-    pub(crate) fn new<T>(tree: &'a Tree<T>, node_id: NodeId) -> ChildrenIds<'a> {
+    pub(crate) fn new<T>(tree: &'a VecTree<T>, node_id: NodeId) -> ChildrenIds<'a> {
         ChildrenIds { child_ids: tree.get_unsafe(&node_id).children().as_slice().iter() }
     }
 }
@@ -139,12 +139,12 @@ impl<'a> Iterator for ChildrenIds<'a> {
 /// `next` will return an immutable reference to the next `Node` in Pre-Order Traversal order.
 ///
 pub struct PreOrderTraversal<'a, T: 'a> {
-    tree: &'a Tree<T>,
+    tree: &'a VecTree<T>,
     data: VecDeque<NodeId>,
 }
 
 impl<'a, T> PreOrderTraversal<'a, T> {
-    pub(crate) fn new(tree: &'a Tree<T>, node_id: NodeId) -> PreOrderTraversal<T> {
+    pub(crate) fn new(tree: &'a VecTree<T>, node_id: NodeId) -> PreOrderTraversal<T> {
 
         // over allocating, but all at once instead of re-sizing and re-allocating as we go
         let mut data = VecDeque::with_capacity(tree.nodes.capacity());
@@ -185,12 +185,12 @@ impl<'a, T> Iterator for PreOrderTraversal<'a, T> {
 /// `next` will return an immutable reference to the next `Node` in Post-Order Traversal order.
 ///
 pub struct PostOrderTraversal<'a, T: 'a> {
-    tree: &'a Tree<T>,
+    tree: &'a VecTree<T>,
     ids: IntoIter<NodeId>,
 }
 
 impl<'a, T> PostOrderTraversal<'a, T> {
-    pub(crate) fn new(tree: &'a Tree<T>, node_id: NodeId) -> PostOrderTraversal<T> {
+    pub(crate) fn new(tree: &'a VecTree<T>, node_id: NodeId) -> PostOrderTraversal<T> {
 
         // over allocating, but all at once instead of re-sizing and re-allocating as we go
         let mut ids = Vec::with_capacity(tree.nodes.capacity());
@@ -203,7 +203,7 @@ impl<'a, T> PostOrderTraversal<'a, T> {
         }
     }
 
-    fn process_nodes(starting_id: NodeId, tree: &Tree<T>, ids: &mut Vec<NodeId>) {
+    fn process_nodes(starting_id: NodeId, tree: &VecTree<T>, ids: &mut Vec<NodeId>) {
         let node = tree.get_unsafe(&starting_id);
 
         for child_id in node.children() {
@@ -235,12 +235,12 @@ impl<'a, T> Iterator for PostOrderTraversal<'a, T> {
 /// `next` will return an immutable reference to the next `Node` in Level-Order Traversal order.
 ///
 pub struct LevelOrderTraversal<'a, T: 'a> {
-    tree: &'a Tree<T>,
+    tree: &'a VecTree<T>,
     data: VecDeque<NodeId>,
 }
 
 impl<'a, T> LevelOrderTraversal<'a, T> {
-    pub(crate) fn new(tree: &'a Tree<T>, node_id: NodeId) -> LevelOrderTraversal<T> {
+    pub(crate) fn new(tree: &'a VecTree<T>, node_id: NodeId) -> LevelOrderTraversal<T> {
 
         // over allocating, but all at once instead of re-sizing and re-allocating as we go
         let mut data = VecDeque::with_capacity(tree.nodes.capacity());
@@ -278,13 +278,13 @@ impl<'a, T> Iterator for LevelOrderTraversal<'a, T> {
 #[cfg(test)]
 mod tests {
 
-    use Tree;
+    use VecTree;
     use node::*;
     use InsertBehavior::*;
 
     #[test]
     fn test_ancestors() {
-        let mut tree = Tree::new();
+        let mut tree = VecTree::new();
 
         let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
         let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
@@ -312,7 +312,7 @@ mod tests {
 
     #[test]
     fn test_ancestor_ids() {
-        let mut tree = Tree::new();
+        let mut tree = VecTree::new();
 
         let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
         let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
@@ -340,7 +340,7 @@ mod tests {
 
     #[test]
     fn test_children() {
-        let mut tree = Tree::new();
+        let mut tree = VecTree::new();
 
         let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
         let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
@@ -366,7 +366,7 @@ mod tests {
 
     #[test]
     fn test_children_ids() {
-        let mut tree = Tree::new();
+        let mut tree = VecTree::new();
 
         let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
         let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
@@ -392,7 +392,7 @@ mod tests {
 
     #[test]
     fn test_pre_order_traversal() {
-        let mut tree = Tree::new();
+        let mut tree = VecTree::new();
 
         //      0
         //     / \
@@ -427,7 +427,7 @@ mod tests {
 
     #[test]
     fn test_post_order_traversal() {
-        let mut tree = Tree::new();
+        let mut tree = VecTree::new();
 
         //      0
         //     / \
@@ -462,7 +462,7 @@ mod tests {
 
     #[test]
     fn test_level_order_traversal() {
-        let mut tree = Tree::new();
+        let mut tree = VecTree::new();
 
         //      0
         //     / \

@@ -5,26 +5,26 @@ use super::*;
 use snowflake::ProcessUniqueId;
 
 ///
-/// A `Tree` builder that provides more control over how a `Tree` is created.
+/// A `VecTree` builder that provides more control over how a `VecTree` is created.
 ///
-pub struct TreeBuilder<T> {
+pub struct VecTreeBuilder<T> {
     root: Option<VecNode<T>>,
     node_capacity: usize,
     swap_capacity: usize,
 }
 
-impl<T> TreeBuilder<T> {
+impl<T> VecTreeBuilder<T> {
     ///
-    /// Creates a new `TreeBuilder` with the default settings.
+    /// Creates a new `VecTreeBuilder` with the default settings.
     ///
     /// ```
-    /// use id_tree::TreeBuilder;
+    /// use id_tree::VecTreeBuilder;
     ///
-    /// let _tree_builder: TreeBuilder<i32> = TreeBuilder::new();
+    /// let _tree_builder: VecTreeBuilder<i32> = VecTreeBuilder::new();
     /// ```
     ///
-    pub fn new() -> TreeBuilder<T> {
-        TreeBuilder {
+    pub fn new() -> VecTreeBuilder<T> {
+        VecTreeBuilder {
             root: None,
             node_capacity: 0,
             swap_capacity: 0,
@@ -32,49 +32,50 @@ impl<T> TreeBuilder<T> {
     }
 
     ///
-    /// Sets the root `Node` of the `TreeBuilder`.
+    /// Sets the root `Node` of the `VecTreeBuilder`.
     ///
     /// ```
-    /// use id_tree::TreeBuilder;
+    /// use id_tree::VecTreeBuilder;
     /// use id_tree::Node;
+    /// use id_tree::VecNode;
     ///
-    /// let _tree_builder = TreeBuilder::new().with_root(Node::new(1));
+    /// let _tree_builder = VecTreeBuilder::new().with_root(VecNode::new(1));
     /// ```
     ///
-    pub fn with_root(mut self, root: VecNode<T>) -> TreeBuilder<T> {
+    pub fn with_root(mut self, root: VecNode<T>) -> VecTreeBuilder<T> {
         self.root = Some(root);
         self
     }
 
     ///
-    /// Sets the node_capacity of the `TreeBuilder`.
+    /// Sets the node_capacity of the `VecTreeBuilder`.
     ///
-    /// Since `Tree`s own their `Node`s, they must allocate storage space as `Node`s are inserted.
-    /// Using this setting allows the `Tree` to pre-allocate space for `Node`s ahead of time, so
-    /// that the space allocations don't happen as the `Node`s are inserted.
+    /// Since `VecTree`s own their `VecNode`s, they must allocate storage space as `VecNode`s are
+    /// inserted. Using this setting allows the `VecTree` to pre-allocate space for `VecNode`s
+    /// ahead of time, so that the space allocations don't happen as the `VecNode`s are inserted.
     ///
-    /// _Use of this setting is recommended if you know the **maximum number** of `Node`s that your
-    /// `Tree` will **contain** at **any given time**._
+    /// _Use of this setting is recommended if you know the **maximum number** of `VecNode`s that
+    /// your `Tree` will **contain** at **any given time**._
     ///
     /// ```
-    /// use id_tree::TreeBuilder;
+    /// use id_tree::VecTreeBuilder;
     ///
-    /// let _tree_builder: TreeBuilder<i32> = TreeBuilder::new().with_node_capacity(3);
+    /// let _tree_builder: VecTreeBuilder<i32> = VecTreeBuilder::new().with_node_capacity(3);
     /// ```
     ///
-    pub fn with_node_capacity(mut self, node_capacity: usize) -> TreeBuilder<T> {
+    pub fn with_node_capacity(mut self, node_capacity: usize) -> VecTreeBuilder<T> {
         self.node_capacity = node_capacity;
         self
     }
 
     ///
-    /// Sets the swap_capacity of the `TreeBuilder`.
+    /// Sets the swap_capacity of the `VecTreeBuilder`.
     ///
-    /// This is important because `Tree`s attempt to save time by re-using storage space when
-    /// `Node`s are removed (instead of shuffling `Node`s around internally).  To do this, the
-    /// `Tree` must store information about the space left behind when a `Node` is removed. Using
-    /// this setting allows the `Tree` to pre-allocate this storage space instead of doing so as
-    /// `Node`s are removed from the `Tree`.
+    /// This is important because `VecTree`s attempt to save time by re-using storage space when
+    /// `VecNode`s are removed (instead of shuffling `VecNode`s around internally).  To do this,
+    /// the `VecTree` must store information about the space left behind when a `VecNode` is
+    /// removed. Using this setting allows the `VecTree` to pre-allocate this storage space
+    /// instead of doing so as `VecNode`s are removed from the `VecTree`.
     ///
     /// _Use of this setting is recommended if you know the **maximum "net number of
     /// removals"** that have occurred **at any given time**._
@@ -83,48 +84,48 @@ impl<T> TreeBuilder<T> {
     /// ---
     /// In **Scenario 1**:
     ///
-    /// * Add 3 `Node`s, Remove 2 `Node`s, Add 1 `Node`.
+    /// * Add 3 `VecNode`s, Remove 2 `VecNode`s, Add 1 `VecNode`.
     ///
     /// The most amount of nodes that have been removed at any given time is **2**.
     ///
     /// But in **Scenario 2**:
     ///
-    /// * Add 3 `Node`s, Remove 2 `Node`s, Add 1 `Node`, Remove 2 `Node`s.
+    /// * Add 3 `VecNode`s, Remove 2 `VecNode`s, Add 1 `VecNode`, Remove 2 `VecNode`s.
     ///
     /// The most amount of nodes that have been removed at any given time is **3**.
     ///
     /// ```
-    /// use id_tree::TreeBuilder;
+    /// use id_tree::VecTreeBuilder;
     ///
-    /// let _tree_builder: TreeBuilder<i32> = TreeBuilder::new().with_swap_capacity(3);
+    /// let _tree_builder: VecTreeBuilder<i32> = VecTreeBuilder::new().with_swap_capacity(3);
     /// ```
     ///
-    pub fn with_swap_capacity(mut self, swap_capacity: usize) -> TreeBuilder<T> {
+    pub fn with_swap_capacity(mut self, swap_capacity: usize) -> VecTreeBuilder<T> {
         self.swap_capacity = swap_capacity;
         self
     }
 
     ///
-    /// Build a `Tree` based upon the current settings in the `TreeBuilder`.
+    /// Build a `VecTree` based upon the current settings in the `VecTreeBuilder`.
     ///
     /// ```
-    /// use id_tree::TreeBuilder;
-    /// use id_tree::Tree;
+    /// use id_tree::VecTreeBuilder;
+    /// use id_tree::VecTree;
     /// use id_tree::Node;
     /// use id_tree::VecNode;
     ///
-    /// let _tree: Tree<i32> = TreeBuilder::new()
+    /// let _tree: VecTree<i32> = VecTreeBuilder::new()
     ///         .with_root(VecNode::new(5))
     ///         .with_node_capacity(3)
     ///         .with_swap_capacity(2)
     ///         .build();
     /// ```
     ///
-    pub fn build(mut self) -> Tree<T> {
+    pub fn build(mut self) -> VecTree<T> {
 
         let tree_id = ProcessUniqueId::new();
 
-        let mut tree = Tree {
+        let mut tree = VecTree {
             id: tree_id,
             root: None,
             nodes: Vec::with_capacity(self.node_capacity),
@@ -147,7 +148,7 @@ impl<T> TreeBuilder<T> {
 }
 
 ///
-/// A tree structure consisting of `Node`s.
+/// A tree structure consisting of `VecNode`s.
 ///
 /// # Panics
 /// While it is highly unlikely, any function that takes a `NodeId` _can_ `panic`.  This, however,
@@ -157,41 +158,42 @@ impl<T> TreeBuilder<T> {
 /// **If this ever happens please report the issue.** `Panic`s are not expected behavior for this
 /// library, but they can happen due to bugs.
 ///
-pub struct Tree<T> {
+pub struct VecTree<T> {
     id: ProcessUniqueId,
     root: Option<NodeId>,
     pub(crate) nodes: Vec<Option<VecNode<T>>>,
     free_ids: Vec<NodeId>,
 }
 
-impl<T> Tree<T> {
+impl<T> VecTree<T> {
     ///
-    /// Creates a new `Tree` with default settings (no root `Node` and no space pre-allocation).
+    /// Creates a new `VecTree` with default settings (no root `VecNode` and no space
+    /// pre-allocation).
     ///
     /// ```
-    /// use id_tree::Tree;
+    /// use id_tree::VecTree;
     ///
-    /// let _tree: Tree<i32> = Tree::new();
+    /// let _tree: VecTree<i32> = VecTree::new();
     /// ```
     ///
-    pub fn new() -> Tree<T> {
-        TreeBuilder::new().build()
+    pub fn new() -> VecTree<T> {
+        VecTreeBuilder::new().build()
     }
 
-    /// Inserts a new `Node` into the `Tree`.  The `InsertBehavior` provided will determine where
-    /// the `Node` is inserted.
+    /// Inserts a new `VecNode` into the `Tree`.  The `InsertBehavior` provided will determine
+    /// where the `VecNode` is inserted.
     ///
-    /// Returns a `Result` containing the `NodeId` of the `Node` that was inserted or a
+    /// Returns a `Result` containing the `NodeId` of the `VecNode` that was inserted or a
     /// `NodeIdError` if one occurred.
     ///
     /// ```
     /// use id_tree::*;
     /// use id_tree::InsertBehavior::*;
     ///
-    /// let root_node = Node::new(1);
-    /// let child_node = Node::new(2);
+    /// let root_node = VecNode::new(1);
+    /// let child_node = VecNode::new(2);
     ///
-    /// let mut tree: Tree<i32> = Tree::new();
+    /// let mut tree: VecTree<i32> = VecTree::new();
     /// let root_id = tree.insert(root_node, AsRoot).unwrap();
     ///
     /// tree.insert(child_node, UnderNode(&root_id)).unwrap();
@@ -231,7 +233,9 @@ impl<T> Tree<T> {
         new_root_id
     }
 
-    /// Add a new `Node` to the tree as the child of a `Node` specified by the given `NodeId`.
+    ///
+    /// Add a new `NodeVec` to the tree as the child of a `NodeVec` specified by the given
+    /// `NodeId`.
     ///
     fn insert_with_parent(
         &mut self,
@@ -244,7 +248,7 @@ impl<T> Tree<T> {
     }
 
     ///
-    /// Get an immutable reference to a `Node`.
+    /// Get an immutable reference to a `VecNode`.
     ///
     /// Returns a `Result` containing the immutable reference or a `NodeIdError` if one occurred.
     ///
@@ -252,8 +256,8 @@ impl<T> Tree<T> {
     /// use id_tree::*;
     /// use id_tree::InsertBehavior::*;
     ///
-    /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.insert(Node::new(5), AsRoot).unwrap();
+    /// let mut tree: VecTree<i32> = VecTree::new();
+    /// let root_id = tree.insert(VecNode::new(5), AsRoot).unwrap();
     ///
     /// let root_node: &Node<i32> = tree.get(&root_id).unwrap();
     ///
@@ -272,7 +276,7 @@ impl<T> Tree<T> {
     }
 
     ///
-    /// Get a mutable reference to a `Node`.
+    /// Get a mutable reference to a `VecNode`.
     ///
     /// Returns a `Result` containing the mutable reference or a `NodeIdError` if one occurred.
     ///
@@ -280,10 +284,10 @@ impl<T> Tree<T> {
     /// use id_tree::*;
     /// use id_tree::InsertBehavior::*;
     ///
-    /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.insert(Node::new(5), AsRoot).unwrap();
+    /// let mut tree: VecTree<i32> = VecTree::new();
+    /// let root_id = tree.insert(VecNode::new(5), AsRoot).unwrap();
     ///
-    /// let root_node: &mut Node<i32> = tree.get_mut(&root_id).unwrap();
+    /// let root_node: &mut VecNode<i32> = tree.get_mut(&root_id).unwrap();
     ///
     /// # assert_eq!(root_node.data(), &5);
     /// ```
@@ -299,31 +303,31 @@ impl<T> Tree<T> {
         }
     }
 
-    /// Remove a `Node` from the `Tree`.  The `RemoveBehavior` provided determines what happens to
-    /// the removed `Node`'s children.
+    /// Remove a `VecNode` from the `VecTree`.  The `RemoveBehavior` provided determines what
+    /// happens to the removed `VecNode`'s children.
     ///
-    /// Returns a `Result` containing the removed `Node` or a `NodeIdError` if one occurred.
+    /// Returns a `Result` containing the removed `VecNode` or a `NodeIdError` if one occurred.
     ///
-    /// **NOTE:** The `Node` that is returned will have its parent and child values cleared to avoid
-    /// providing the caller with extra copies of `NodeId`s should the corresponding `Node`s be
-    /// removed from the `Tree` at a later time.
+    /// **NOTE:** The `VecNode` that is returned will have its parent and child values cleared to
+    /// avoid providing the caller with extra copies of `NodeId`s should the corresponding
+    /// `VecNode`s be removed from the `VecTree` at a later time.
     ///
     /// If the caller needs a copy of the parent or child `NodeId`s, they must `Clone` them before
-    /// this `Node` is removed from the `Tree`.  Please see the
+    /// this `VecNode` is removed from the `VecTree`.  Please see the
     /// [Potential `NodeId` Issues](struct.NodeId.html#potential-nodeid-issues) section
-    /// of the `NodeId` documentation for more information on the implications of calling `Clone` on
-    /// a `NodeId`.
+    /// of the `NodeId` documentation for more information on the implications of calling `Clone`
+    /// on a `NodeId`.
     ///
     /// ```
     /// use id_tree::*;
     /// use id_tree::InsertBehavior::*;
     /// use id_tree::RemoveBehavior::*;
     ///
-    /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+    /// let mut tree: VecTree<i32> = VecTree::new();
+    /// let root_id = tree.insert(VecNode::new(0), AsRoot).unwrap();
     ///
-    /// let child_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
-    /// let grandchild_id = tree.insert(Node::new(2), UnderNode(&child_id)).unwrap();
+    /// let child_id = tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
+    /// let grandchild_id = tree.insert(VecNode::new(2), UnderNode(&child_id)).unwrap();
     ///
     /// let child = tree.remove_node(child_id, DropChildren).unwrap();
     ///
@@ -354,13 +358,13 @@ impl<T> Tree<T> {
     }
 
     ///
-    /// Remove a `Node` from the `Tree` and move its children up one "level" in the `Tree` if
+    /// Remove a `VecNode` from the `VecTree` and move its children up one "level" in the `Tree` if
     /// possible.
     ///
-    /// In other words, this `Node`'s children will point to its parent as their parent instead of
-    /// this `Node`.  In addition, this `Node`'s parent will have this `Node`'s children added as
-    /// its own children.  If this `Node` has no parent, then calling this function is the
-    /// equivalent of calling `remove_node_orphan_children`.
+    /// In other words, this `VecNode`'s children will point to its parent as their parent instead
+    /// of this `VecNode`.  In addition, this `VecNode`'s parent will have this `VecNode`'s
+    /// children added as its own children.  If this `VecNode` has no parent, then calling this
+    /// function is the equivalent of calling `remove_node_orphan_children`.
     ///
     fn remove_node_lift_children(&mut self, node_id: NodeId) -> Result<VecNode<T>, NodeIdError> {
         if let Some(parent_id) = self.get_unsafe(&node_id).parent().cloned() {
@@ -377,7 +381,7 @@ impl<T> Tree<T> {
     }
 
     ///
-    /// Remove a `Node` from the `Tree` and leave all of its children in the `Tree`.
+    /// Remove a `VecNode` from the `VecTree` and leave all of its children in the `Tree`.
     ///
     fn remove_node_orphan_children(&mut self, node_id: NodeId) -> Result<VecNode<T>, NodeIdError> {
         self.clear_parent_of_children(&node_id);
@@ -385,7 +389,7 @@ impl<T> Tree<T> {
     }
 
     ///
-    /// Remove a `Node` from the `Tree` including all its children recursively.
+    /// Remove a `VecNode` from the `VecTree` including all its children recursively.
     ///
     fn remove_node_drop_children(&mut self, node_id: NodeId) -> Result<VecNode<T>, NodeIdError> {
         let mut children = self.get_mut_unsafe(&node_id).take_children();
@@ -395,17 +399,19 @@ impl<T> Tree<T> {
         Ok(self.remove_node_internal(node_id))
     }
 
-    /// Moves a `Node` in the `Tree` to a new location based upon the `MoveBehavior` provided.
+    ///
+    /// Moves a `VecNode` in the `VecTree` to a new location based upon the `MoveBehavior`
+    /// provided.
     ///
     /// ```
     /// use id_tree::*;
     /// use id_tree::InsertBehavior::*;
     /// use id_tree::MoveBehavior::*;
     ///
-    /// let mut tree: Tree<i32> = Tree::new();
+    /// let mut tree: VecTree<i32> = VecTree::new();
     ///
-    /// let root_id = tree.insert(Node::new(1), AsRoot).unwrap();
-    /// let child_id = tree.insert(Node::new(2),  UnderNode(&root_id)).unwrap();
+    /// let root_id = tree.insert(VecNode::new(1), AsRoot).unwrap();
+    /// let child_id = tree.insert(VecNode::new(2),  UnderNode(&root_id)).unwrap();
     /// let grandchild_id = tree.insert(Node::new(3), UnderNode(&child_id)).unwrap();
     ///
     /// tree.move_node(&grandchild_id, ToRoot).unwrap();
@@ -443,7 +449,8 @@ impl<T> Tree<T> {
         }
     }
 
-    /// Moves a `Node` inside a `Tree` to a new parent leaving all children in their place.
+    ///
+    /// Moves a `VecNode` inside a `VecTree` to a new parent leaving all children in their place.
     ///
     fn move_node_to_parent(
         &mut self,
@@ -504,7 +511,8 @@ impl<T> Tree<T> {
     }
 
     ///
-    /// Sets a `Node` inside a `Tree` as the new root `Node`, leaving all children in their place.
+    /// Sets a `VecNode` inside a `VecTree` as the new root `VecNode`, leaving all children in
+    /// their place.
     ///
     fn move_node_to_root(&mut self, node_id: &NodeId) -> Result<(), NodeIdError> {
         let old_root = self.root.clone();
@@ -534,12 +542,12 @@ impl<T> Tree<T> {
     /// use id_tree::*;
     /// use id_tree::InsertBehavior::*;
     ///
-    /// let mut tree: Tree<i32> = Tree::new();
+    /// let mut tree: VecTree<i32> = VecTree::new();
     ///
-    /// let root_id = tree.insert(Node::new(100), AsRoot).unwrap();
-    /// tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
-    /// tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
-    /// tree.insert(Node::new(0), UnderNode(&root_id)).unwrap();
+    /// let root_id = tree.insert(VecNode::new(100), AsRoot).unwrap();
+    /// tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
+    /// tree.insert(VecNode::new(2), UnderNode(&root_id)).unwrap();
+    /// tree.insert(VecNode::new(0), UnderNode(&root_id)).unwrap();
     ///
     /// tree.sort_children_by(&root_id, |a, b| a.data().cmp(b.data())).unwrap();
     ///
@@ -582,12 +590,12 @@ impl<T> Tree<T> {
     /// use id_tree::*;
     /// use id_tree::InsertBehavior::*;
     ///
-    /// let mut tree: Tree<i32> = Tree::new();
+    /// let mut tree: VecTree<i32> = VecTree::new();
     ///
-    /// let root_id = tree.insert(Node::new(100), AsRoot).unwrap();
-    /// tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
-    /// tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
-    /// tree.insert(Node::new(0), UnderNode(&root_id)).unwrap();
+    /// let root_id = tree.insert(VecNode::new(100), AsRoot).unwrap();
+    /// tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
+    /// tree.insert(VecNode::new(2), UnderNode(&root_id)).unwrap();
+    /// tree.insert(VecNode::new(0), UnderNode(&root_id)).unwrap();
     ///
     /// tree.sort_children_by_data(&root_id).unwrap();
     ///
@@ -627,12 +635,12 @@ impl<T> Tree<T> {
     /// use id_tree::*;
     /// use id_tree::InsertBehavior::*;
     ///
-    /// let mut tree: Tree<i32> = Tree::new();
+    /// let mut tree: VecTree<i32> = VecTree::new();
     ///
-    /// let root_id = tree.insert(Node::new(100), AsRoot).unwrap();
-    /// tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
-    /// tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
-    /// tree.insert(Node::new(0), UnderNode(&root_id)).unwrap();
+    /// let root_id = tree.insert(VecNode::new(100), AsRoot).unwrap();
+    /// tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
+    /// tree.insert(VecNode::new(2), UnderNode(&root_id)).unwrap();
+    /// tree.insert(VecNode::new(0), UnderNode(&root_id)).unwrap();
     ///
     /// tree.sort_children_by_key(&root_id, |x| x.data().clone()).unwrap();
     ///
@@ -665,11 +673,11 @@ impl<T> Tree<T> {
     }
 
 
-    /// Swap `Node`s in the `Tree` based upon the `SwapBehavior` provided.
+    /// Swap `VecNode`s in the `VecTree` based upon the `SwapBehavior` provided.
     ///
     /// Both `NodeId`s are still valid after this process and are not swapped.
     ///
-    /// This keeps the positions of the `Node`s in their parents' children collection.
+    /// This keeps the positions of the `VecNode`s in their parents' children collection.
     ///
     /// Returns an empty `Result` containing a `NodeIdError` if one occurred on either provided
     /// `NodeId`.
@@ -679,13 +687,13 @@ impl<T> Tree<T> {
     /// use id_tree::InsertBehavior::*;
     /// use id_tree::SwapBehavior::*;
     ///
-    /// let mut tree: Tree<i32> = Tree::new();
+    /// let mut tree: VecTree<i32> = VecTree::new();
     ///
-    /// let root_id = tree.insert(Node::new(1), AsRoot).unwrap();
+    /// let root_id = tree.insert(VecNode::new(1), AsRoot).unwrap();
     ///
-    /// let first_child_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
-    /// let second_child_id = tree.insert(Node::new(3), UnderNode(&root_id)).unwrap();
-    /// let grandchild_id = tree.insert(Node::new(4), UnderNode(&second_child_id)).unwrap();
+    /// let first_child_id = tree.insert(VecNode::new(2), UnderNode(&root_id)).unwrap();
+    /// let second_child_id = tree.insert(VecNode::new(3), UnderNode(&root_id)).unwrap();
+    /// let grandchild_id = tree.insert(VecNode::new(4), UnderNode(&second_child_id)).unwrap();
     ///
     /// tree.swap_nodes(&first_child_id, &grandchild_id, TakeChildren).unwrap();
     ///
@@ -720,7 +728,7 @@ impl<T> Tree<T> {
         }
     }
 
-    /// Swaps two `Node`s including their children given their `NodeId`s.
+    /// Swaps two `VecNode`s including their children given their `NodeId`s.
     ///
     fn swap_nodes_take_children(
         &mut self,
@@ -1015,15 +1023,15 @@ impl<T> Tree<T> {
     }
 
     ///
-    /// Returns a `Some` value containing the `NodeId` of the root `Node` if it exists.  Otherwise a
-    /// `None` value is returned.
+    /// Returns a `Some` value containing the `NodeId` of the root `VecNode` if it exists.
+    /// Otherwise a `None` value is returned.
     ///
     /// ```
     /// use id_tree::*;
     /// use id_tree::InsertBehavior::*;
     ///
-    /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.insert(Node::new(5), AsRoot).unwrap();
+    /// let mut tree: VecTree<i32> = VecTree::new();
+    /// let root_id = tree.insert(VecNode::new(5), AsRoot).unwrap();
     ///
     /// assert_eq!(&root_id, tree.root_node_id().unwrap());
     /// ```
@@ -1035,16 +1043,16 @@ impl<T> Tree<T> {
     ///
     /// Returns an `Ancestors` iterator (or a `NodeIdError` if one occurred).
     ///
-    /// Allows iteration over the ancestor `Node`s of a given `NodeId` directly instead of having
-    /// to call `tree.get(...)` with a `NodeId` each time.
+    /// Allows iteration over the ancestor `VecNode`s of a given `NodeId` directly instead of
+    /// having to call `tree.get(...)` with a `NodeId` each time.
     ///
     /// ```
     /// use id_tree::*;
     /// use id_tree::InsertBehavior::*;
     ///
-    /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
-    /// let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    /// let mut tree: VecTree<i32> = VecTree::new();
+    /// let root_id = tree.insert(VecNode::new(0), AsRoot).unwrap();
+    /// let node_1 = tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
     ///
     /// let mut ancestors = tree.ancestors(&node_1).unwrap();
     ///
@@ -1072,9 +1080,9 @@ impl<T> Tree<T> {
     /// use id_tree::*;
     /// use id_tree::InsertBehavior::*;
     ///
-    /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
-    /// let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    /// let mut tree: VecTree<i32> = VecTree::new();
+    /// let root_id = tree.insert(VecNode::new(0), AsRoot).unwrap();
+    /// let node_1 = tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
     ///
     /// let mut ancestor_ids = tree.ancestor_ids(&node_1).unwrap();
     ///
@@ -1096,16 +1104,16 @@ impl<T> Tree<T> {
     ///
     /// Returns a `Children` iterator (or a `NodeIdError` if one occurred).
     ///
-    /// Allows iteration over the child `Node`s of a given `NodeId` directly instead of having
+    /// Allows iteration over the child `VecNode`s of a given `NodeId` directly instead of having
     /// to call `tree.get(...)` with a `NodeId` each time.
     ///
     /// ```
     /// use id_tree::*;
     /// use id_tree::InsertBehavior::*;
     ///
-    /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
-    /// tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    /// let mut tree: VecTree<i32> = VecTree::new();
+    /// let root_id = tree.insert(VecNode::new(0), AsRoot).unwrap();
+    /// tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
     ///
     /// let mut children = tree.children(&root_id).unwrap();
     ///
@@ -1133,9 +1141,9 @@ impl<T> Tree<T> {
     /// use id_tree::*;
     /// use id_tree::InsertBehavior::*;
     ///
-    /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
-    /// let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    /// let mut tree: VecTree<i32> = VecTree::new();
+    /// let root_id = tree.insert(VecNode::new(0), AsRoot).unwrap();
+    /// let node_1 = tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
     ///
     /// let mut children_ids = tree.children_ids(&root_id).unwrap();
     ///
@@ -1156,16 +1164,16 @@ impl<T> Tree<T> {
 
     /// Returns a `PreOrderTraversal` iterator (or a `NodeIdError` if one occurred).
     ///
-    /// Allows iteration over all of the `Node`s in the sub-tree below a given `Node`.  This
+    /// Allows iteration over all of the `VecNode`s in the sub-tree below a given `VecNode`.  This
     /// iterator will always include that sub-tree "root" specified by the `NodeId` given.
     ///
     /// ```
     /// use id_tree::*;
     /// use id_tree::InsertBehavior::*;
     ///
-    /// let mut tree: Tree<i32> = Tree::new();
+    /// let mut tree: VecTree<i32> = VecTree::new();
     /// let root_id = tree.insert(VecNode::new(0), AsRoot).unwrap();
-    /// tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    /// tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
     ///
     /// let mut nodes = tree.traverse_pre_order(&root_id).unwrap();
     ///
@@ -1190,16 +1198,16 @@ impl<T> Tree<T> {
 
     /// Returns a `PostOrderTraversal` iterator (or a `NodeIdError` if one occurred).
     ///
-    /// Allows iteration over all of the `Node`s in the sub-tree below a given `Node`.  This
+    /// Allows iteration over all of the `VecNode`s in the sub-tree below a given `Node`.  This
     /// iterator will always include that sub-tree "root" specified by the `NodeId` given.
     ///
     /// ```
     /// use id_tree::*;
     /// use id_tree::InsertBehavior::*;
     ///
-    /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
-    /// tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    /// let mut tree: VecTree<i32> = VecTree::new();
+    /// let root_id = tree.insert(VecNode::new(0), AsRoot).unwrap();
+    /// tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
     ///
     /// let mut nodes = tree.traverse_post_order(&root_id).unwrap();
     ///
@@ -1224,16 +1232,16 @@ impl<T> Tree<T> {
 
     /// Returns a `LevelOrderTraversal` iterator (or a `NodeIdError` if one occurred).
     ///
-    /// Allows iteration over all of the `Node`s in the sub-tree below a given `Node`.  This
+    /// Allows iteration over all of the `VecNode`s in the sub-tree below a given `VecNode`.  This
     /// iterator will always include that sub-tree "root" specified by the `NodeId` given.
     ///
     /// ```
     /// use id_tree::*;
     /// use id_tree::InsertBehavior::*;
     ///
-    /// let mut tree: Tree<i32> = Tree::new();
-    /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
-    /// tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    /// let mut tree: VecTree<i32> = VecTree::new();
+    /// let root_id = tree.insert(VecNode::new(0), AsRoot).unwrap();
+    /// tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
     ///
     /// let mut nodes = tree.traverse_level_order(&root_id).unwrap();
     ///
@@ -1417,12 +1425,12 @@ impl<T> Tree<T> {
 
 #[cfg(test)]
 mod tree_builder_tests {
-    use super::TreeBuilder;
+    use super::VecTreeBuilder;
     use node::*;
 
     #[test]
     fn test_new() {
-        let tb: TreeBuilder<i32> = TreeBuilder::new();
+        let tb: VecTreeBuilder<i32> = VecTreeBuilder::new();
         assert!(tb.root.is_none());
         assert_eq!(tb.node_capacity, 0);
         assert_eq!(tb.swap_capacity, 0);
@@ -1430,7 +1438,7 @@ mod tree_builder_tests {
 
     #[test]
     fn test_with_root() {
-        let tb: TreeBuilder<i32> = TreeBuilder::new().with_root(Node::new(5));
+        let tb: VecTreeBuilder<i32> = VecTreeBuilder::new().with_root(Node::new(5));
 
         assert_eq!(tb.root.unwrap().data(), &5);
         assert_eq!(tb.node_capacity, 0);
@@ -1439,7 +1447,7 @@ mod tree_builder_tests {
 
     #[test]
     fn test_with_node_capacity() {
-        let tb: TreeBuilder<i32> = TreeBuilder::new().with_node_capacity(10);
+        let tb: VecTreeBuilder<i32> = VecTreeBuilder::new().with_node_capacity(10);
 
         assert!(tb.root.is_none());
         assert_eq!(tb.node_capacity, 10);
@@ -1448,7 +1456,7 @@ mod tree_builder_tests {
 
     #[test]
     fn test_with_swap_capacity() {
-        let tb: TreeBuilder<i32> = TreeBuilder::new().with_swap_capacity(10);
+        let tb: VecTreeBuilder<i32> = VecTreeBuilder::new().with_swap_capacity(10);
 
         assert!(tb.root.is_none());
         assert_eq!(tb.node_capacity, 0);
@@ -1457,7 +1465,7 @@ mod tree_builder_tests {
 
     #[test]
     fn test_with_all_settings() {
-        let tb: TreeBuilder<i32> = TreeBuilder::new()
+        let tb: VecTreeBuilder<i32> = VecTreeBuilder::new()
             .with_root(Node::new(5))
             .with_node_capacity(10)
             .with_swap_capacity(3);
@@ -1469,7 +1477,7 @@ mod tree_builder_tests {
 
     #[test]
     fn test_build() {
-        let tree = TreeBuilder::new()
+        let tree = VecTreeBuilder::new()
             .with_root(Node::new(5))
             .with_node_capacity(10)
             .with_swap_capacity(3)
@@ -1485,14 +1493,14 @@ mod tree_builder_tests {
 
 #[cfg(test)]
 mod tree_tests {
-    use super::Tree;
-    use super::TreeBuilder;
+    use super::VecTree;
+    use super::VecTreeBuilder;
     use super::super::NodeId;
     use node::*;
 
     #[test]
     fn test_new() {
-        let tree: Tree<i32> = Tree::new();
+        let tree: VecTree<i32> = VecTree::new();
 
         assert_eq!(tree.root, None);
         assert_eq!(tree.nodes.len(), 0);
@@ -1501,7 +1509,7 @@ mod tree_tests {
 
     #[test]
     fn test_get() {
-        let tree = TreeBuilder::new().with_root(Node::new(5)).build();
+        let tree = VecTreeBuilder::new().with_root(Node::new(5)).build();
 
         let root_id = tree.root.clone().unwrap();
         let root = tree.get(&root_id).unwrap();
@@ -1511,7 +1519,7 @@ mod tree_tests {
 
     #[test]
     fn test_get_mut() {
-        let mut tree = TreeBuilder::new().with_root(Node::new(5)).build();
+        let mut tree = VecTreeBuilder::new().with_root(Node::new(5)).build();
 
         let root_id = tree.root.clone().unwrap();
 
@@ -1538,7 +1546,7 @@ mod tree_tests {
         let node_a = Node::new(a);
         let node_b = Node::new(b);
 
-        let mut tree = TreeBuilder::new().build();
+        let mut tree = VecTreeBuilder::new().build();
 
         let node_a_id = tree.insert(node_a, AsRoot).unwrap();
         let root_id = tree.root.clone().unwrap();
@@ -1569,7 +1577,7 @@ mod tree_tests {
 
     #[test]
     fn test_root_node_id() {
-        let tree = TreeBuilder::new().with_root(Node::new(5)).build();
+        let tree = VecTreeBuilder::new().with_root(Node::new(5)).build();
 
         let root_id = tree.root.clone().unwrap();
         let root_node_id = tree.root_node_id().unwrap();
@@ -1585,7 +1593,7 @@ mod tree_tests {
         let b = 2;
         let r = 5;
 
-        let mut tree = TreeBuilder::new().with_root(Node::new(r)).build();
+        let mut tree = VecTreeBuilder::new().with_root(Node::new(r)).build();
 
         let node_a = Node::new(a);
         let node_b = Node::new(b);
@@ -1620,7 +1628,7 @@ mod tree_tests {
         use InsertBehavior::*;
         use RemoveBehavior::*;
 
-        let mut tree = TreeBuilder::new().with_root(Node::new(5)).build();
+        let mut tree = VecTreeBuilder::new().with_root(Node::new(5)).build();
 
         let root_id = tree.root.clone().unwrap();
 
@@ -1656,7 +1664,7 @@ mod tree_tests {
         use InsertBehavior::*;
         use RemoveBehavior::*;
 
-        let mut tree = TreeBuilder::new().with_root(Node::new(5)).build();
+        let mut tree = VecTreeBuilder::new().with_root(Node::new(5)).build();
 
         let root_id = tree.root.clone().unwrap();
 
@@ -1687,13 +1695,13 @@ mod tree_tests {
     fn test_remove_root() {
         use RemoveBehavior::*;
 
-        let mut tree = TreeBuilder::new().with_root(Node::new(5)).build();
+        let mut tree = VecTreeBuilder::new().with_root(Node::new(5)).build();
 
         let root_id = tree.root.clone().unwrap();
         tree.remove_node(root_id.clone(), OrphanChildren).unwrap();
         assert_eq!(None, tree.root_node_id());
 
-        let mut tree = TreeBuilder::new().with_root(Node::new(5)).build();
+        let mut tree = VecTreeBuilder::new().with_root(Node::new(5)).build();
 
         let root_id = tree.root.clone().unwrap();
         tree.remove_node(root_id.clone(), LiftChildren).unwrap();
@@ -1705,7 +1713,7 @@ mod tree_tests {
         use InsertBehavior::*;
         use MoveBehavior::*;
 
-        let mut tree = Tree::new();
+        let mut tree = VecTree::new();
 
         let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
         let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
@@ -1782,7 +1790,7 @@ mod tree_tests {
 
         // test move with existing root
         {
-            let mut tree = Tree::new();
+            let mut tree = VecTree::new();
             let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
             let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
             let node_2_id = tree.insert(Node::new(2), UnderNode(&node_1_id)).unwrap();
@@ -1798,7 +1806,7 @@ mod tree_tests {
 
         // test move with existing root and with orphan
         {
-            let mut tree = Tree::new();
+            let mut tree = VecTree::new();
             let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
             let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
             let node_2_id = tree.insert(Node::new(2), UnderNode(&node_1_id)).unwrap();
@@ -1813,7 +1821,7 @@ mod tree_tests {
 
         // test move without root and with orphan
         {
-            let mut tree = Tree::new();
+            let mut tree = VecTree::new();
             let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
             let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
             let node_2_id = tree.insert(Node::new(2), UnderNode(&node_1_id)).unwrap();
@@ -1833,7 +1841,7 @@ mod tree_tests {
     fn test_find_subtree_root_below_upper_id() {
         use InsertBehavior::*;
 
-        let mut tree = Tree::new();
+        let mut tree = VecTree::new();
 
         let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
         let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
@@ -1869,7 +1877,7 @@ mod tree_tests {
 
         // test across swap
         {
-            let mut tree = Tree::new();
+            let mut tree = VecTree::new();
             let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
             let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
             let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
@@ -1889,7 +1897,7 @@ mod tree_tests {
 
         // test ordering via swap
         {
-            let mut tree = Tree::new();
+            let mut tree = VecTree::new();
             let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
             let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
             let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
@@ -1904,7 +1912,7 @@ mod tree_tests {
 
         // test swap down
         {
-            let mut tree = Tree::new();
+            let mut tree = VecTree::new();
             let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
             let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
             let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
@@ -1923,7 +1931,7 @@ mod tree_tests {
 
         // test swap down without root
         {
-            let mut tree = Tree::new();
+            let mut tree = VecTree::new();
             let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
             let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
             let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
@@ -1963,7 +1971,7 @@ mod tree_tests {
         //      |   |
         //      3   4
         {
-            let mut tree = Tree::new();
+            let mut tree = VecTree::new();
             let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
             let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
             let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
@@ -2002,7 +2010,7 @@ mod tree_tests {
         //      |   |
         //      1   4
         {
-            let mut tree = Tree::new();
+            let mut tree = VecTree::new();
             let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
             let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
             let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
@@ -2043,7 +2051,7 @@ mod tree_tests {
         //      |
         //      1
         {
-            let mut tree = Tree::new();
+            let mut tree = VecTree::new();
             let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
             let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
             let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
@@ -2085,7 +2093,7 @@ mod tree_tests {
         //      |   |
         //      3   0
         {
-            let mut tree = Tree::new();
+            let mut tree = VecTree::new();
             let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
             let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
             let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
@@ -2119,7 +2127,7 @@ mod tree_tests {
         //      |   |
         //      3   4
         {
-            let mut tree = Tree::new();
+            let mut tree = VecTree::new();
             let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
             let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
             let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
@@ -2153,7 +2161,7 @@ mod tree_tests {
         //      |   |
         //      3   4
         {
-            let mut tree = Tree::new();
+            let mut tree = VecTree::new();
             let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
             let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
             let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
@@ -2199,7 +2207,7 @@ mod tree_tests {
         //     /   / \
         //    5   3   4
         {
-            let mut tree = Tree::new();
+            let mut tree = VecTree::new();
             let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
             let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
             let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
@@ -2250,7 +2258,7 @@ mod tree_tests {
         //        |
         //        7
         {
-            let mut tree = Tree::new();
+            let mut tree = VecTree::new();
             let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
             let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
             let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
@@ -2301,7 +2309,7 @@ mod tree_tests {
         //      |
         //      7
         {
-            let mut tree = Tree::new();
+            let mut tree = VecTree::new();
             let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
             let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
             let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
@@ -2358,7 +2366,7 @@ mod tree_tests {
         //          |
         //          5
         {
-            let mut tree = Tree::new();
+            let mut tree = VecTree::new();
             let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
             let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
             let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
