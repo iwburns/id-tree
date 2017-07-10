@@ -456,45 +456,45 @@ impl<T> VecTree<T> {
         parent_id: &NodeId,
     ) -> Result<(), NodeIdError> {
         if let Some(subtree_root_id) =
-        self.find_subtree_root_between_ids(parent_id, node_id)
-            .cloned()
-            {
-                // node_id is above parent_id, this is a move "down" the tree.
+            self.find_subtree_root_between_ids(parent_id, node_id)
+                .cloned()
+        {
+            // node_id is above parent_id, this is a move "down" the tree.
 
-                let root = self.root.clone();
+            let root = self.root.clone();
 
-                if root.as_ref() == Some(node_id) {
-                    // we're moving the root down the tree.
-                    // also we know the root exists
+            if root.as_ref() == Some(node_id) {
+                // we're moving the root down the tree.
+                // also we know the root exists
 
-                    // detach subtree_root from node
-                    self.detach_from_parent(node_id, &subtree_root_id);
+                // detach subtree_root from node
+                self.detach_from_parent(node_id, &subtree_root_id);
 
-                    // set subtree_root as Tree root.
-                    self.clear_parent(&subtree_root_id);
-                    self.root = Some(subtree_root_id);
+                // set subtree_root as Tree root.
+                self.clear_parent(&subtree_root_id);
+                self.root = Some(subtree_root_id);
 
-                    self.set_as_parent_and_child(parent_id, node_id);
-
-                } else {
-                    // we're moving some other node down the tree.
-
-                    if let Some(old_parent) = self.get_unsafe(node_id).parent().cloned() {
-                        // detach from old parent
-                        self.detach_from_parent(&old_parent, node_id);
-                        // connect old parent and subtree root
-                        self.set_as_parent_and_child(&old_parent, &subtree_root_id);
-                    } else {
-                        // node is orphaned, need to set subtree_root's parent to None (same as node's)
-                        self.clear_parent(&subtree_root_id);
-                    }
-                    // detach subtree_root from node
-                    self.detach_from_parent(node_id, &subtree_root_id);
-
-                    self.set_as_parent_and_child(parent_id, node_id);
-                }
+                self.set_as_parent_and_child(parent_id, node_id);
 
             } else {
+                // we're moving some other node down the tree.
+
+                if let Some(old_parent) = self.get_unsafe(node_id).parent().cloned() {
+                    // detach from old parent
+                    self.detach_from_parent(&old_parent, node_id);
+                    // connect old parent and subtree root
+                    self.set_as_parent_and_child(&old_parent, &subtree_root_id);
+                } else {
+                    // node is orphaned, need to set subtree_root's parent to None (same as node's)
+                    self.clear_parent(&subtree_root_id);
+                }
+                // detach subtree_root from node
+                self.detach_from_parent(node_id, &subtree_root_id);
+
+                self.set_as_parent_and_child(parent_id, node_id);
+            }
+
+        } else {
             // this is a move "across" or "up" the tree.
 
             // detach from old parent
@@ -559,8 +559,8 @@ impl<T> VecTree<T> {
         node_id: &NodeId,
         mut compare: F,
     ) -> Result<(), NodeIdError>
-        where
-            F: FnMut(&VecNode<T>, &VecNode<T>) -> Ordering,
+    where
+        F: FnMut(&VecNode<T>, &VecNode<T>) -> Ordering,
     {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
@@ -603,8 +603,8 @@ impl<T> VecTree<T> {
     /// ```
     ///
     pub fn sort_children_by_data(&mut self, node_id: &NodeId) -> Result<(), NodeIdError>
-        where
-            T: Ord,
+    where
+        T: Ord,
     {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
@@ -652,9 +652,9 @@ impl<T> VecTree<T> {
         node_id: &NodeId,
         mut f: F,
     ) -> Result<(), NodeIdError>
-        where
-            B: Ord,
-            F: FnMut(&VecNode<T>) -> B,
+    where
+        B: Ord,
+        F: FnMut(&VecNode<T>) -> B,
     {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
