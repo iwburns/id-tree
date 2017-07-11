@@ -8,7 +8,10 @@ addons:
       - libcurl4-openssl-dev
       - libelf-dev
       - libdw-dev
-      - binutils-dev # optional: only required for the --verify flag of coveralls
+      - binutils-dev
+      - cmake
+    sources:
+      - kalakris-cmake
 
 rust:
   - stable
@@ -20,24 +23,18 @@ matrix:
 
 before_script:
   - |
-      pip install 'travis-cargo<0.2' --user &&
-      export PATH=$HOME/.local/bin:$PATH &&
-      export PATH="$PATH:$HOME/.cargo/bin" &&
+      cargo install cargo-travis &&
+      export PATH=$HOME/.cargo/bin:$PATH &&
       which rustfmt || cargo install rustfmt
 
 script:
   - |
       cargo fmt -- --write-mode=diff &&
-      travis-cargo build &&
-      travis-cargo test
+      cargo build &&
+      cargo test &&
+      cargo bench &&
+      cargo doc
 
 after_success:
-  # measure code coverage and upload to coveralls.io (the verify
-  # argument mitigates kcov crashes due to malformed debuginfo, at the
-  # cost of some speed <https://github.com/huonw/travis-cargo/issues/12>)
-  - travis-cargo coveralls --no-sudo --verify
-
-env:
-  global:
-    # override the default `--features unstable` used for the nightly branch (optional)
-    - TRAVIS_CARGO_NIGHTLY_FEATURE=""
+  # measure code coverage and upload to coveralls.io
+  - cargo coveralls
