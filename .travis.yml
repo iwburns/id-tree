@@ -22,10 +22,9 @@ matrix:
     - rust: nightly
 
 before_script:
-  - |
-      cargo install cargo-travis &&
-      export PATH=$HOME/.cargo/bin:$PATH &&
-      which rustfmt || cargo install rustfmt
+  - export PATH=$HOME/.cargo/bin:$PATH
+  - which cargo-coverage && which cargo-coveralls || cargo install cargo-travis
+  - which rustfmt || cargo install rustfmt
 
 script:
   - |
