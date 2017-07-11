@@ -23,7 +23,7 @@ matrix:
 
 before_script:
   - export PATH=$HOME/.cargo/bin:$PATH
-  - which cargo-travis || cargo install cargo-travis
+  - which cargo-coverage && which cargo-coveralls || cargo install cargo-travis
   - which rustfmt || cargo install rustfmt
 
 script:
