@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/iwburns/id-tree.svg?branch=master)](https://travis-ci.org/iwburns/id-tree)
 [![Build status](https://ci.appveyor.com/api/projects/status/rw42btsa1i7bqcx9/branch/master?svg=true)](https://ci.appveyor.com/project/iwburns/id-tree/branch/master)
+[![Coverage Status](https://coveralls.io/repos/github/iwburns/id-tree/badge.svg?branch=master)](https://coveralls.io/github/iwburns/id-tree?branch=master)
 [![Docs.rs](https://docs.rs/id_tree/badge.svg)](https://docs.rs/id_tree)
 [![Crates.io](https://img.shields.io/crates/v/id_tree.svg)](https://crates.io/crates/id_tree)
 [![](https://tokei.rs/b1/github/iwburns/id-tree)](https://github.com/iwburns/id-tree)
