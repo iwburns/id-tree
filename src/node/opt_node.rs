@@ -140,16 +140,13 @@ impl<T> OptNode<T> {
         self.prev_sibling = prev_sibling;
     }
 
-
     pub(crate) fn set_next_sibling(&mut self, next_sibling: Option<NodeId>) {
         self.next_sibling = next_sibling;
     }
 
-
     pub(crate) fn set_first_child(&mut self, first_child: Option<NodeId>) {
         self.first_child = first_child;
     }
-
 
     pub(crate) fn set_last_child(&mut self, last_child: Option<NodeId>) {
         self.last_child = last_child;
