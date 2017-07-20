@@ -1,6 +1,8 @@
 mod vec_tree;
+mod opt_tree;
 
 pub use self::vec_tree::*;
+pub use self::opt_tree::*;
 
 use std::cmp::Ordering;
 use behaviors::*;
