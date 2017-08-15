@@ -1,4 +1,5 @@
 use std::slice::Iter;
+use std::marker::PhantomData;
 use std::vec::IntoIter;
 use std::collections::VecDeque;
 
@@ -12,27 +13,31 @@ use NodeId;
 /// Iterates over the ancestor `Node`s of a given `Node` in the `Tree`.  Each call to `next` will
 /// return an immutable reference to the next `Node` up the `Tree`.
 ///
-pub struct Ancestors<'a, T: 'a> {
-    tree: &'a VecTree<T>,
+///
+pub struct Ancestors<'a, T: 'a, D> where T: Tree<'a, D> {
+    tree: &'a T,
     node_id: Option<NodeId>,
+    phantom: PhantomData<D>,
 }
 
-impl<'a, T> Ancestors<'a, T> {
-    pub(crate) fn new(tree: &'a VecTree<T>, node_id: NodeId) -> Ancestors<'a, T> {
+impl<'a, T, D> Ancestors<'a, T, D> where T: Tree<'a, D> {
+    pub(crate) fn new<'f>(tree: &'f T, node_id: NodeId) -> Ancestors<'a, T, D> where 'f: 'a {
         Ancestors {
             tree: tree,
             node_id: Some(node_id),
+            phantom: PhantomData,
         }
     }
 }
 
-impl<'a, T> Iterator for Ancestors<'a, T> {
-    type Item = &'a Node<T>;
+impl<'a, T: 'a, D: 'a> Iterator for Ancestors<'a, T, D> where T: Tree<'a, D>, T::NodeType: 'a {
+    type Item = &'a T::NodeType;
 
-    fn next(&mut self) -> Option<&'a Node<T>> {
+    fn next(&mut self) -> Option<Self::Item> {
         if let Some(current_id) = self.node_id.clone() {
-            if let Some(parent_id) = self.tree.get_unsafe(&current_id).parent() {
-                let parent = self.tree.get_unsafe(parent_id);
+            //todo: switch back to get_unsafe here
+            if let Some(parent_id) = self.tree.get(&current_id).unwrap().parent() {
+                let parent = self.tree.get(parent_id).unwrap();
                 self.node_id = Some(parent_id.clone());
                 return Some(parent);
             } else {
@@ -42,6 +47,7 @@ impl<'a, T> Iterator for Ancestors<'a, T> {
         None
     }
 }
+/*
 
 ///
 /// An Iterator over the ancestors of a `Node`.
@@ -493,3 +499,4 @@ mod tests {
         }
     }
 }
+*/

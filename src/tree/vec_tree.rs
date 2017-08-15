@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use std::marker::PhantomData;
 use snowflake::ProcessUniqueId;
 use ::*;
 
@@ -11,7 +12,7 @@ pub struct VecTreeBuilder<T> {
     swap_capacity: usize,
 }
 
-impl<T> VecTreeBuilder<T> {
+impl<'a, T> VecTreeBuilder<T> {
     ///
     /// Creates a new `VecTreeBuilder` with the default settings.
     ///
@@ -119,7 +120,7 @@ impl<T> VecTreeBuilder<T> {
     ///         .build();
     /// ```
     ///
-    pub fn build(mut self) -> VecTree<T> {
+    pub fn build(mut self) -> VecTree<'a, T> {
 
         let tree_id = ProcessUniqueId::new();
 
@@ -128,6 +129,7 @@ impl<T> VecTreeBuilder<T> {
             root: None,
             nodes: Vec::with_capacity(self.node_capacity),
             free_ids: Vec::with_capacity(self.swap_capacity),
+            phantom: PhantomData,
         };
 
         if self.root.is_some() {
@@ -156,24 +158,25 @@ impl<T> VecTreeBuilder<T> {
 /// **If this ever happens please report the issue.** `Panic`s are not expected behavior for this
 /// library, but they can happen due to bugs.
 ///
-pub struct VecTree<T> {
+pub struct VecTree<'a, T: 'a> {
     id: ProcessUniqueId,
     root: Option<NodeId>,
     pub(crate) nodes: Vec<Option<VecNode<T>>>,
     free_ids: Vec<NodeId>,
+    phantom: PhantomData<&'a T>,
 }
 
-impl<'a, T: 'a> Tree<'a, T> for VecTree<T> {
+impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
     type NodeType = VecNode<T>;
-    type AncestorsIter = Ancestors<'a, T>;
-    type AncestorIdsIter = AncestorIds<'a, T>;
-    type ChildrenIter = Children<'a, T>;
-    type ChildrenIdsIter = ChildrenIds<'a>;
-    type PreOrderIter = PreOrderTraversal<'a, T>;
-    type PostOrderIter = PostOrderTraversal<'a, T>;
-    type LevelOrderIter = LevelOrderTraversal<'a, T>;
+    type AncestorsIter = Ancestors<'a, VecTree<'a, T>, T>;
+//    type AncestorIdsIter = AncestorIds<'a, T>;
+//    type ChildrenIter = Children<'a, T>;
+//    type ChildrenIdsIter = ChildrenIds<'a>;
+//    type PreOrderIter = PreOrderTraversal<'a, T>;
+//    type PostOrderIter = PostOrderTraversal<'a, T>;
+//    type LevelOrderIter = LevelOrderTraversal<'a, T>;
 
-    fn new() -> VecTree<T> {
+    fn new() -> VecTree<'a, T> {
         VecTreeBuilder::new().build()
     }
 
@@ -348,7 +351,7 @@ impl<'a, T: 'a> Tree<'a, T> for VecTree<T> {
         self.root.as_ref()
     }
 
-    fn ancestors<'b>(&'a self, node_id: &'a NodeId) -> Result<Ancestors<T>, NodeIdError> {
+    fn ancestors<'b: 'a>(&'a self, node_id: &NodeId) -> Result<Ancestors<'b, VecTree<'a, T>, T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
@@ -359,83 +362,83 @@ impl<'a, T: 'a> Tree<'a, T> for VecTree<T> {
         Ok(Ancestors::new(self, node_id.clone()))
     }
 
-    fn ancestor_ids<'b>(&'a self, node_id: &'a NodeId) -> Result<AncestorIds<T>, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
-        if !is_valid {
-            return Err(error.expect(
-                "Tree::ancestor_ids: Missing an error value but found an invalid NodeId.",
-            ));
-        }
-
-        Ok(AncestorIds::new(self, node_id.clone()))
-    }
-
-    fn children<'b>(&'a self, node_id: &'a NodeId) -> Result<Children<T>, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
-        if !is_valid {
-            return Err(error.expect(
-                "Tree::children: Missing an error value but found an invalid NodeId.",
-            ));
-        }
-
-        Ok(Children::new(self, node_id.clone()))
-    }
-
-    fn children_ids<'b>(&'a self, node_id: &'a NodeId) -> Result<ChildrenIds, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
-        if !is_valid {
-            return Err(error.expect(
-                "Tree::children_ids: Missing an error value but found an invalid NodeId.",
-            ));
-        }
-
-        Ok(ChildrenIds::new(self, node_id.clone()))
-    }
-
-    fn traverse_pre_order<'b>(
-        &'a self,
-        node_id: &'a NodeId,
-    ) -> Result<PreOrderTraversal<T>, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
-        if !is_valid {
-            return Err(error.expect(
-                "Tree::traverse_pre_order: Missing an error value but found an invalid NodeId.",
-            ));
-        }
-
-        Ok(PreOrderTraversal::new(self, node_id.clone()))
-    }
-
-    fn traverse_post_order<'b>(
-        &'a self,
-        node_id: &'a NodeId,
-    ) -> Result<PostOrderTraversal<T>, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
-        if !is_valid {
-            return Err(error.expect(
-                "Tree::traverse_post_order: Missing an error value but found an invalid NodeId.",
-            ));
-        }
-
-        Ok(PostOrderTraversal::new(self, node_id.clone()))
-    }
-
-    fn traverse_level_order<'b>(
-        &'a self,
-        node_id: &'a NodeId,
-    ) -> Result<LevelOrderTraversal<T>, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
-        if !is_valid {
-            return Err(error.expect(
-                "Tree::traverse_level_order: Missing an error value but found an invalid NodeId.",
-            ));
-        }
-
-        Ok(LevelOrderTraversal::new(self, node_id.clone()))
-    }
+//    fn ancestor_ids<'b>(&'a self, node_id: &'a NodeId) -> Result<AncestorIds<T>, NodeIdError> {
+//        let (is_valid, error) = self.is_valid_node_id(node_id);
+//        if !is_valid {
+//            return Err(error.expect(
+//                "Tree::ancestor_ids: Missing an error value but found an invalid NodeId.",
+//            ));
+//        }
+//
+//        Ok(AncestorIds::new(self, node_id.clone()))
+//    }
+//
+//    fn children<'b>(&'a self, node_id: &'a NodeId) -> Result<Children<T>, NodeIdError> {
+//        let (is_valid, error) = self.is_valid_node_id(node_id);
+//        if !is_valid {
+//            return Err(error.expect(
+//                "Tree::children: Missing an error value but found an invalid NodeId.",
+//            ));
+//        }
+//
+//        Ok(Children::new(self, node_id.clone()))
+//    }
+//
+//    fn children_ids<'b>(&'a self, node_id: &'a NodeId) -> Result<ChildrenIds, NodeIdError> {
+//        let (is_valid, error) = self.is_valid_node_id(node_id);
+//        if !is_valid {
+//            return Err(error.expect(
+//                "Tree::children_ids: Missing an error value but found an invalid NodeId.",
+//            ));
+//        }
+//
+//        Ok(ChildrenIds::new(self, node_id.clone()))
+//    }
+//
+//    fn traverse_pre_order<'b>(
+//        &'a self,
+//        node_id: &'a NodeId,
+//    ) -> Result<PreOrderTraversal<T>, NodeIdError> {
+//        let (is_valid, error) = self.is_valid_node_id(node_id);
+//        if !is_valid {
+//            return Err(error.expect(
+//                "Tree::traverse_pre_order: Missing an error value but found an invalid NodeId.",
+//            ));
+//        }
+//
+//        Ok(PreOrderTraversal::new(self, node_id.clone()))
+//    }
+//
+//    fn traverse_post_order<'b>(
+//        &'a self,
+//        node_id: &'a NodeId,
+//    ) -> Result<PostOrderTraversal<T>, NodeIdError> {
+//        let (is_valid, error) = self.is_valid_node_id(node_id);
+//        if !is_valid {
+//            return Err(error.expect(
+//                "Tree::traverse_post_order: Missing an error value but found an invalid NodeId.",
+//            ));
+//        }
+//
+//        Ok(PostOrderTraversal::new(self, node_id.clone()))
+//    }
+//
+//    fn traverse_level_order<'b>(
+//        &'a self,
+//        node_id: &'a NodeId,
+//    ) -> Result<LevelOrderTraversal<T>, NodeIdError> {
+//        let (is_valid, error) = self.is_valid_node_id(node_id);
+//        if !is_valid {
+//            return Err(error.expect(
+//                "Tree::traverse_level_order: Missing an error value but found an invalid NodeId.",
+//            ));
+//        }
+//
+//        Ok(LevelOrderTraversal::new(self, node_id.clone()))
+//    }
 }
 
-impl<T> VecTree<T> {
+impl<'a, T> VecTree<'a, T> {
     ///
     /// Sets the root of the `Tree`.
     ///
@@ -905,11 +908,11 @@ impl<T> VecTree<T> {
         (true, None)
     }
 
-    fn find_subtree_root_between_ids<'a>(
-        &'a self,
-        lower_id: &'a NodeId,
-        upper_id: &'a NodeId,
-    ) -> Option<&'a NodeId> {
+    fn find_subtree_root_between_ids<'f>(
+        &'f self,
+        lower_id: &'f NodeId,
+        upper_id: &'f NodeId,
+    ) -> Option<&'f NodeId> {
         if let Some(lower_parent) = self.get_unsafe(lower_id).parent() {
             if lower_parent == upper_id {
                 return Some(lower_id);

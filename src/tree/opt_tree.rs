@@ -150,7 +150,90 @@ pub struct OptTree<T> {
     pub(crate) nodes: Vec<Option<OptNode<T>>>,
     free_ids: Vec<NodeId>,
 }
-//
+
 //impl<'a, T: 'a> Tree<'a, T> for OptTree<T> {
+//    type NodeType = OptNode<T>;
+//    type AncestorsIter = Ancestors<'a, T>;
+//    type AncestorIdsIter = AncestorIds<'a, T>;
+//    type ChildrenIter = Children<'a, T>;
+//    type ChildrenIdsIter = ChildrenIds<'a>;
+//    type PreOrderIter = PreOrderTraversal<'a, T>;
+//    type PostOrderIter = PostOrderTraversal<'a, T>;
+//    type LevelOrderIter = LevelOrderTraversal<'a, T>;
 //
+//    fn new() -> Self {
+//        unimplemented!()
+//    }
+//
+//    fn insert(&mut self, node: Self::NodeType, behavior: InsertBehavior) -> Result<NodeId, NodeIdError> {
+//        unimplemented!()
+//    }
+//
+//    fn get(&self, node_id: &NodeId) -> Result<&Self::NodeType, NodeIdError> {
+//        unimplemented!()
+//    }
+//
+//    fn get_mut(&mut self, node_id: &NodeId) -> Result<&mut Self::NodeType, NodeIdError> {
+//        unimplemented!()
+//    }
+//
+//    fn remove(&mut self, node_id: NodeId, behavior: RemoveBehavior) -> Result<Self::NodeType, NodeIdError> {
+//        unimplemented!()
+//    }
+//
+//    fn move_node(&mut self, node_id: &NodeId, behavior: MoveBehavior) -> Result<(), NodeIdError> {
+//        unimplemented!()
+//    }
+//
+//    fn sort_children_by<F>(&mut self, node_id: &NodeId, compare: F) -> Result<(), NodeIdError> where
+//        F: FnMut(&Self::NodeType, &Self::NodeType) -> Ordering {
+//        unimplemented!()
+//    }
+//
+//    fn sort_children_by_data(&mut self, node_id: &NodeId) -> Result<(), NodeIdError> where
+//        T: Ord {
+//        unimplemented!()
+//    }
+//
+//    fn sort_children_by_key<K, F>(&mut self, node_id: &NodeId, f: F) -> Result<(), NodeIdError> where
+//        K: Ord,
+//        F: FnMut(&Self::NodeType) -> K {
+//        unimplemented!()
+//    }
+//
+//    fn swap_nodes(&mut self, first_id: &NodeId, second_id: &NodeId, behavior: SwapBehavior) -> Result<(), NodeIdError> {
+//        unimplemented!()
+//    }
+//
+//    fn root_node_id(&self) -> Option<&NodeId> {
+//        unimplemented!()
+//    }
+//
+//    fn ancestors<'b>(&'a self, node_id: &'a NodeId) -> Result<Self::AncestorsIter, NodeIdError> {
+//        unimplemented!()
+//    }
+//
+//    fn ancestor_ids<'b>(&'a self, node_id: &'a NodeId) -> Result<Self::AncestorIdsIter, NodeIdError> {
+//        unimplemented!()
+//    }
+//
+//    fn children<'b>(&'a self, node_id: &'a NodeId) -> Result<Self::ChildrenIter, NodeIdError> {
+//        unimplemented!()
+//    }
+//
+//    fn children_ids<'b>(&'a self, node_id: &'a NodeId) -> Result<Self::ChildrenIdsIter, NodeIdError> {
+//        unimplemented!()
+//    }
+//
+//    fn traverse_pre_order<'b>(&'a self, node_id: &'a NodeId) -> Result<Self::PreOrderIter, NodeIdError> {
+//        unimplemented!()
+//    }
+//
+//    fn traverse_post_order<'b>(&'a self, node_id: &'a NodeId) -> Result<Self::PostOrderIter, NodeIdError> {
+//        unimplemented!()
+//    }
+//
+//    fn traverse_level_order<'b>(&'a self, node_id: &'a NodeId) -> Result<Self::LevelOrderIter, NodeIdError> {
+//        unimplemented!()
+//    }
 //}

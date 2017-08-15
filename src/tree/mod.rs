@@ -9,15 +9,17 @@ use behaviors::*;
 use NodeId;
 use NodeIdError;
 
-pub trait Tree<'a, T> {
-    type NodeType;
+use node::Node;
+
+pub trait Tree<'a, Data> {
+    type NodeType: Node<Data>;
     type AncestorsIter: Iterator;
-    type AncestorIdsIter: Iterator;
-    type ChildrenIter: Iterator;
-    type ChildrenIdsIter: Iterator;
-    type PreOrderIter: Iterator;
-    type PostOrderIter: Iterator;
-    type LevelOrderIter: Iterator;
+//    type AncestorIdsIter: Iterator;
+//    type ChildrenIter: Iterator;
+//    type ChildrenIdsIter: Iterator;
+//    type PreOrderIter: Iterator;
+//    type PostOrderIter: Iterator;
+//    type LevelOrderIter: Iterator;
 
     ///
     /// Creates a new `Tree` with default settings (no root `Node` and no space
@@ -218,7 +220,7 @@ pub trait Tree<'a, T> {
     ///
     fn sort_children_by_data(&mut self, node_id: &NodeId) -> Result<(), NodeIdError>
     where
-        T: Ord;
+        Data: Ord;
 
     ///
     /// Sorts the children of one node, in-place, using f to extract a key by which to order the
@@ -323,9 +325,9 @@ pub trait Tree<'a, T> {
     /// assert!(ancestors.next().is_none());
     /// ```
     ///
-    fn ancestors<'b>(&'a self, node_id: &'a NodeId) -> Result<Self::AncestorsIter, NodeIdError>;
+    fn ancestors<'b: 'a>(&'a self, node_id: &NodeId) -> Result<Self::AncestorsIter, NodeIdError>;
 
-    ///
+/*    ///
     /// Returns an `AncestorIds` iterator (or a `NodeIdError` if one occurred).
     ///
     /// Allows iteration over the ancestor `NodeId`s of a given `NodeId`.
@@ -344,10 +346,10 @@ pub trait Tree<'a, T> {
     /// assert!(ancestor_ids.next().is_none());
     /// ```
     ///
-    fn ancestor_ids<'b>(
-        &'a self,
-        node_id: &'a NodeId,
-    ) -> Result<Self::AncestorIdsIter, NodeIdError>;
+//    fn ancestor_ids<'b>(
+//        &'a self,
+//        node_id: &'a NodeId,
+//    ) -> Result<Self::AncestorIdsIter, NodeIdError>;
 
     ///
     /// Returns a `Children` iterator (or a `NodeIdError` if one occurred).
@@ -369,7 +371,7 @@ pub trait Tree<'a, T> {
     /// assert!(children.next().is_none());
     /// ```
     ///
-    fn children<'b>(&'a self, node_id: &'a NodeId) -> Result<Self::ChildrenIter, NodeIdError>;
+//    fn children<'b>(&'a self, node_id: &'a NodeId) -> Result<Self::ChildrenIter, NodeIdError>;
 
     ///
     /// Returns a `ChildrenIds` iterator (or a `NodeIdError` if one occurred).
@@ -390,10 +392,10 @@ pub trait Tree<'a, T> {
     /// assert!(children_ids.next().is_none());
     /// ```
     ///
-    fn children_ids<'b>(
-        &'a self,
-        node_id: &'a NodeId,
-    ) -> Result<Self::ChildrenIdsIter, NodeIdError>;
+//    fn children_ids<'b>(
+//        &'a self,
+//        node_id: &'a NodeId,
+//    ) -> Result<Self::ChildrenIdsIter, NodeIdError>;
 
     ///
     /// Returns a `PreOrderTraversal` iterator (or a `NodeIdError` if one occurred).
@@ -416,10 +418,10 @@ pub trait Tree<'a, T> {
     /// assert!(nodes.next().is_none());
     /// ```
     ///
-    fn traverse_pre_order<'b>(
-        &'a self,
-        node_id: &'a NodeId,
-    ) -> Result<Self::PreOrderIter, NodeIdError>;
+//    fn traverse_pre_order<'b>(
+//        &'a self,
+//        node_id: &'a NodeId,
+//    ) -> Result<Self::PreOrderIter, NodeIdError>;
 
     ///
     /// Returns a `PostOrderTraversal` iterator (or a `NodeIdError` if one occurred).
@@ -442,10 +444,10 @@ pub trait Tree<'a, T> {
     /// assert!(nodes.next().is_none());
     /// ```
     ///
-    fn traverse_post_order<'b>(
-        &'a self,
-        node_id: &'a NodeId,
-    ) -> Result<Self::PostOrderIter, NodeIdError>;
+//    fn traverse_post_order<'b>(
+//        &'a self,
+//        node_id: &'a NodeId,
+//    ) -> Result<Self::PostOrderIter, NodeIdError>;
 
     ///
     /// Returns a `LevelOrderTraversal` iterator (or a `NodeIdError` if one occurred).
@@ -468,8 +470,9 @@ pub trait Tree<'a, T> {
     /// assert!(nodes.next().is_none());
     /// ```
     ///
-    fn traverse_level_order<'b>(
-        &'a self,
-        node_id: &'a NodeId,
-    ) -> Result<Self::LevelOrderIter, NodeIdError>;
+    */
+//    fn traverse_level_order<'b>(
+//        &'a self,
+//        node_id: &'a NodeId,
+//    ) -> Result<Self::LevelOrderIter, NodeIdError>;
 }
