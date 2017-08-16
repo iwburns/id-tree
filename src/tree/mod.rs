@@ -325,7 +325,7 @@ pub trait Tree<'a, Data> {
     /// assert!(ancestors.next().is_none());
     /// ```
     ///
-    fn ancestors<'b: 'a>(&'a self, node_id: &NodeId) -> Result<Self::AncestorsIter, NodeIdError>;
+    fn ancestors(&'a self, node_id: &NodeId) -> Result<Self::AncestorsIter, NodeIdError>;
 
 /*    ///
     /// Returns an `AncestorIds` iterator (or a `NodeIdError` if one occurred).

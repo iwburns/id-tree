@@ -1,8 +1,8 @@
-//extern crate id_tree;
-//
-//use id_tree::*;
-//
-//fn main() {
+extern crate id_tree;
+
+use id_tree::*;
+
+fn main() {
 //    use id_tree::InsertBehavior::*;
 //
 //    //      0
@@ -32,4 +32,4 @@
 //    }
 //
 //    println!();
-//}
+}

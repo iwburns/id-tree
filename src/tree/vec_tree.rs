@@ -351,7 +351,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
         self.root.as_ref()
     }
 
-    fn ancestors<'b: 'a>(&'a self, node_id: &NodeId) -> Result<Ancestors<'b, VecTree<'a, T>, T>, NodeIdError> {
+    fn ancestors(&'a self, node_id: &NodeId) -> Result<Ancestors<VecTree<'a, T>, T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
