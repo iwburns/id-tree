@@ -47,33 +47,35 @@ impl<'a, T: 'a, D: 'a> Iterator for Ancestors<'a, T, D> where T: Tree<'a, D>, T:
         None
     }
 }
-/*
 
 ///
 /// An Iterator over the ancestors of a `Node`.
 ///
 /// Iterates over `NodeId`s instead of over the `Node`s themselves.
 ///
-pub struct AncestorIds<'a, T: 'a> {
-    tree: &'a VecTree<T>,
+pub struct AncestorIds<'a, T: 'a, D> where T: Tree<'a, D> {
+    tree: &'a T,
     node_id: Option<NodeId>,
+    phantom: PhantomData<D>,
 }
 
-impl<'a, T> AncestorIds<'a, T> {
-    pub(crate) fn new(tree: &'a VecTree<T>, node_id: NodeId) -> AncestorIds<'a, T> {
+impl<'a, T, D> AncestorIds<'a, T, D> where T: Tree<'a, D> {
+    pub(crate) fn new<'f>(tree: &'f T, node_id: NodeId) -> AncestorIds<'a, T, D> where 'f: 'a {
         AncestorIds {
             tree: tree,
             node_id: Some(node_id),
+            phantom: PhantomData,
         }
     }
 }
 
-impl<'a, T> Iterator for AncestorIds<'a, T> {
+impl<'a, T: 'a, D: 'a> Iterator for AncestorIds<'a, T, D> where T: Tree<'a, D>, T::NodeType: 'a {
     type Item = &'a NodeId;
 
     fn next(&mut self) -> Option<&'a NodeId> {
         if let Some(current_id) = self.node_id.clone() {
-            if let Some(parent_id) = self.tree.get_unsafe(&current_id).parent() {
+            //todo: switch back to get_unsafe here
+            if let Some(parent_id) = self.tree.get(&current_id).unwrap().parent() {
                 self.node_id = Some(parent_id.clone());
                 return Some(parent_id);
             } else {
@@ -83,7 +85,7 @@ impl<'a, T> Iterator for AncestorIds<'a, T> {
         None
     }
 }
-
+/*
 ///
 /// An Iterator over the children of a `Node`.
 ///

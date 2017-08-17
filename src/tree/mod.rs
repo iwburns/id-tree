@@ -14,7 +14,7 @@ use node::Node;
 pub trait Tree<'a, Data> {
     type NodeType: Node<Data>;
     type AncestorsIter: Iterator;
-//    type AncestorIdsIter: Iterator;
+    type AncestorIdsIter: Iterator;
 //    type ChildrenIter: Iterator;
 //    type ChildrenIdsIter: Iterator;
 //    type PreOrderIter: Iterator;
@@ -327,7 +327,7 @@ pub trait Tree<'a, Data> {
     ///
     fn ancestors(&'a self, node_id: &NodeId) -> Result<Self::AncestorsIter, NodeIdError>;
 
-/*    ///
+    ///
     /// Returns an `AncestorIds` iterator (or a `NodeIdError` if one occurred).
     ///
     /// Allows iteration over the ancestor `NodeId`s of a given `NodeId`.
@@ -346,11 +346,11 @@ pub trait Tree<'a, Data> {
     /// assert!(ancestor_ids.next().is_none());
     /// ```
     ///
-//    fn ancestor_ids<'b>(
-//        &'a self,
-//        node_id: &'a NodeId,
-//    ) -> Result<Self::AncestorIdsIter, NodeIdError>;
-
+    fn ancestor_ids(
+        &'a self,
+        node_id: &NodeId,
+    ) -> Result<Self::AncestorIdsIter, NodeIdError>;
+/*
     ///
     /// Returns a `Children` iterator (or a `NodeIdError` if one occurred).
     ///
@@ -470,9 +470,9 @@ pub trait Tree<'a, Data> {
     /// assert!(nodes.next().is_none());
     /// ```
     ///
-    */
-//    fn traverse_level_order<'b>(
-//        &'a self,
-//        node_id: &'a NodeId,
-//    ) -> Result<Self::LevelOrderIter, NodeIdError>;
+*/
+    //    fn traverse_level_order<'b>(
+    //        &'a self,
+    //        node_id: &'a NodeId,
+    //    ) -> Result<Self::LevelOrderIter, NodeIdError>;
 }

@@ -82,7 +82,7 @@ pub use error::NodeIdError;
 pub use node::*;
 pub use tree::*;
 pub use iterators::Ancestors;
-//pub use iterators::AncestorIds;
+pub use iterators::AncestorIds;
 //pub use iterators::Children;
 //pub use iterators::ChildrenIds;
 //pub use iterators::PreOrderTraversal;

@@ -169,12 +169,12 @@ pub struct VecTree<'a, T: 'a> {
 impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
     type NodeType = VecNode<T>;
     type AncestorsIter = Ancestors<'a, VecTree<'a, T>, T>;
-//    type AncestorIdsIter = AncestorIds<'a, T>;
-//    type ChildrenIter = Children<'a, T>;
-//    type ChildrenIdsIter = ChildrenIds<'a>;
-//    type PreOrderIter = PreOrderTraversal<'a, T>;
-//    type PostOrderIter = PostOrderTraversal<'a, T>;
-//    type LevelOrderIter = LevelOrderTraversal<'a, T>;
+    type AncestorIdsIter = AncestorIds<'a, VecTree<'a, T>, T>;
+    //    type ChildrenIter = Children<'a, T>;
+    //    type ChildrenIdsIter = ChildrenIds<'a>;
+    //    type PreOrderIter = PreOrderTraversal<'a, T>;
+    //    type PostOrderIter = PostOrderTraversal<'a, T>;
+    //    type LevelOrderIter = LevelOrderTraversal<'a, T>;
 
     fn new() -> VecTree<'a, T> {
         VecTreeBuilder::new().build()
@@ -362,16 +362,16 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
         Ok(Ancestors::new(self, node_id.clone()))
     }
 
-//    fn ancestor_ids<'b>(&'a self, node_id: &'a NodeId) -> Result<AncestorIds<T>, NodeIdError> {
-//        let (is_valid, error) = self.is_valid_node_id(node_id);
-//        if !is_valid {
-//            return Err(error.expect(
-//                "Tree::ancestor_ids: Missing an error value but found an invalid NodeId.",
-//            ));
-//        }
-//
-//        Ok(AncestorIds::new(self, node_id.clone()))
-//    }
+    fn ancestor_ids(&'a self, node_id: &NodeId) -> Result<AncestorIds<VecTree<'a, T>, T>, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::ancestor_ids: Missing an error value but found an invalid NodeId.",
+            ));
+        }
+
+        Ok(AncestorIds::new(self, node_id.clone()))
+    }
 //
 //    fn children<'b>(&'a self, node_id: &'a NodeId) -> Result<Children<T>, NodeIdError> {
 //        let (is_valid, error) = self.is_valid_node_id(node_id);
