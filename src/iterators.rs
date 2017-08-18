@@ -244,37 +244,36 @@ impl<'a, T> Iterator for VecPostOrderTraversal<'a, T> {
 
 //todo: add an OptPostOrderTraversal iterator
 
-/*
 ///
-/// An Iterator over the sub-tree relative to a given `Node`.
+/// An Iterator over the sub-tree relative to a given `VecNode`.
 ///
-/// Iterates over all of the `Node`s in the sub-tree of a given `Node` in the `Tree`.  Each call to
-/// `next` will return an immutable reference to the next `Node` in Level-Order Traversal order.
+/// Iterates over all of the `VecNode`s in the sub-tree of a given `VecNode` in the `VecTree`.  Each call to
+/// `next` will return an immutable reference to the next `VecNode` in Level-Order Traversal order.
 ///
-pub struct LevelOrderTraversal<'a, T: 'a> {
-    tree: &'a VecTree<T>,
+pub struct VecLevelOrderTraversal<'a, T: 'a> {
+    tree: &'a VecTree<'a, T>,
     data: VecDeque<NodeId>,
 }
 
-impl<'a, T> LevelOrderTraversal<'a, T> {
-    pub(crate) fn new(tree: &'a VecTree<T>, node_id: NodeId) -> LevelOrderTraversal<T> {
+impl<'a, T> VecLevelOrderTraversal<'a, T> {
+    pub(crate) fn new(tree: &'a VecTree<'a, T>, node_id: NodeId) -> VecLevelOrderTraversal<T> {
 
         // over allocating, but all at once instead of re-sizing and re-allocating as we go
         let mut data = VecDeque::with_capacity(tree.nodes.capacity());
 
         data.push_back(node_id);
 
-        LevelOrderTraversal {
+        VecLevelOrderTraversal {
             tree: tree,
             data: data,
         }
     }
 }
 
-impl<'a, T> Iterator for LevelOrderTraversal<'a, T> {
-    type Item = &'a Node<T>;
+impl<'a, T> Iterator for VecLevelOrderTraversal<'a, T> {
+    type Item = &'a VecNode<T>;
 
-    fn next(&mut self) -> Option<&'a Node<T>> {
+    fn next(&mut self) -> Option<Self::Item> {
         let id = self.data.pop_front();
 
         if let Some(ref node_id_ref) = id {
@@ -291,6 +290,8 @@ impl<'a, T> Iterator for LevelOrderTraversal<'a, T> {
         None
     }
 }
+
+//todo: add an OptLevelOrderTraversal iterator
 
 #[cfg(test)]
 mod tests {
@@ -510,4 +511,4 @@ mod tests {
         }
     }
 }
-*/
+

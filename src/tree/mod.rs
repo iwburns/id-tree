@@ -19,7 +19,7 @@ pub trait Tree<'a, Data> {
     type ChildrenIdsIter: Iterator;
     type PreOrderIter: Iterator;
     type PostOrderIter: Iterator;
-//    type LevelOrderIter: Iterator;
+    type LevelOrderIter: Iterator;
 
     ///
     /// Creates a new `Tree` with default settings (no root `Node` and no space
@@ -449,7 +449,7 @@ pub trait Tree<'a, Data> {
         &'a self,
         node_id: &NodeId,
     ) -> Result<Self::PostOrderIter, NodeIdError>;
-/*
+
     ///
     /// Returns a `LevelOrderTraversal` iterator (or a `NodeIdError` if one occurred).
     ///
@@ -471,9 +471,8 @@ pub trait Tree<'a, Data> {
     /// assert!(nodes.next().is_none());
     /// ```
     ///
-*/
-    //    fn traverse_level_order<'b>(
-    //        &'a self,
-    //        node_id: &'a NodeId,
-    //    ) -> Result<Self::LevelOrderIter, NodeIdError>;
+    fn traverse_level_order(
+        &'a self,
+        node_id: &NodeId,
+    ) -> Result<Self::LevelOrderIter, NodeIdError>;
 }

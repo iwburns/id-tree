@@ -174,7 +174,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
     type ChildrenIdsIter = VecChildrenIds<'a>;
     type PreOrderIter = VecPreOrderTraversal<'a, T>;
     type PostOrderIter = VecPostOrderTraversal<'a, T>;
-    //    type LevelOrderIter = LevelOrderTraversal<'a, T>;
+    type LevelOrderIter = VecLevelOrderTraversal<'a, T>;
 
     fn new() -> VecTree<'a, T> {
         VecTreeBuilder::new().build()
@@ -422,20 +422,20 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
 
         Ok(VecPostOrderTraversal::new(self, node_id.clone()))
     }
-//
-//    fn traverse_level_order<'b>(
-//        &'a self,
-//        node_id: &'a NodeId,
-//    ) -> Result<LevelOrderTraversal<T>, NodeIdError> {
-//        let (is_valid, error) = self.is_valid_node_id(node_id);
-//        if !is_valid {
-//            return Err(error.expect(
-//                "VecTree::traverse_level_order: Missing an error value but found an invalid NodeId.",
-//            ));
-//        }
-//
-//        Ok(LevelOrderTraversal::new(self, node_id.clone()))
-//    }
+
+    fn traverse_level_order(
+        &'a self,
+        node_id: &NodeId,
+    ) -> Result<Self::LevelOrderIter, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "VecTree::traverse_level_order: Missing an error value but found an invalid NodeId.",
+            ));
+        }
+
+        Ok(VecLevelOrderTraversal::new(self, node_id.clone()))
+    }
 }
 
 impl<'a, T> VecTree<'a, T> {

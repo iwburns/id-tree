@@ -93,6 +93,7 @@ pub use iterators::VecPreOrderTraversal;
 //pub use iterators::PreOrderTraversal;
 pub use iterators::VecPostOrderTraversal;
 //pub use iterators::PostOrderTraversal;
+pub use iterators::VecLevelOrderTraversal;
 //pub use iterators::LevelOrderTraversal;
 
 ///
