@@ -346,10 +346,7 @@ pub trait Tree<'a, Data> {
     /// assert!(ancestor_ids.next().is_none());
     /// ```
     ///
-    fn ancestor_ids(
-        &'a self,
-        node_id: &NodeId,
-    ) -> Result<Self::AncestorIdsIter, NodeIdError>;
+    fn ancestor_ids(&'a self, node_id: &NodeId) -> Result<Self::AncestorIdsIter, NodeIdError>;
 
     ///
     /// Returns a `Children` iterator (or a `NodeIdError` if one occurred).
@@ -393,10 +390,7 @@ pub trait Tree<'a, Data> {
     /// assert!(children_ids.next().is_none());
     /// ```
     ///
-    fn children_ids(
-        &'a self,
-        node_id: &NodeId,
-    ) -> Result<Self::ChildrenIdsIter, NodeIdError>;
+    fn children_ids(&'a self, node_id: &NodeId) -> Result<Self::ChildrenIdsIter, NodeIdError>;
 
     ///
     /// Returns a `PreOrderTraversal` iterator (or a `NodeIdError` if one occurred).
@@ -419,10 +413,7 @@ pub trait Tree<'a, Data> {
     /// assert!(nodes.next().is_none());
     /// ```
     ///
-    fn traverse_pre_order(
-        &'a self,
-        node_id: &NodeId,
-    ) -> Result<Self::PreOrderIter, NodeIdError>;
+    fn traverse_pre_order(&'a self, node_id: &NodeId) -> Result<Self::PreOrderIter, NodeIdError>;
 
     ///
     /// Returns a `PostOrderTraversal` iterator (or a `NodeIdError` if one occurred).
@@ -445,10 +436,7 @@ pub trait Tree<'a, Data> {
     /// assert!(nodes.next().is_none());
     /// ```
     ///
-    fn traverse_post_order(
-        &'a self,
-        node_id: &NodeId,
-    ) -> Result<Self::PostOrderIter, NodeIdError>;
+    fn traverse_post_order(&'a self, node_id: &NodeId) -> Result<Self::PostOrderIter, NodeIdError>;
 
     ///
     /// Returns a `LevelOrderTraversal` iterator (or a `NodeIdError` if one occurred).

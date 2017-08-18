@@ -395,10 +395,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
         Ok(VecChildrenIds::new(self, node_id.clone()))
     }
 
-    fn traverse_pre_order(
-        &'a self,
-        node_id: &NodeId,
-    ) -> Result<Self::PreOrderIter, NodeIdError> {
+    fn traverse_pre_order(&'a self, node_id: &NodeId) -> Result<Self::PreOrderIter, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
@@ -409,10 +406,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
         Ok(VecPreOrderTraversal::new(self, node_id.clone()))
     }
 
-    fn traverse_post_order(
-        &'a self,
-        node_id: &NodeId,
-    ) -> Result<Self::PostOrderIter, NodeIdError> {
+    fn traverse_post_order(&'a self, node_id: &NodeId) -> Result<Self::PostOrderIter, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(

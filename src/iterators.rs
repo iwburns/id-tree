@@ -14,14 +14,23 @@ use NodeId;
 /// return an immutable reference to the next `Node` up the `Tree`.
 ///
 ///
-pub struct Ancestors<'a, T: 'a, D> where T: Tree<'a, D> {
+pub struct Ancestors<'a, T: 'a, D>
+where
+    T: Tree<'a, D>,
+{
     tree: &'a T,
     node_id: Option<NodeId>,
     phantom: PhantomData<D>,
 }
 
-impl<'a, T, D> Ancestors<'a, T, D> where T: Tree<'a, D> {
-    pub(crate) fn new<'f>(tree: &'f T, node_id: NodeId) -> Ancestors<'a, T, D> where 'f: 'a {
+impl<'a, T, D> Ancestors<'a, T, D>
+where
+    T: Tree<'a, D>,
+{
+    pub(crate) fn new<'f>(tree: &'f T, node_id: NodeId) -> Ancestors<'a, T, D>
+    where
+        'f: 'a,
+    {
         Ancestors {
             tree: tree,
             node_id: Some(node_id),
@@ -30,7 +39,11 @@ impl<'a, T, D> Ancestors<'a, T, D> where T: Tree<'a, D> {
     }
 }
 
-impl<'a, T: 'a, D: 'a> Iterator for Ancestors<'a, T, D> where T: Tree<'a, D>, T::NodeType: 'a {
+impl<'a, T: 'a, D: 'a> Iterator for Ancestors<'a, T, D>
+where
+    T: Tree<'a, D>,
+    T::NodeType: 'a,
+{
     type Item = &'a T::NodeType;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -53,14 +66,23 @@ impl<'a, T: 'a, D: 'a> Iterator for Ancestors<'a, T, D> where T: Tree<'a, D>, T:
 ///
 /// Iterates over `NodeId`s instead of over the `Node`s themselves.
 ///
-pub struct AncestorIds<'a, T: 'a, D> where T: Tree<'a, D> {
+pub struct AncestorIds<'a, T: 'a, D>
+where
+    T: Tree<'a, D>,
+{
     tree: &'a T,
     node_id: Option<NodeId>,
     phantom: PhantomData<D>,
 }
 
-impl<'a, T, D> AncestorIds<'a, T, D> where T: Tree<'a, D> {
-    pub(crate) fn new<'f>(tree: &'f T, node_id: NodeId) -> AncestorIds<'a, T, D> where 'f: 'a {
+impl<'a, T, D> AncestorIds<'a, T, D>
+where
+    T: Tree<'a, D>,
+{
+    pub(crate) fn new<'f>(tree: &'f T, node_id: NodeId) -> AncestorIds<'a, T, D>
+    where
+        'f: 'a,
+    {
         AncestorIds {
             tree: tree,
             node_id: Some(node_id),
@@ -69,7 +91,11 @@ impl<'a, T, D> AncestorIds<'a, T, D> where T: Tree<'a, D> {
     }
 }
 
-impl<'a, T: 'a, D: 'a> Iterator for AncestorIds<'a, T, D> where T: Tree<'a, D>, T::NodeType: 'a {
+impl<'a, T: 'a, D: 'a> Iterator for AncestorIds<'a, T, D>
+where
+    T: Tree<'a, D>,
+    T::NodeType: 'a,
+{
     type Item = &'a NodeId;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -511,4 +537,3 @@ mod tests {
         }
     }
 }
-
