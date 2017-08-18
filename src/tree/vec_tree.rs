@@ -408,20 +408,20 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
 
         Ok(VecPreOrderTraversal::new(self, node_id.clone()))
     }
-//
-//    fn traverse_post_order<'b>(
-//        &'a self,
-//        node_id: &'a NodeId,
-//    ) -> Result<PostOrderTraversal<T>, NodeIdError> {
-//        let (is_valid, error) = self.is_valid_node_id(node_id);
-//        if !is_valid {
-//            return Err(error.expect(
-//                "VecTree::traverse_post_order: Missing an error value but found an invalid NodeId.",
-//            ));
-//        }
-//
-//        Ok(PostOrderTraversal::new(self, node_id.clone()))
-//    }
+
+    fn traverse_post_order(
+        &'a self,
+        node_id: &NodeId,
+    ) -> Result<Self::PostOrderIter, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "VecTree::traverse_post_order: Missing an error value but found an invalid NodeId.",
+            ));
+        }
+
+        Ok(VecPostOrderTraversal::new(self, node_id.clone()))
+    }
 //
 //    fn traverse_level_order<'b>(
 //        &'a self,
