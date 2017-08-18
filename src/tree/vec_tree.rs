@@ -173,7 +173,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
     type ChildrenIter = VecChildren<'a, T>;
     type ChildrenIdsIter = VecChildrenIds<'a>;
     type PreOrderIter = VecPreOrderTraversal<'a, T>;
-    //    type PostOrderIter = PostOrderTraversal<'a, T>;
+    type PostOrderIter = VecPostOrderTraversal<'a, T>;
     //    type LevelOrderIter = LevelOrderTraversal<'a, T>;
 
     fn new() -> VecTree<'a, T> {

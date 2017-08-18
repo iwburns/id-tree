@@ -72,7 +72,7 @@ impl<'a, T, D> AncestorIds<'a, T, D> where T: Tree<'a, D> {
 impl<'a, T: 'a, D: 'a> Iterator for AncestorIds<'a, T, D> where T: Tree<'a, D>, T::NodeType: 'a {
     type Item = &'a NodeId;
 
-    fn next(&mut self) -> Option<&'a NodeId> {
+    fn next(&mut self) -> Option<Self::Item> {
         if let Some(current_id) = self.node_id.clone() {
             //todo: switch back to get_unsafe here
             if let Some(parent_id) = self.tree.get(&current_id).unwrap().parent() {
@@ -109,7 +109,7 @@ impl<'a, D> VecChildren<'a, D> {
 impl<'a, D> Iterator for VecChildren<'a, D> {
     type Item = &'a VecNode<D>;
 
-    fn next(&mut self) -> Option<&'a VecNode<D>> {
+    fn next(&mut self) -> Option<Self::Item> {
         if let Some(next_child_id) = self.child_ids.next() {
             return Some(self.tree.get_unsafe(next_child_id));
         }
@@ -137,7 +137,7 @@ impl<'a> VecChildrenIds<'a> {
 impl<'a> Iterator for VecChildrenIds<'a> {
     type Item = &'a NodeId;
 
-    fn next(&mut self) -> Option<&'a NodeId> {
+    fn next(&mut self) -> Option<Self::Item> {
         self.child_ids.next()
     }
 }
@@ -145,10 +145,10 @@ impl<'a> Iterator for VecChildrenIds<'a> {
 //todo: add an OptChildrenIds iterator
 
 ///
-/// An Iterator over the sub-tree relative to a given `Node`.
+/// An Iterator over the sub-tree relative to a given `VecNode`.
 ///
-/// Iterates over all of the `Node`s in the sub-tree of a given `Node` in the `Tree`.  Each call to
-/// `next` will return an immutable reference to the next `Node` in Pre-Order Traversal order.
+/// Iterates over all of the `VecNode`s in the sub-tree of a given `VecNode` in the `VecTree`.  Each call to
+/// `next` will return an immutable reference to the next `VecNode` in Pre-Order Traversal order.
 ///
 pub struct VecPreOrderTraversal<'a, T: 'a> {
     tree: &'a VecTree<'a, T>,
@@ -171,9 +171,9 @@ impl<'a, T> VecPreOrderTraversal<'a, T> {
 }
 
 impl<'a, T> Iterator for VecPreOrderTraversal<'a, T> {
-    type Item = &'a Node<T>;
+    type Item = &'a VecNode<T>;
 
-    fn next(&mut self) -> Option<&'a Node<T>> {
+    fn next(&mut self) -> Option<Self::Item> {
         let id = self.data.pop_front();
 
         if let Some(ref node_id) = id {
@@ -192,27 +192,26 @@ impl<'a, T> Iterator for VecPreOrderTraversal<'a, T> {
 
 //todo: add an OptPreOrderTraversal iterator
 
-/*
 ///
-/// An Iterator over the sub-tree relative to a given `Node`.
+/// An Iterator over the sub-tree relative to a given `VecNode`.
 ///
-/// Iterates over all of the `Node`s in the sub-tree of a given `Node` in the `Tree`.  Each call to
-/// `next` will return an immutable reference to the next `Node` in Post-Order Traversal order.
+/// Iterates over all of the `VecNode`s in the sub-tree of a given `VecNode` in the `VecTree`.  Each call to
+/// `next` will return an immutable reference to the next `VecNode` in Post-Order Traversal order.
 ///
-pub struct PostOrderTraversal<'a, T: 'a> {
-    tree: &'a VecTree<T>,
+pub struct VecPostOrderTraversal<'a, T: 'a> {
+    tree: &'a VecTree<'a, T>,
     ids: IntoIter<NodeId>,
 }
 
-impl<'a, T> PostOrderTraversal<'a, T> {
-    pub(crate) fn new(tree: &'a VecTree<T>, node_id: NodeId) -> PostOrderTraversal<T> {
+impl<'a, T> VecPostOrderTraversal<'a, T> {
+    pub(crate) fn new(tree: &'a VecTree<'a, T>, node_id: NodeId) -> VecPostOrderTraversal<'a, T> {
 
         // over allocating, but all at once instead of re-sizing and re-allocating as we go
         let mut ids = Vec::with_capacity(tree.nodes.capacity());
 
-        PostOrderTraversal::process_nodes(node_id, tree, &mut ids);
+        VecPostOrderTraversal::process_nodes(node_id, tree, &mut ids);
 
-        PostOrderTraversal {
+        VecPostOrderTraversal {
             tree: tree,
             ids: ids.into_iter(),
         }
@@ -222,17 +221,17 @@ impl<'a, T> PostOrderTraversal<'a, T> {
         let node = tree.get_unsafe(&starting_id);
 
         for child_id in node.children() {
-            PostOrderTraversal::process_nodes(child_id.clone(), tree, ids);
+            VecPostOrderTraversal::process_nodes(child_id.clone(), tree, ids);
         }
 
         ids.push(starting_id);
     }
 }
 
-impl<'a, T> Iterator for PostOrderTraversal<'a, T> {
-    type Item = &'a Node<T>;
+impl<'a, T> Iterator for VecPostOrderTraversal<'a, T> {
+    type Item = &'a VecNode<T>;
 
-    fn next(&mut self) -> Option<&'a Node<T>> {
+    fn next(&mut self) -> Option<Self::Item> {
         let id = self.ids.next();
 
         if let Some(ref node_id) = id {
@@ -243,6 +242,9 @@ impl<'a, T> Iterator for PostOrderTraversal<'a, T> {
     }
 }
 
+//todo: add an OptPostOrderTraversal iterator
+
+/*
 ///
 /// An Iterator over the sub-tree relative to a given `Node`.
 ///

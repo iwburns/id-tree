@@ -18,7 +18,7 @@ pub trait Tree<'a, Data> {
     type ChildrenIter: Iterator;
     type ChildrenIdsIter: Iterator;
     type PreOrderIter: Iterator;
-//    type PostOrderIter: Iterator;
+    type PostOrderIter: Iterator;
 //    type LevelOrderIter: Iterator;
 
     ///
