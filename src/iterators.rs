@@ -85,31 +85,31 @@ impl<'a, T: 'a, D: 'a> Iterator for AncestorIds<'a, T, D> where T: Tree<'a, D>, 
         None
     }
 }
-/*
+
 ///
-/// An Iterator over the children of a `Node`.
+/// An Iterator over the children of a `VecNode`.
 ///
-/// Iterates over the child `Node`s of a given `Node` in the `Tree`.  Each call to `next` will
-/// return an immutable reference to the next child `Node`.
+/// Iterates over the child `VecNode`s of a given `VecNode` in the `VecTree`.  Each call to `next`
+/// will return an immutable reference to the next child `VecNode`.
 ///
-pub struct Children<'a, T: 'a> {
-    tree: &'a VecTree<T>,
+pub struct VecChildren<'a, D: 'a> {
+    tree: &'a VecTree<'a, D>,
     child_ids: Iter<'a, NodeId>,
 }
 
-impl<'a, T> Children<'a, T> {
-    pub(crate) fn new(tree: &'a VecTree<T>, node_id: NodeId) -> Children<'a, T> {
-        Children {
+impl<'a, D> VecChildren<'a, D> {
+    pub(crate) fn new(tree: &'a VecTree<D>, node_id: NodeId) -> VecChildren<'a, D> {
+        VecChildren {
             tree: tree,
             child_ids: tree.get_unsafe(&node_id).children().as_slice().iter(),
         }
     }
 }
 
-impl<'a, T> Iterator for Children<'a, T> {
-    type Item = &'a Node<T>;
+impl<'a, D> Iterator for VecChildren<'a, D> {
+    type Item = &'a VecNode<D>;
 
-    fn next(&mut self) -> Option<&'a Node<T>> {
+    fn next(&mut self) -> Option<&'a VecNode<D>> {
         if let Some(next_child_id) = self.child_ids.next() {
             return Some(self.tree.get_unsafe(next_child_id));
         }
@@ -117,6 +117,9 @@ impl<'a, T> Iterator for Children<'a, T> {
     }
 }
 
+//todo: add an OptChildren iterator
+
+/*
 ///
 /// An Iterator over the children of a `Node`.
 ///

@@ -170,7 +170,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
     type NodeType = VecNode<T>;
     type AncestorsIter = Ancestors<'a, VecTree<'a, T>, T>;
     type AncestorIdsIter = AncestorIds<'a, VecTree<'a, T>, T>;
-    //    type ChildrenIter = Children<'a, T>;
+    type ChildrenIter = VecChildren<'a, T>;
     //    type ChildrenIdsIter = ChildrenIds<'a>;
     //    type PreOrderIter = PreOrderTraversal<'a, T>;
     //    type PostOrderIter = PostOrderTraversal<'a, T>;
@@ -190,7 +190,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
                 let (is_valid, error) = self.is_valid_node_id(parent_id);
                 if !is_valid {
                     return Err(error.expect(
-                        "Tree::insert: Missing an error value but found an \
+                        "TVecree::insert: Missing an error value but found an \
                         invalid NodeId.",
                     ));
                 }
@@ -204,7 +204,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
             Err(error.expect(
-                "Tree::get: Missing an error value on finding an invalid NodeId.",
+                "VecTree::get: Missing an error value on finding an invalid NodeId.",
             ))
         } else {
             Ok(self.get_unsafe(node_id))
@@ -215,7 +215,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
             Err(error.expect(
-                "Tree::get_mut: Missing an error value on finding an invalid NodeId.",
+                "VecTree::get_mut: Missing an error value on finding an invalid NodeId.",
             ))
         } else {
             Ok(self.get_mut_unsafe(node_id))
@@ -230,7 +230,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
         let (is_valid, error) = self.is_valid_node_id(&node_id);
         if !is_valid {
             return Err(error.expect(
-                "Tree::remove: Missing an error value but found an invalid NodeId.",
+                "VecTree::remove: Missing an error value but found an invalid NodeId.",
             ));
         }
 
@@ -245,7 +245,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
-                "Tree::move_node: Missing an error value on finding an \
+                "VecTree::move_node: Missing an error value on finding an \
                 invalid NodeId.",
             ));
         }
@@ -256,7 +256,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
                 let (is_valid, error) = self.is_valid_node_id(parent_id);
                 if !is_valid {
                     return Err(error.expect(
-                        "Tree::move_node: Missing an error value on finding \
+                        "VecTree::move_node: Missing an error value on finding \
                         an invalid NodeId.",
                     ));
                 }
@@ -272,7 +272,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
-                "Tree::sort_children_by: Missing an error value but found an invalid NodeId.",
+                "VecTree::sort_children_by: Missing an error value but found an invalid NodeId.",
             ));
         }
 
@@ -290,7 +290,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
-                "Tree::sort_children: Missing an error value but found an invalid NodeId.",
+                "VecTree::sort_children: Missing an error value but found an invalid NodeId.",
             ));
         }
 
@@ -309,7 +309,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
-                "Tree::sort_children_by_key: Missing an error value but found an invalid NodeId.",
+                "VecTree::sort_children_by_key: Missing an error value but found an invalid NodeId.",
             ));
         }
 
@@ -329,14 +329,14 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
         let (is_valid, error) = self.is_valid_node_id(first_id);
         if !is_valid {
             return Err(error.expect(
-                "Tree::swap_nodes: Missing an error value but found an invalid NodeId.",
+                "VecTree::swap_nodes: Missing an error value but found an invalid NodeId.",
             ));
         }
 
         let (is_valid, error) = self.is_valid_node_id(second_id);
         if !is_valid {
             return Err(error.expect(
-                "Tree::swap_nodes: Missing an error value but found an invalid NodeId.",
+                "VecTree::swap_nodes: Missing an error value but found an invalid NodeId.",
             ));
         }
 
@@ -351,44 +351,44 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
         self.root.as_ref()
     }
 
-    fn ancestors(&'a self, node_id: &NodeId) -> Result<Ancestors<VecTree<'a, T>, T>, NodeIdError> {
+    fn ancestors(&'a self, node_id: &NodeId) -> Result<Self::AncestorsIter, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
-                "Tree::ancestors: Missing an error value but found an invalid NodeId.",
+                "VecTree::ancestors: Missing an error value but found an invalid NodeId.",
             ));
         }
 
         Ok(Ancestors::new(self, node_id.clone()))
     }
 
-    fn ancestor_ids(&'a self, node_id: &NodeId) -> Result<AncestorIds<VecTree<'a, T>, T>, NodeIdError> {
+    fn ancestor_ids(&'a self, node_id: &NodeId) -> Result<Self::AncestorIdsIter, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
-                "Tree::ancestor_ids: Missing an error value but found an invalid NodeId.",
+                "VecTree::ancestor_ids: Missing an error value but found an invalid NodeId.",
             ));
         }
 
         Ok(AncestorIds::new(self, node_id.clone()))
     }
-//
-//    fn children<'b>(&'a self, node_id: &'a NodeId) -> Result<Children<T>, NodeIdError> {
-//        let (is_valid, error) = self.is_valid_node_id(node_id);
-//        if !is_valid {
-//            return Err(error.expect(
-//                "Tree::children: Missing an error value but found an invalid NodeId.",
-//            ));
-//        }
-//
-//        Ok(Children::new(self, node_id.clone()))
-//    }
+
+    fn children(&'a self, node_id: &NodeId) -> Result<Self::ChildrenIter, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "VecTree::children: Missing an error value but found an invalid NodeId.",
+            ));
+        }
+
+        Ok(VecChildren::new(self, node_id.clone()))
+    }
 //
 //    fn children_ids<'b>(&'a self, node_id: &'a NodeId) -> Result<ChildrenIds, NodeIdError> {
 //        let (is_valid, error) = self.is_valid_node_id(node_id);
 //        if !is_valid {
 //            return Err(error.expect(
-//                "Tree::children_ids: Missing an error value but found an invalid NodeId.",
+//                "VecTree::children_ids: Missing an error value but found an invalid NodeId.",
 //            ));
 //        }
 //
@@ -402,7 +402,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
 //        let (is_valid, error) = self.is_valid_node_id(node_id);
 //        if !is_valid {
 //            return Err(error.expect(
-//                "Tree::traverse_pre_order: Missing an error value but found an invalid NodeId.",
+//                "VecTree::traverse_pre_order: Missing an error value but found an invalid NodeId.",
 //            ));
 //        }
 //
@@ -416,7 +416,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
 //        let (is_valid, error) = self.is_valid_node_id(node_id);
 //        if !is_valid {
 //            return Err(error.expect(
-//                "Tree::traverse_post_order: Missing an error value but found an invalid NodeId.",
+//                "VecTree::traverse_post_order: Missing an error value but found an invalid NodeId.",
 //            ));
 //        }
 //
@@ -430,7 +430,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
 //        let (is_valid, error) = self.is_valid_node_id(node_id);
 //        if !is_valid {
 //            return Err(error.expect(
-//                "Tree::traverse_level_order: Missing an error value but found an invalid NodeId.",
+//                "VecTree::traverse_level_order: Missing an error value but found an invalid NodeId.",
 //            ));
 //        }
 //
@@ -945,7 +945,7 @@ impl<'a, T> VecTree<'a, T> {
 
         if !self.free_ids.is_empty() {
             let new_node_id: NodeId = self.free_ids.pop().expect(
-                "Tree::insert_new_node: Couldn't pop from Vec with len() > 0.",
+                "VecTree::insert_new_node: Couldn't pop from Vec with len() > 0.",
             );
 
             self.nodes.push(Some(new_node));
@@ -991,7 +991,7 @@ impl<'a, T> VecTree<'a, T> {
     fn take_node(&mut self, node_id: NodeId) -> VecNode<T> {
         self.nodes.push(None);
         let node = self.nodes.swap_remove(node_id.index).expect(
-            "Tree::take_node: An invalid NodeId made it past id_tree's internal checks. \
+            "VecTree::take_node: An invalid NodeId made it past id_tree's internal checks. \
                 Please report this issue!",
         );
         self.free_ids.push(node_id);
@@ -1027,7 +1027,7 @@ impl<'a, T> VecTree<'a, T> {
     pub(crate) fn get_unsafe(&self, node_id: &NodeId) -> &VecNode<T> {
         unsafe {
             self.nodes.get_unchecked(node_id.index).as_ref().expect(
-                "Tree::get_unsafe: An invalid NodeId made it past id_tree's internal \
+                "VecTree::get_unsafe: An invalid NodeId made it past id_tree's internal \
                     checks.  Please report this issue!",
             )
         }
@@ -1036,7 +1036,7 @@ impl<'a, T> VecTree<'a, T> {
     fn get_mut_unsafe(&mut self, node_id: &NodeId) -> &mut VecNode<T> {
         unsafe {
             self.nodes.get_unchecked_mut(node_id.index).as_mut().expect(
-                "Tree::get_mut_unsafe: An invalid NodeId made it past id_tree's internal \
+                "VecTree::get_mut_unsafe: An invalid NodeId made it past id_tree's internal \
                     checks.  Please report this issue!",
             )
         }

@@ -2,7 +2,7 @@ use snowflake::ProcessUniqueId;
 use ::*;
 
 ///
-/// A `OptTree` builder that provides more control over how a `OptTree` is created.
+/// An `OptTree` builder that provides more control over how a `OptTree` is created.
 ///
 pub struct OptTreeBuilder<T> {
     root: Option<OptNode<T>>,
