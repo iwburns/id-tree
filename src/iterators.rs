@@ -141,34 +141,36 @@ impl<'a> Iterator for VecChildrenIds<'a> {
         self.child_ids.next()
     }
 }
-/*
+
+//todo: add an OptChildrenIds iterator
+
 ///
 /// An Iterator over the sub-tree relative to a given `Node`.
 ///
 /// Iterates over all of the `Node`s in the sub-tree of a given `Node` in the `Tree`.  Each call to
 /// `next` will return an immutable reference to the next `Node` in Pre-Order Traversal order.
 ///
-pub struct PreOrderTraversal<'a, T: 'a> {
-    tree: &'a VecTree<T>,
+pub struct VecPreOrderTraversal<'a, T: 'a> {
+    tree: &'a VecTree<'a, T>,
     data: VecDeque<NodeId>,
 }
 
-impl<'a, T> PreOrderTraversal<'a, T> {
-    pub(crate) fn new(tree: &'a VecTree<T>, node_id: NodeId) -> PreOrderTraversal<T> {
+impl<'a, T> VecPreOrderTraversal<'a, T> {
+    pub(crate) fn new(tree: &'a VecTree<'a, T>, node_id: NodeId) -> VecPreOrderTraversal<'a, T> {
 
         // over allocating, but all at once instead of re-sizing and re-allocating as we go
         let mut data = VecDeque::with_capacity(tree.nodes.capacity());
 
         data.push_front(node_id);
 
-        PreOrderTraversal {
+        VecPreOrderTraversal {
             tree: tree,
             data: data,
         }
     }
 }
 
-impl<'a, T> Iterator for PreOrderTraversal<'a, T> {
+impl<'a, T> Iterator for VecPreOrderTraversal<'a, T> {
     type Item = &'a Node<T>;
 
     fn next(&mut self) -> Option<&'a Node<T>> {
@@ -188,6 +190,9 @@ impl<'a, T> Iterator for PreOrderTraversal<'a, T> {
     }
 }
 
+//todo: add an OptPreOrderTraversal iterator
+
+/*
 ///
 /// An Iterator over the sub-tree relative to a given `Node`.
 ///
