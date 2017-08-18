@@ -419,9 +419,9 @@ pub trait Tree<'a, Data> {
     /// assert!(nodes.next().is_none());
     /// ```
     ///
-    fn traverse_pre_order<'b>(
+    fn traverse_pre_order(
         &'a self,
-        node_id: &'a NodeId,
+        node_id: &NodeId,
     ) -> Result<Self::PreOrderIter, NodeIdError>;
 
     ///
