@@ -16,7 +16,7 @@ pub trait Tree<'a, Data> {
     type AncestorsIter: Iterator;
     type AncestorIdsIter: Iterator;
     type ChildrenIter: Iterator;
-//    type ChildrenIdsIter: Iterator;
+    type ChildrenIdsIter: Iterator;
 //    type PreOrderIter: Iterator;
 //    type PostOrderIter: Iterator;
 //    type LevelOrderIter: Iterator;
@@ -373,7 +373,7 @@ pub trait Tree<'a, Data> {
     ///
     fn children(&'a self, node_id: &NodeId) -> Result<Self::ChildrenIter, NodeIdError>;
 
-/*
+
     ///
     /// Returns a `ChildrenIds` iterator (or a `NodeIdError` if one occurred).
     ///
@@ -393,11 +393,12 @@ pub trait Tree<'a, Data> {
     /// assert!(children_ids.next().is_none());
     /// ```
     ///
-//    fn children_ids<'b>(
-//        &'a self,
-//        node_id: &'a NodeId,
-//    ) -> Result<Self::ChildrenIdsIter, NodeIdError>;
+    fn children_ids(
+        &'a self,
+        node_id: &NodeId,
+    ) -> Result<Self::ChildrenIdsIter, NodeIdError>;
 
+/*
     ///
     /// Returns a `PreOrderTraversal` iterator (or a `NodeIdError` if one occurred).
     ///

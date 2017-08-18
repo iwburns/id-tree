@@ -119,30 +119,29 @@ impl<'a, D> Iterator for VecChildren<'a, D> {
 
 //todo: add an OptChildren iterator
 
-/*
 ///
-/// An Iterator over the children of a `Node`.
+/// An Iterator over the children of a `VecNode`.
 ///
-/// Iterates over `NodeId`s instead of over the `Node`s themselves.
+/// Iterates over `NodeId`s instead of over the `VecNode`s themselves.
 ///
-pub struct ChildrenIds<'a> {
+pub struct VecChildrenIds<'a> {
     child_ids: Iter<'a, NodeId>,
 }
 
-impl<'a> ChildrenIds<'a> {
-    pub(crate) fn new<T>(tree: &'a VecTree<T>, node_id: NodeId) -> ChildrenIds<'a> {
-        ChildrenIds { child_ids: tree.get_unsafe(&node_id).children().as_slice().iter() }
+impl<'a> VecChildrenIds<'a> {
+    pub(crate) fn new<T>(tree: &'a VecTree<T>, node_id: NodeId) -> VecChildrenIds<'a> {
+        VecChildrenIds { child_ids: tree.get_unsafe(&node_id).children().as_slice().iter() }
     }
 }
 
-impl<'a> Iterator for ChildrenIds<'a> {
+impl<'a> Iterator for VecChildrenIds<'a> {
     type Item = &'a NodeId;
 
     fn next(&mut self) -> Option<&'a NodeId> {
         self.child_ids.next()
     }
 }
-
+/*
 ///
 /// An Iterator over the sub-tree relative to a given `Node`.
 ///

@@ -68,6 +68,8 @@
 extern crate snowflake;
 use self::snowflake::ProcessUniqueId;
 
+//todo: re-work how we expose these modules and objects a bit.
+
 mod behaviors;
 mod error;
 mod iterators;
@@ -85,6 +87,7 @@ pub use iterators::Ancestors;
 pub use iterators::AncestorIds;
 pub use iterators::VecChildren;
 //pub use iterators::Children;
+pub use iterators::VecChildrenIds;
 //pub use iterators::ChildrenIds;
 //pub use iterators::PreOrderTraversal;
 //pub use iterators::PostOrderTraversal;
