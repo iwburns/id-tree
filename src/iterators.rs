@@ -173,8 +173,9 @@ impl<'a> Iterator for VecChildrenIds<'a> {
 ///
 /// An Iterator over the sub-tree relative to a given `VecNode`.
 ///
-/// Iterates over all of the `VecNode`s in the sub-tree of a given `VecNode` in the `VecTree`.  Each call to
-/// `next` will return an immutable reference to the next `VecNode` in Pre-Order Traversal order.
+/// Iterates over all of the `VecNode`s in the sub-tree of a given `VecNode` in the `VecTree`.
+/// Each call to `next` will return an immutable reference to the next `VecNode` in Pre-Order
+/// Traversal order.
 ///
 pub struct VecPreOrderTraversal<'a, T: 'a> {
     tree: &'a VecTree<'a, T>,
@@ -221,8 +222,9 @@ impl<'a, T> Iterator for VecPreOrderTraversal<'a, T> {
 ///
 /// An Iterator over the sub-tree relative to a given `VecNode`.
 ///
-/// Iterates over all of the `VecNode`s in the sub-tree of a given `VecNode` in the `VecTree`.  Each call to
-/// `next` will return an immutable reference to the next `VecNode` in Post-Order Traversal order.
+/// Iterates over all of the `VecNode`s in the sub-tree of a given `VecNode` in the `VecTree`.
+/// Each call to `next` will return an immutable reference to the next `VecNode` in Post-Order
+/// Traversal order.
 ///
 pub struct VecPostOrderTraversal<'a, T: 'a> {
     tree: &'a VecTree<'a, T>,
@@ -273,8 +275,9 @@ impl<'a, T> Iterator for VecPostOrderTraversal<'a, T> {
 ///
 /// An Iterator over the sub-tree relative to a given `VecNode`.
 ///
-/// Iterates over all of the `VecNode`s in the sub-tree of a given `VecNode` in the `VecTree`.  Each call to
-/// `next` will return an immutable reference to the next `VecNode` in Level-Order Traversal order.
+/// Iterates over all of the `VecNode`s in the sub-tree of a given `VecNode` in the `VecTree`.
+/// Each call to `next` will return an immutable reference to the next `VecNode` in Level-Order
+/// Traversal order.
 ///
 pub struct VecLevelOrderTraversal<'a, T: 'a> {
     tree: &'a VecTree<'a, T>,

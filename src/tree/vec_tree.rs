@@ -309,7 +309,8 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
-                "VecTree::sort_children_by_key: Missing an error value but found an invalid NodeId.",
+                "VecTree::sort_children_by_key: Missing an error value but found an invalid\
+                NodeId.",
             ));
         }
 
@@ -410,7 +411,8 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
-                "VecTree::traverse_post_order: Missing an error value but found an invalid NodeId.",
+                "VecTree::traverse_post_order: Missing an error value but found an invalid\
+                NodeId.",
             ));
         }
 
@@ -424,7 +426,8 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
-                "VecTree::traverse_level_order: Missing an error value but found an invalid NodeId.",
+                "VecTree::traverse_level_order: Missing an error value but found an invalid\
+                NodeId.",
             ));
         }
 
@@ -584,6 +587,7 @@ impl<'a, T> VecTree<'a, T> {
         Ok(())
     }
 
+    ///
     /// Swaps two `VecNode`s including their children given their `NodeId`s.
     ///
     fn swap_nodes_take_children(
