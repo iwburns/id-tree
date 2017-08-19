@@ -464,3 +464,19 @@ pub trait Tree<'a, Data> {
         node_id: &NodeId,
     ) -> Result<Self::LevelOrderIter, NodeIdError>;
 }
+
+pub(crate) trait UnsafeTree<Data> {
+    type NodeType: Node<Data>;
+
+    ///
+    /// Returns an immutable reference to a `Node`.  This function assumes that the caller has a
+    /// valid `NodeId` and should panic if this is not the case.
+    ///
+    unsafe fn get_unchecked(&self, node_id: &NodeId) -> &Self::NodeType;
+
+    ///
+    /// Returns a mutable reference to a `Node`.  This function assumes that the caller has a
+    /// valid `NodeId` and should panic if this is not the case.
+    ///
+    unsafe fn get_unchecked_mut(&mut self, node_id: &NodeId) -> &mut Self::NodeType;
+}
