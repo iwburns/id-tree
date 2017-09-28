@@ -200,10 +200,7 @@ impl<'a, T> VecPreOrderTraversal<'a, T> {
 
         data.push_front(node_id);
 
-        VecPreOrderTraversal {
-            tree,
-            data,
-        }
+        VecPreOrderTraversal { tree, data }
     }
 }
 
@@ -302,10 +299,7 @@ impl<'a, T> VecLevelOrderTraversal<'a, T> {
 
         data.push_back(node_id);
 
-        VecLevelOrderTraversal {
-            tree,
-            data,
-        }
+        VecLevelOrderTraversal { tree, data }
     }
 }
 
