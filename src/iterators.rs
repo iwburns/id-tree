@@ -127,7 +127,7 @@ impl<'a, D> VecChildren<'a, D> {
     pub(crate) fn new(tree: &'a VecTree<D>, node_id: NodeId) -> VecChildren<'a, D> {
         VecChildren {
             tree: tree,
-            child_ids: tree.get_unsafe(&node_id).children().as_slice().iter(),
+            child_ids: tree.core_tree().get_unsafe(&node_id).children().as_slice().iter(),
         }
     }
 }
@@ -137,7 +137,7 @@ impl<'a, D> Iterator for VecChildren<'a, D> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(next_child_id) = self.child_ids.next() {
-            return Some(self.tree.get_unsafe(next_child_id));
+            return Some(self.tree.core_tree().get_unsafe(next_child_id));
         }
         None
     }
@@ -156,7 +156,7 @@ pub struct VecChildrenIds<'a> {
 
 impl<'a> VecChildrenIds<'a> {
     pub(crate) fn new<T>(tree: &'a VecTree<T>, node_id: NodeId) -> VecChildrenIds<'a> {
-        VecChildrenIds { child_ids: tree.get_unsafe(&node_id).children().as_slice().iter() }
+        VecChildrenIds { child_ids: tree.core_tree().get_unsafe(&node_id).children().as_slice().iter() }
     }
 }
 
@@ -186,7 +186,7 @@ impl<'a, T> VecPreOrderTraversal<'a, T> {
     pub(crate) fn new(tree: &'a VecTree<'a, T>, node_id: NodeId) -> VecPreOrderTraversal<'a, T> {
 
         // over allocating, but all at once instead of re-sizing and re-allocating as we go
-        let mut data = VecDeque::with_capacity(tree.nodes.capacity());
+        let mut data = VecDeque::with_capacity(tree.core_tree().nodes.capacity());
 
         data.push_front(node_id);
 
@@ -204,7 +204,7 @@ impl<'a, T> Iterator for VecPreOrderTraversal<'a, T> {
         let id = self.data.pop_front();
 
         if let Some(ref node_id) = id {
-            let node_ref = self.tree.get_unsafe(node_id);
+            let node_ref = self.tree.core_tree().get_unsafe(node_id);
 
             // prepend child_ids
             for child_id in node_ref.children().iter().rev() {
@@ -235,7 +235,7 @@ impl<'a, T> VecPostOrderTraversal<'a, T> {
     pub(crate) fn new(tree: &'a VecTree<'a, T>, node_id: NodeId) -> VecPostOrderTraversal<'a, T> {
 
         // over allocating, but all at once instead of re-sizing and re-allocating as we go
-        let mut ids = Vec::with_capacity(tree.nodes.capacity());
+        let mut ids = Vec::with_capacity(tree.core_tree().nodes.capacity());
 
         VecPostOrderTraversal::process_nodes(node_id, tree, &mut ids);
 
@@ -246,7 +246,7 @@ impl<'a, T> VecPostOrderTraversal<'a, T> {
     }
 
     fn process_nodes(starting_id: NodeId, tree: &VecTree<T>, ids: &mut Vec<NodeId>) {
-        let node = tree.get_unsafe(&starting_id);
+        let node = tree.core_tree().get_unsafe(&starting_id);
 
         for child_id in node.children() {
             VecPostOrderTraversal::process_nodes(child_id.clone(), tree, ids);
@@ -263,7 +263,7 @@ impl<'a, T> Iterator for VecPostOrderTraversal<'a, T> {
         let id = self.ids.next();
 
         if let Some(ref node_id) = id {
-            return Some(self.tree.get_unsafe(node_id));
+            return Some(self.tree.core_tree().get_unsafe(node_id));
         }
 
         None
@@ -288,7 +288,7 @@ impl<'a, T> VecLevelOrderTraversal<'a, T> {
     pub(crate) fn new(tree: &'a VecTree<'a, T>, node_id: NodeId) -> VecLevelOrderTraversal<T> {
 
         // over allocating, but all at once instead of re-sizing and re-allocating as we go
-        let mut data = VecDeque::with_capacity(tree.nodes.capacity());
+        let mut data = VecDeque::with_capacity(tree.core_tree().nodes.capacity());
 
         data.push_back(node_id);
 
@@ -307,7 +307,7 @@ impl<'a, T> Iterator for VecLevelOrderTraversal<'a, T> {
 
         if let Some(ref node_id_ref) = id {
 
-            let node_ref = self.tree.get_unsafe(node_id_ref);
+            let node_ref = self.tree.core_tree().get_unsafe(node_id_ref);
 
             for child_id in node_ref.children() {
                 self.data.push_back(child_id.clone());

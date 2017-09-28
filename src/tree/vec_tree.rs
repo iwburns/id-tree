@@ -3,6 +3,8 @@ use std::marker::PhantomData;
 use snowflake::ProcessUniqueId;
 use ::*;
 
+use super::core::CoreTree;
+
 ///
 /// A `VecTree` builder that provides more control over how a `VecTree` is created.
 ///
@@ -120,30 +122,15 @@ impl<'a, T> VecTreeBuilder<T> {
     ///         .build();
     /// ```
     ///
-    pub fn build(mut self) -> VecTree<'a, T> {
-
-        let tree_id = ProcessUniqueId::new();
-
-        let mut tree = VecTree {
-            id: tree_id,
-            root: None,
-            nodes: Vec::with_capacity(self.node_capacity),
-            free_ids: Vec::with_capacity(self.swap_capacity),
+    pub fn build(self) -> VecTree<'a, T> {
+        VecTree {
+            core_tree: CoreTree::new(
+                self.root,
+                self.node_capacity,
+                self.swap_capacity,
+            ),
             phantom: PhantomData,
-        };
-
-        if self.root.is_some() {
-
-            let node_id = NodeId {
-                tree_id: tree_id,
-                index: 0,
-            };
-
-            tree.nodes.push(self.root.take());
-            tree.root = Some(node_id);
         }
-
-        tree
     }
 }
 
@@ -159,10 +146,7 @@ impl<'a, T> VecTreeBuilder<T> {
 /// library, but they can happen due to bugs.
 ///
 pub struct VecTree<'a, T: 'a> {
-    id: ProcessUniqueId,
-    root: Option<NodeId>,
-    pub(crate) nodes: Vec<Option<VecNode<T>>>,
-    free_ids: Vec<NodeId>,
+    core_tree: CoreTree<VecNode<T>, T>,
     phantom: PhantomData<&'a T>,
 }
 
@@ -187,7 +171,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
     ) -> Result<NodeId, NodeIdError> {
         match behavior {
             InsertBehavior::UnderNode(parent_id) => {
-                let (is_valid, error) = self.is_valid_node_id(parent_id);
+                let (is_valid, error) = self.core_tree.is_valid_node_id(parent_id);
                 if !is_valid {
                     return Err(error.expect(
                         "TVecree::insert: Missing an error value but found an \
@@ -201,24 +185,24 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
     }
 
     fn get(&self, node_id: &NodeId) -> Result<&VecNode<T>, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
+        let (is_valid, error) = self.core_tree.is_valid_node_id(node_id);
         if !is_valid {
             Err(error.expect(
                 "VecTree::get: Missing an error value on finding an invalid NodeId.",
             ))
         } else {
-            Ok(self.get_unsafe(node_id))
+            Ok(self.core_tree.get_unsafe(node_id))
         }
     }
 
     fn get_mut(&mut self, node_id: &NodeId) -> Result<&mut VecNode<T>, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
+        let (is_valid, error) = self.core_tree.is_valid_node_id(node_id);
         if !is_valid {
             Err(error.expect(
                 "VecTree::get_mut: Missing an error value on finding an invalid NodeId.",
             ))
         } else {
-            Ok(self.get_mut_unsafe(node_id))
+            Ok(self.core_tree.get_mut_unsafe(node_id))
         }
     }
 
@@ -227,7 +211,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
         node_id: NodeId,
         behavior: RemoveBehavior,
     ) -> Result<VecNode<T>, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(&node_id);
+        let (is_valid, error) = self.core_tree.is_valid_node_id(&node_id);
         if !is_valid {
             return Err(error.expect(
                 "VecTree::remove: Missing an error value but found an invalid NodeId.",
@@ -242,7 +226,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
     }
 
     fn move_node(&mut self, node_id: &NodeId, behavior: MoveBehavior) -> Result<(), NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
+        let (is_valid, error) = self.core_tree.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
                 "VecTree::move_node: Missing an error value on finding an \
@@ -253,7 +237,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
         match behavior {
             MoveBehavior::ToRoot => self.move_node_to_root(node_id),
             MoveBehavior::ToParent(parent_id) => {
-                let (is_valid, error) = self.is_valid_node_id(parent_id);
+                let (is_valid, error) = self.core_tree.is_valid_node_id(parent_id);
                 if !is_valid {
                     return Err(error.expect(
                         "VecTree::move_node: Missing an error value on finding \
@@ -269,16 +253,16 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
     where
         F: FnMut(&VecNode<T>, &VecNode<T>) -> Ordering,
     {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
+        let (is_valid, error) = self.core_tree.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
                 "VecTree::sort_children_by: Missing an error value but found an invalid NodeId.",
             ));
         }
 
-        let mut children = self.get_mut_unsafe(node_id).take_children();
-        children.sort_by(|a, b| compare(self.get_unsafe(a), self.get_unsafe(b)));
-        self.get_mut_unsafe(node_id).set_children(children);
+        let mut children = self.core_tree.get_mut_unsafe(node_id).take_children();
+        children.sort_by(|a, b| compare(self.core_tree.get_unsafe(a), self.core_tree.get_unsafe(b)));
+        self.core_tree.get_mut_unsafe(node_id).set_children(children);
 
         Ok(())
     }
@@ -287,16 +271,16 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
     where
         T: Ord,
     {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
+        let (is_valid, error) = self.core_tree.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
                 "VecTree::sort_children: Missing an error value but found an invalid NodeId.",
             ));
         }
 
-        let mut children = self.get_mut_unsafe(node_id).take_children();
-        children.sort_by_key(|a| self.get_unsafe(a).data());
-        self.get_mut_unsafe(node_id).set_children(children);
+        let mut children = self.core_tree.get_mut_unsafe(node_id).take_children();
+        children.sort_by_key(|a| self.core_tree.get_unsafe(a).data());
+        self.core_tree.get_mut_unsafe(node_id).set_children(children);
 
         Ok(())
     }
@@ -306,7 +290,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
         B: Ord,
         F: FnMut(&VecNode<T>) -> B,
     {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
+        let (is_valid, error) = self.core_tree.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
                 "VecTree::sort_children_by_key: Missing an error value but found an invalid\
@@ -314,9 +298,9 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
             ));
         }
 
-        let mut children = self.get_mut_unsafe(node_id).take_children();
-        children.sort_by_key(|a| f(self.get_unsafe(a)));
-        self.get_mut_unsafe(node_id).set_children(children);
+        let mut children = self.core_tree.get_mut_unsafe(node_id).take_children();
+        children.sort_by_key(|a| f(self.core_tree.get_unsafe(a)));
+        self.core_tree.get_mut_unsafe(node_id).set_children(children);
 
         Result::Ok(())
     }
@@ -327,14 +311,14 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
         second_id: &NodeId,
         behavior: SwapBehavior,
     ) -> Result<(), NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(first_id);
+        let (is_valid, error) = self.core_tree.is_valid_node_id(first_id);
         if !is_valid {
             return Err(error.expect(
                 "VecTree::swap_nodes: Missing an error value but found an invalid NodeId.",
             ));
         }
 
-        let (is_valid, error) = self.is_valid_node_id(second_id);
+        let (is_valid, error) = self.core_tree.is_valid_node_id(second_id);
         if !is_valid {
             return Err(error.expect(
                 "VecTree::swap_nodes: Missing an error value but found an invalid NodeId.",
@@ -349,11 +333,11 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
     }
 
     fn root_node_id(&self) -> Option<&NodeId> {
-        self.root.as_ref()
+        self.core_tree.root.as_ref()
     }
 
     fn ancestors(&'a self, node_id: &NodeId) -> Result<Self::AncestorsIter, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
+        let (is_valid, error) = self.core_tree.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
                 "VecTree::ancestors: Missing an error value but found an invalid NodeId.",
@@ -364,7 +348,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
     }
 
     fn ancestor_ids(&'a self, node_id: &NodeId) -> Result<Self::AncestorIdsIter, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
+        let (is_valid, error) = self.core_tree.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
                 "VecTree::ancestor_ids: Missing an error value but found an invalid NodeId.",
@@ -375,7 +359,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
     }
 
     fn children(&'a self, node_id: &NodeId) -> Result<Self::ChildrenIter, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
+        let (is_valid, error) = self.core_tree.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
                 "VecTree::children: Missing an error value but found an invalid NodeId.",
@@ -386,7 +370,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
     }
 
     fn children_ids(&'a self, node_id: &NodeId) -> Result<Self::ChildrenIdsIter, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
+        let (is_valid, error) = self.core_tree.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
                 "VecTree::children_ids: Missing an error value but found an invalid NodeId.",
@@ -397,7 +381,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
     }
 
     fn traverse_pre_order(&'a self, node_id: &NodeId) -> Result<Self::PreOrderIter, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
+        let (is_valid, error) = self.core_tree.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
                 "VecTree::traverse_pre_order: Missing an error value but found an invalid NodeId.",
@@ -408,7 +392,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
     }
 
     fn traverse_post_order(&'a self, node_id: &NodeId) -> Result<Self::PostOrderIter, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
+        let (is_valid, error) = self.core_tree.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
                 "VecTree::traverse_post_order: Missing an error value but found an invalid\
@@ -423,7 +407,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
         &'a self,
         node_id: &NodeId,
     ) -> Result<Self::LevelOrderIter, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
+        let (is_valid, error) = self.core_tree.is_valid_node_id(node_id);
         if !is_valid {
             return Err(error.expect(
                 "VecTree::traverse_level_order: Missing an error value but found an invalid\
@@ -440,13 +424,14 @@ impl<'a, T> VecTree<'a, T> {
     /// Sets the root of the `Tree`.
     ///
     fn set_root(&mut self, new_root: VecNode<T>) -> NodeId {
-        let new_root_id = self.insert_new_node(new_root);
 
-        if let Some(current_root_node_id) = self.root.clone() {
+        let current_root = self.core_tree.root.clone();
+        let new_root_id = self.core_tree.set_root(new_root);
+
+        if let Some(current_root_node_id) = current_root {
             self.set_as_parent_and_child(&new_root_id, &current_root_node_id);
         }
 
-        self.root = Some(new_root_id.clone());
         new_root_id
     }
 
@@ -459,7 +444,7 @@ impl<'a, T> VecTree<'a, T> {
         child: VecNode<T>,
         parent_id: &NodeId,
     ) -> Result<NodeId, NodeIdError> {
-        let new_child_id = self.insert_new_node(child);
+        let new_child_id = self.core_tree.insert_new_node(child);
         self.set_as_parent_and_child(parent_id, &new_child_id);
         Ok(new_child_id)
     }
@@ -474,15 +459,14 @@ impl<'a, T> VecTree<'a, T> {
     /// function is the equivalent of calling `remove_node_orphan_children`.
     ///
     fn remove_node_lift_children(&mut self, node_id: NodeId) -> Result<VecNode<T>, NodeIdError> {
-        if let Some(parent_id) = self.get_unsafe(&node_id).parent().cloned() {
+        if let Some(parent_id) = self.core_tree.get_unsafe(&node_id).parent().cloned() {
             // attach children to parent
-            for child_id in self.get_unsafe(&node_id).children().clone() {
+            for child_id in self.core_tree.get_unsafe(&node_id).children().clone() {
                 self.set_as_parent_and_child(&parent_id, &child_id);
             }
         } else {
             self.clear_parent_of_children(&node_id);
         }
-
 
         Ok(self.remove_node_internal(node_id))
     }
@@ -499,9 +483,9 @@ impl<'a, T> VecTree<'a, T> {
     /// Remove a `VecNode` from the `VecTree` including all its children recursively.
     ///
     fn remove_node_drop_children(&mut self, node_id: NodeId) -> Result<VecNode<T>, NodeIdError> {
-        let mut children = self.get_mut_unsafe(&node_id).take_children();
+        let mut children = self.core_tree.get_mut_unsafe(&node_id).take_children();
         for child in children.drain(..) {
-            try!(self.remove_node_drop_children(child));
+            self.remove_node_drop_children(child)?;
         }
         Ok(self.remove_node_internal(node_id))
     }
@@ -520,7 +504,7 @@ impl<'a, T> VecTree<'a, T> {
         {
             // node_id is above parent_id, this is a move "down" the tree.
 
-            let root = self.root.clone();
+            let root = self.core_tree.root.clone();
 
             if root.as_ref() == Some(node_id) {
                 // we're moving the root down the tree.
@@ -531,14 +515,14 @@ impl<'a, T> VecTree<'a, T> {
 
                 // set subtree_root as Tree root.
                 self.clear_parent(&subtree_root_id);
-                self.root = Some(subtree_root_id);
+                self.core_tree.root = Some(subtree_root_id);
 
                 self.set_as_parent_and_child(parent_id, node_id);
 
             } else {
                 // we're moving some other node down the tree.
 
-                if let Some(old_parent) = self.get_unsafe(node_id).parent().cloned() {
+                if let Some(old_parent) = self.core_tree.get_unsafe(node_id).parent().cloned() {
                     // detach from old parent
                     self.detach_from_parent(&old_parent, node_id);
                     // connect old parent and subtree root
@@ -557,7 +541,7 @@ impl<'a, T> VecTree<'a, T> {
             // this is a move "across" or "up" the tree.
 
             // detach from old parent
-            if let Some(old_parent) = self.get_unsafe(node_id).parent().cloned() {
+            if let Some(old_parent) = self.core_tree.get_unsafe(node_id).parent().cloned() {
                 self.detach_from_parent(&old_parent, node_id);
             }
 
@@ -572,16 +556,16 @@ impl<'a, T> VecTree<'a, T> {
     /// their place.
     ///
     fn move_node_to_root(&mut self, node_id: &NodeId) -> Result<(), NodeIdError> {
-        let old_root = self.root.clone();
+        let old_root = self.core_tree.root.clone();
 
-        if let Some(parent_id) = self.get_unsafe(node_id).parent().cloned() {
+        if let Some(parent_id) = self.core_tree.get_unsafe(node_id).parent().cloned() {
             self.detach_from_parent(&parent_id, node_id);
         }
         self.clear_parent(node_id);
-        self.root = Some(node_id.clone());
+        self.core_tree.root = Some(node_id.clone());
 
         if let Some(old_root) = old_root {
-            try!(self.move_node_to_parent(&old_root, node_id));
+            self.move_node_to_parent(&old_root, node_id)?;
         }
 
         Ok(())
@@ -603,10 +587,10 @@ impl<'a, T> VecTree<'a, T> {
             });
 
         if let Some((lower_id, upper_id)) = lower_upper_test {
-            let upper_parent_id = self.get_unsafe(upper_id).parent().cloned();
+            let upper_parent_id = self.core_tree.get_unsafe(upper_id).parent().cloned();
 
             let lower_parent_id = {
-                let lower = self.get_mut_unsafe(lower_id);
+                let lower = self.core_tree.get_mut_unsafe(lower_id);
                 // lower is lower, so it has a parent for sure
                 let lower_parent_id = lower.parent().unwrap().clone();
 
@@ -622,30 +606,30 @@ impl<'a, T> VecTree<'a, T> {
             self.detach_from_parent(&lower_parent_id, lower_id);
 
             if upper_parent_id.is_some() {
-                self.get_mut_unsafe(upper_parent_id.as_ref().unwrap())
+                self.core_tree.get_mut_unsafe(upper_parent_id.as_ref().unwrap())
                     .replace_child(upper_id.clone(), lower_id.clone());
-            } else if self.root.as_ref() == Some(upper_id) {
-                self.root = Some(lower_id.clone());
+            } else if self.core_tree.root.as_ref() == Some(upper_id) {
+                self.core_tree.root = Some(lower_id.clone());
             }
 
-            self.get_mut_unsafe(upper_id).set_parent(
+            self.core_tree.get_mut_unsafe(upper_id).set_parent(
                 Some(lower_id.clone()),
             );
-            self.get_mut_unsafe(lower_id).add_child(upper_id.clone());
+            self.core_tree.get_mut_unsafe(lower_id).add_child(upper_id.clone());
 
         } else {
 
             // just across
 
-            let is_same_parent = self.get_unsafe(first_id).parent() ==
-                self.get_unsafe(second_id).parent();
+            let is_same_parent = self.core_tree.get_unsafe(first_id).parent() ==
+                self.core_tree.get_unsafe(second_id).parent();
 
             if is_same_parent {
-                let parent_id = self.get_unsafe(first_id).parent().cloned();
+                let parent_id = self.core_tree.get_unsafe(first_id).parent().cloned();
                 if let Some(parent_id) = parent_id {
                     // same parent
                     // get indices
-                    let parent = self.get_mut_unsafe(&parent_id);
+                    let parent = self.core_tree.get_mut_unsafe(&parent_id);
                     let first_index = parent
                         .children()
                         .iter()
@@ -666,23 +650,23 @@ impl<'a, T> VecTree<'a, T> {
                     // swapping the root with itself??
                 }
             } else {
-                let first_parent_id = self.get_unsafe(first_id).parent().cloned().unwrap();
-                let second_parent_id = self.get_unsafe(second_id).parent().cloned().unwrap();
+                let first_parent_id = self.core_tree.get_unsafe(first_id).parent().cloned().unwrap();
+                let second_parent_id = self.core_tree.get_unsafe(second_id).parent().cloned().unwrap();
 
                 // replace parents
-                self.get_mut_unsafe(first_id).set_parent(
+                self.core_tree.get_mut_unsafe(first_id).set_parent(
                     Some(second_parent_id.clone()),
                 );
-                self.get_mut_unsafe(second_id).set_parent(
+                self.core_tree.get_mut_unsafe(second_id).set_parent(
                     Some(first_parent_id.clone()),
                 );
 
                 // change children
-                self.get_mut_unsafe(&first_parent_id).replace_child(
+                self.core_tree.get_mut_unsafe(&first_parent_id).replace_child(
                     first_id.clone(),
                     second_id.clone(),
                 );
-                self.get_mut_unsafe(&second_parent_id).replace_child(
+                self.core_tree.get_mut_unsafe(&second_parent_id).replace_child(
                     second_id.clone(),
                     first_id.clone(),
                 );
@@ -702,95 +686,95 @@ impl<'a, T> VecTree<'a, T> {
         self.set_parent_of_children(second_id, Some(first_id.clone()));
 
         //swap children of these nodes
-        let first_children = self.get_unsafe(first_id).children().clone();
-        let second_children = self.get_unsafe(second_id).children().clone();
-        self.get_mut_unsafe(first_id).set_children(second_children);
-        self.get_mut_unsafe(second_id).set_children(first_children);
+        let first_children = self.core_tree.get_unsafe(first_id).children().clone();
+        let second_children = self.core_tree.get_unsafe(second_id).children().clone();
+        self.core_tree.get_mut_unsafe(first_id).set_children(second_children);
+        self.core_tree.get_mut_unsafe(second_id).set_children(first_children);
 
-        let first_parent = self.get_unsafe(first_id).parent().cloned();
-        let second_parent = self.get_unsafe(second_id).parent().cloned();
+        let first_parent = self.core_tree.get_unsafe(first_id).parent().cloned();
+        let second_parent = self.core_tree.get_unsafe(second_id).parent().cloned();
 
         //todo: some of this could probably be abstracted out into a method or two
         match (first_parent, second_parent) {
             (Some(ref first_parent_id), Some(ref second_parent_id)) => {
-                let first_index = self.get_unsafe(first_parent_id)
+                let first_index = self.core_tree.get_unsafe(first_parent_id)
                     .children()
                     .iter()
                     .position(|id| id == first_id)
                     .unwrap();
-                let second_index = self.get_unsafe(second_parent_id)
+                let second_index = self.core_tree.get_unsafe(second_parent_id)
                     .children()
                     .iter()
                     .position(|id| id == second_id)
                     .unwrap();
 
                 unsafe {
-                    let temp = self.get_mut_unsafe(first_parent_id)
+                    let temp = self.core_tree.get_mut_unsafe(first_parent_id)
                         .children_mut()
                         .get_unchecked_mut(first_index);
                     *temp = second_id.clone();
                 }
                 unsafe {
-                    let temp = self.get_mut_unsafe(second_parent_id)
+                    let temp = self.core_tree.get_mut_unsafe(second_parent_id)
                         .children_mut()
                         .get_unchecked_mut(second_index);
                     *temp = first_id.clone();
                 }
 
-                self.get_mut_unsafe(first_id).set_parent(
+                self.core_tree.get_mut_unsafe(first_id).set_parent(
                     Some(second_parent_id.clone()),
                 );
-                self.get_mut_unsafe(second_id).set_parent(
+                self.core_tree.get_mut_unsafe(second_id).set_parent(
                     Some(first_parent_id.clone()),
                 );
             }
             (Some(ref first_parent_id), None) => {
-                let first_index = self.get_unsafe(first_parent_id)
+                let first_index = self.core_tree.get_unsafe(first_parent_id)
                     .children()
                     .iter()
                     .position(|id| id == first_id)
                     .unwrap();
 
                 unsafe {
-                    let temp = self.get_mut_unsafe(first_parent_id)
+                    let temp = self.core_tree.get_mut_unsafe(first_parent_id)
                         .children_mut()
                         .get_unchecked_mut(first_index);
                     *temp = second_id.clone();
                 }
 
-                self.get_mut_unsafe(first_id).set_parent(None);
-                self.get_mut_unsafe(second_id).set_parent(
+                self.core_tree.get_mut_unsafe(first_id).set_parent(None);
+                self.core_tree.get_mut_unsafe(second_id).set_parent(
                     Some(first_parent_id.clone()),
                 );
 
                 if let Some(root_id) = self.root_node_id().cloned() {
                     if root_id == second_id.clone() {
-                        self.root = Some(first_id.clone());
+                        self.core_tree.root = Some(first_id.clone());
                     }
                 }
             }
             (None, Some(ref second_parent_id)) => {
-                let second_index = self.get_unsafe(second_parent_id)
+                let second_index = self.core_tree.get_unsafe(second_parent_id)
                     .children()
                     .iter()
                     .position(|id| id == second_id)
                     .unwrap();
 
                 unsafe {
-                    let temp = self.get_mut_unsafe(second_parent_id)
+                    let temp = self.core_tree.get_mut_unsafe(second_parent_id)
                         .children_mut()
                         .get_unchecked_mut(second_index);
                     *temp = first_id.clone();
                 }
 
-                self.get_mut_unsafe(first_id).set_parent(
+                self.core_tree.get_mut_unsafe(first_id).set_parent(
                     Some(second_parent_id.clone()),
                 );
-                self.get_mut_unsafe(second_id).set_parent(None);
+                self.core_tree.get_mut_unsafe(second_id).set_parent(None);
 
                 if let Some(root_id) = self.root_node_id().cloned() {
                     if root_id == first_id.clone() {
-                        self.root = Some(second_id.clone());
+                        self.core_tree.root = Some(second_id.clone());
                     }
                 }
             }
@@ -798,9 +782,9 @@ impl<'a, T> VecTree<'a, T> {
                 if let Some(root_id) = self.root_node_id().cloned() {
 
                     if root_id == first_id.clone() {
-                        self.root = Some(second_id.clone());
+                        self.core_tree.root = Some(second_id.clone());
                     } else if root_id == second_id.clone() {
-                        self.root = Some(first_id.clone());
+                        self.core_tree.root = Some(first_id.clone());
                     }
                 }
             }
@@ -823,12 +807,12 @@ impl<'a, T> VecTree<'a, T> {
 
         // todo: lots of repetition in here
 
-        let first_children = self.get_unsafe(first_id).children().clone();
-        let second_children = self.get_unsafe(second_id).children().clone();
+        let first_children = self.core_tree.get_unsafe(first_id).children().clone();
+        let second_children = self.core_tree.get_unsafe(second_id).children().clone();
 
         if let Some((lower_id, upper_id)) = lower_upper_test {
 
-            let lower_parent = self.get_unsafe(lower_id).parent().cloned().unwrap();
+            let lower_parent = self.core_tree.get_unsafe(lower_id).parent().cloned().unwrap();
 
             let (mut upper_children, lower_children) = if upper_id == first_id {
                 (first_children, second_children)
@@ -837,12 +821,12 @@ impl<'a, T> VecTree<'a, T> {
             };
 
             for child in &upper_children {
-                self.get_mut_unsafe(child).set_parent(
+                self.core_tree.get_mut_unsafe(child).set_parent(
                     Some(lower_id.clone()),
                 );
             }
             for child in &lower_children {
-                self.get_mut_unsafe(child).set_parent(
+                self.core_tree.get_mut_unsafe(child).set_parent(
                     Some(upper_id.clone()),
                 );
             }
@@ -853,8 +837,8 @@ impl<'a, T> VecTree<'a, T> {
             }
 
             //swap children of these nodes
-            self.get_mut_unsafe(upper_id).set_children(lower_children);
-            self.get_mut_unsafe(lower_id).set_children(upper_children);
+            self.core_tree.get_mut_unsafe(upper_id).set_children(lower_children);
+            self.core_tree.get_mut_unsafe(lower_id).set_children(upper_children);
 
             //add lower to upper
             self.set_as_parent_and_child(upper_id, lower_id);
@@ -864,46 +848,22 @@ impl<'a, T> VecTree<'a, T> {
 
             //take care of these nodes' children's parent values
             for child in &first_children {
-                self.get_mut_unsafe(child).set_parent(
+                self.core_tree.get_mut_unsafe(child).set_parent(
                     Some(second_id.clone()),
                 );
             }
             for child in &second_children {
-                self.get_mut_unsafe(child).set_parent(
+                self.core_tree.get_mut_unsafe(child).set_parent(
                     Some(first_id.clone()),
                 );
             }
 
             //swap children of these nodes
-            self.get_mut_unsafe(first_id).set_children(second_children);
-            self.get_mut_unsafe(second_id).set_children(first_children);
+            self.core_tree.get_mut_unsafe(first_id).set_children(second_children);
+            self.core_tree.get_mut_unsafe(second_id).set_children(first_children);
         }
 
         Ok(())
-    }
-
-    // Nothing should make it past this function.
-    // If there is a way for a NodeId to be invalid, it should be caught here.
-    fn is_valid_node_id(&self, node_id: &NodeId) -> (bool, Option<NodeIdError>) {
-        if node_id.tree_id != self.id {
-            return (false, Some(NodeIdError::InvalidNodeIdForTree));
-        }
-
-        if node_id.index >= self.nodes.len() {
-            panic!(
-                "NodeId: {:?} is out of bounds. This is most likely a bug in id_tree. Please \
-                report this issue!",
-                node_id
-            );
-        }
-
-        unsafe {
-            if self.nodes.get_unchecked(node_id.index).is_none() {
-                return (false, Some(NodeIdError::NodeIdNoLongerValid));
-            }
-        }
-
-        (true, None)
     }
 
     fn find_subtree_root_between_ids<'f>(
@@ -911,7 +871,7 @@ impl<'a, T> VecTree<'a, T> {
         lower_id: &'f NodeId,
         upper_id: &'f NodeId,
     ) -> Option<&'f NodeId> {
-        if let Some(lower_parent) = self.get_unsafe(lower_id).parent() {
+        if let Some(lower_parent) = self.core_tree.get_unsafe(lower_id).parent() {
             if lower_parent == upper_id {
                 return Some(lower_id);
             } else {
@@ -924,55 +884,38 @@ impl<'a, T> VecTree<'a, T> {
     }
 
     fn set_as_parent_and_child(&mut self, parent_id: &NodeId, child_id: &NodeId) {
-        self.get_mut_unsafe(parent_id).add_child(child_id.clone());
+        self.core_tree.get_mut_unsafe(parent_id).add_child(child_id.clone());
 
-        self.get_mut_unsafe(child_id).set_parent(
+        self.core_tree.get_mut_unsafe(child_id).set_parent(
             Some(parent_id.clone()),
         );
     }
 
     fn detach_from_parent(&mut self, parent_id: &NodeId, node_id: &NodeId) {
-        self.get_mut_unsafe(parent_id).children_mut().retain(
+        self.core_tree.get_mut_unsafe(parent_id).children_mut().retain(
             |child_id| {
                 child_id != node_id
             },
         );
     }
 
-    fn insert_new_node(&mut self, new_node: VecNode<T>) -> NodeId {
-
-        if !self.free_ids.is_empty() {
-            let new_node_id: NodeId = self.free_ids.pop().expect(
-                "VecTree::insert_new_node: Couldn't pop from Vec with len() > 0.",
-            );
-
-            self.nodes.push(Some(new_node));
-            self.nodes.swap_remove(new_node_id.index);
-
-            new_node_id
-        } else {
-            let new_node_index = self.nodes.len();
-            self.nodes.push(Some(new_node));
-
-            self.new_node_id(new_node_index)
-        }
-    }
-
     fn remove_node_internal(&mut self, node_id: NodeId) -> VecNode<T> {
 
-        if let Some(root_id) = self.root.clone() {
-            if node_id == root_id {
-                self.root = None;
-            }
-        }
+        let mut node = self.core_tree.remove_node(node_id.clone());
 
-        let mut node = self.take_node(node_id.clone());
+//        if let Some(root_id) = self.root.clone() {
+//            if node_id == root_id {
+//                self.root = None;
+//            }
+//        }
+//
+//        let mut node = self.take_node(node_id.clone());
 
         // The only thing we care about here is dealing with "this" Node's parent's children
         // This Node's children's parent will be handled in different ways depending upon how this
         // method is called.
         if let Some(parent_id) = node.parent() {
-            self.get_mut_unsafe(parent_id).children_mut().retain(
+            self.core_tree.get_mut_unsafe(parent_id).children_mut().retain(
                 |child_id| {
                     child_id != &node_id
                 },
@@ -986,30 +929,12 @@ impl<'a, T> VecTree<'a, T> {
         node
     }
 
-    fn take_node(&mut self, node_id: NodeId) -> VecNode<T> {
-        self.nodes.push(None);
-        let node = self.nodes.swap_remove(node_id.index).expect(
-            "VecTree::take_node: An invalid NodeId made it past id_tree's internal checks. \
-                Please report this issue!",
-        );
-        self.free_ids.push(node_id);
-
-        node
-    }
-
-    fn new_node_id(&self, node_index: usize) -> NodeId {
-        NodeId {
-            tree_id: self.id,
-            index: node_index,
-        }
-    }
-
     fn clear_parent(&mut self, node_id: &NodeId) {
         self.set_parent(node_id, None);
     }
 
     fn set_parent(&mut self, node_id: &NodeId, new_parent: Option<NodeId>) {
-        self.get_mut_unsafe(node_id).set_parent(new_parent);
+        self.core_tree.get_mut_unsafe(node_id).set_parent(new_parent);
     }
 
     fn clear_parent_of_children(&mut self, node_id: &NodeId) {
@@ -1017,27 +942,17 @@ impl<'a, T> VecTree<'a, T> {
     }
 
     fn set_parent_of_children(&mut self, node_id: &NodeId, new_parent: Option<NodeId>) {
-        for child_id in self.get_unsafe(node_id).children().clone() {
+        for child_id in self.core_tree.get_unsafe(node_id).children().clone() {
             self.set_parent(&child_id, new_parent.clone());
         }
     }
 
-    pub(crate) fn get_unsafe(&self, node_id: &NodeId) -> &VecNode<T> {
-        unsafe {
-            self.nodes.get_unchecked(node_id.index).as_ref().expect(
-                "VecTree::get_unsafe: An invalid NodeId made it past id_tree's internal \
-                    checks.  Please report this issue!",
-            )
-        }
+    pub(crate) fn core_tree(&self) -> &CoreTree<VecNode<T>, T> {
+        &self.core_tree
     }
 
-    fn get_mut_unsafe(&mut self, node_id: &NodeId) -> &mut VecNode<T> {
-        unsafe {
-            self.nodes.get_unchecked_mut(node_id.index).as_mut().expect(
-                "VecTree::get_mut_unsafe: An invalid NodeId made it past id_tree's internal \
-                    checks.  Please report this issue!",
-            )
-        }
+    pub(crate) fn core_tree_mut(&mut self) -> &mut CoreTree<VecNode<T>, T> {
+        &mut self.core_tree
     }
 }
 
@@ -1103,8 +1018,8 @@ mod tree_builder_tests {
         let root = tree.get(tree.root_node_id().unwrap()).unwrap();
 
         assert_eq!(root.data(), &5);
-        assert_eq!(tree.nodes.capacity(), 10);
-        assert_eq!(tree.free_ids.capacity(), 3);
+        assert_eq!(tree.core_tree.nodes.capacity(), 10);
+        assert_eq!(tree.core_tree.free_ids.capacity(), 3);
     }
 }
 
@@ -1116,16 +1031,16 @@ mod tree_tests {
     fn test_new() {
         let tree: VecTree<i32> = VecTree::new();
 
-        assert_eq!(tree.root, None);
-        assert_eq!(tree.nodes.len(), 0);
-        assert_eq!(tree.free_ids.len(), 0);
+        assert_eq!(tree.core_tree.root, None);
+        assert_eq!(tree.core_tree.nodes.len(), 0);
+        assert_eq!(tree.core_tree.free_ids.len(), 0);
     }
 
     #[test]
     fn test_get() {
         let tree = VecTreeBuilder::new().with_root(Node::new(5)).build();
 
-        let root_id = tree.root.clone().unwrap();
+        let root_id = tree.core_tree.root.clone().unwrap();
         let root = tree.get(&root_id).unwrap();
 
         assert_eq!(root.data(), &5);
@@ -1135,7 +1050,7 @@ mod tree_tests {
     fn test_get_mut() {
         let mut tree = VecTreeBuilder::new().with_root(Node::new(5)).build();
 
-        let root_id = tree.root.clone().unwrap();
+        let root_id = tree.core_tree.root.clone().unwrap();
 
         {
             let root = tree.get(&root_id).unwrap();
@@ -1163,7 +1078,7 @@ mod tree_tests {
         let mut tree = VecTreeBuilder::new().build();
 
         let node_a_id = tree.insert(node_a, AsRoot).unwrap();
-        let root_id = tree.root.clone().unwrap();
+        let root_id = tree.core_tree.root.clone().unwrap();
         assert_eq!(node_a_id, root_id);
 
         {
@@ -1174,7 +1089,7 @@ mod tree_tests {
         }
 
         let node_b_id = tree.insert(node_b, AsRoot).unwrap();
-        let root_id = tree.root.clone().unwrap();
+        let root_id = tree.core_tree.root.clone().unwrap();
         assert_eq!(node_b_id, root_id);
 
         {
@@ -1193,7 +1108,7 @@ mod tree_tests {
     fn test_root_node_id() {
         let tree = VecTreeBuilder::new().with_root(Node::new(5)).build();
 
-        let root_id = tree.root.clone().unwrap();
+        let root_id = tree.core_tree.root.clone().unwrap();
         let root_node_id = tree.root_node_id().unwrap();
 
         assert_eq!(&root_id, root_node_id);
@@ -1212,7 +1127,7 @@ mod tree_tests {
         let node_a = Node::new(a);
         let node_b = Node::new(b);
 
-        let root_id = tree.root.clone().unwrap();
+        let root_id = tree.core_tree.root.clone().unwrap();
         let node_a_id = tree.insert(node_a, UnderNode(&root_id)).unwrap();
         let node_b_id = tree.insert(node_b, UnderNode(&root_id)).unwrap();
 
@@ -1244,7 +1159,7 @@ mod tree_tests {
 
         let mut tree = VecTreeBuilder::new().with_root(Node::new(5)).build();
 
-        let root_id = tree.root.clone().unwrap();
+        let root_id = tree.core_tree.root.clone().unwrap();
 
         let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
         let node_2_id = tree.insert(Node::new(2), UnderNode(&node_1_id)).unwrap();
@@ -1280,7 +1195,7 @@ mod tree_tests {
 
         let mut tree = VecTreeBuilder::new().with_root(Node::new(5)).build();
 
-        let root_id = tree.root.clone().unwrap();
+        let root_id = tree.core_tree.root.clone().unwrap();
 
         let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
         let node_2_id = tree.insert(Node::new(2), UnderNode(&node_1_id)).unwrap();
@@ -1311,13 +1226,13 @@ mod tree_tests {
 
         let mut tree = VecTreeBuilder::new().with_root(Node::new(5)).build();
 
-        let root_id = tree.root.clone().unwrap();
+        let root_id = tree.core_tree.root.clone().unwrap();
         tree.remove(root_id.clone(), OrphanChildren).unwrap();
         assert_eq!(None, tree.root_node_id());
 
         let mut tree = VecTreeBuilder::new().with_root(Node::new(5)).build();
 
-        let root_id = tree.root.clone().unwrap();
+        let root_id = tree.core_tree.root.clone().unwrap();
         tree.remove(root_id.clone(), LiftChildren).unwrap();
         assert_eq!(None, tree.root_node_id());
     }

@@ -3,15 +3,15 @@ use snowflake::ProcessUniqueId;
 
 use ::*;
 
-pub(crate) struct CoreTree<N, T> where N: Node<T>, N: MutNode {
-    id: ProcessUniqueId,
-    root: Option<NodeId>,
-    nodes: Vec<Option<N>>,
-    free_ids: Vec<NodeId>,
+pub struct CoreTree<N, T> where N: Node<T> {
+    pub id: ProcessUniqueId,
+    pub root: Option<NodeId>,
+    pub nodes: Vec<Option<N>>,
+    pub free_ids: Vec<NodeId>,
     phantom: PhantomData<T>,
 }
 
-impl<N, T> CoreTree<N, T> where N: Node<T>, N: MutNode {
+impl<N, T> CoreTree<N, T> where N: Node<T> {
     pub fn new(mut root: Option<N>, node_capacity: usize, swap_capacity: usize) -> CoreTree<N, T> {
 
         let tree_id = ProcessUniqueId::new();
@@ -38,6 +38,9 @@ impl<N, T> CoreTree<N, T> where N: Node<T>, N: MutNode {
         tree
     }
 
+    ///
+    /// Sets the root of the `Tree`.
+    ///
     pub fn set_root(&mut self, new_root: N) -> NodeId {
         let new_root_id = self.insert_new_node(new_root);
         self.root = Some(new_root_id.clone());
@@ -64,7 +67,7 @@ impl<N, T> CoreTree<N, T> where N: Node<T>, N: MutNode {
 
     }
 
-    fn remove_node(&mut self, node_id: NodeId) -> N {
+    pub fn remove_node(&mut self, node_id: NodeId) -> N {
 
         if Some(&node_id) == self.root.as_ref() {
             self.root = None;
@@ -73,7 +76,7 @@ impl<N, T> CoreTree<N, T> where N: Node<T>, N: MutNode {
         self.take_node(node_id)
     }
 
-    fn take_node(&mut self, node_id: NodeId) -> N {
+    pub fn take_node(&mut self, node_id: NodeId) -> N {
         self.nodes.push(None);
 
         if let Some(node) = self.nodes.swap_remove(node_id.index) {
