@@ -1,3 +1,4 @@
+mod core;
 mod vec_tree;
 mod opt_tree;
 
