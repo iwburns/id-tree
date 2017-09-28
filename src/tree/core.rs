@@ -3,7 +3,10 @@ use snowflake::ProcessUniqueId;
 
 use ::*;
 
-pub struct CoreTree<N, T> where N: Node<T> {
+pub struct CoreTree<N, T>
+where
+    N: Node<T>,
+{
     pub id: ProcessUniqueId,
     pub root: Option<NodeId>,
     pub nodes: Vec<Option<N>>,
@@ -11,7 +14,10 @@ pub struct CoreTree<N, T> where N: Node<T> {
     phantom: PhantomData<T>,
 }
 
-impl<N, T> CoreTree<N, T> where N: Node<T> {
+impl<N, T> CoreTree<N, T>
+where
+    N: Node<T>,
+{
     pub fn new(mut root: Option<N>, node_capacity: usize, swap_capacity: usize) -> CoreTree<N, T> {
 
         let tree_id = ProcessUniqueId::new();
@@ -26,10 +32,7 @@ impl<N, T> CoreTree<N, T> where N: Node<T> {
 
         if root.is_some() {
 
-            let node_id = NodeId {
-                tree_id,
-                index: 0,
-            };
+            let node_id = NodeId { tree_id, index: 0 };
 
             tree.nodes.push(root.take());
             tree.root = Some(node_id);
@@ -83,8 +86,10 @@ impl<N, T> CoreTree<N, T> where N: Node<T> {
             self.free_ids.push(node_id);
             node
         } else {
-            panic!("CoreTree::take_node: An invalid NodeId made it past id_tree's internal \
-                checks. Please report this issue!");
+            panic!(
+                "CoreTree::take_node: An invalid NodeId made it past id_tree's internal \
+                checks. Please report this issue!"
+            );
         }
     }
 
@@ -139,4 +144,3 @@ impl<N, T> CoreTree<N, T> where N: Node<T> {
         }
     }
 }
-

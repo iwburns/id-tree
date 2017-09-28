@@ -124,11 +124,7 @@ impl<'a, T> VecTreeBuilder<T> {
     ///
     pub fn build(self) -> VecTree<'a, T> {
         VecTree {
-            core_tree: CoreTree::new(
-                self.root,
-                self.node_capacity,
-                self.swap_capacity,
-            ),
+            core_tree: CoreTree::new(self.root, self.node_capacity, self.swap_capacity),
             phantom: PhantomData,
         }
     }
@@ -261,8 +257,12 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
         }
 
         let mut children = self.core_tree.get_mut_unsafe(node_id).take_children();
-        children.sort_by(|a, b| compare(self.core_tree.get_unsafe(a), self.core_tree.get_unsafe(b)));
-        self.core_tree.get_mut_unsafe(node_id).set_children(children);
+        children.sort_by(|a, b| {
+            compare(self.core_tree.get_unsafe(a), self.core_tree.get_unsafe(b))
+        });
+        self.core_tree.get_mut_unsafe(node_id).set_children(
+            children,
+        );
 
         Ok(())
     }
@@ -280,7 +280,9 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
 
         let mut children = self.core_tree.get_mut_unsafe(node_id).take_children();
         children.sort_by_key(|a| self.core_tree.get_unsafe(a).data());
-        self.core_tree.get_mut_unsafe(node_id).set_children(children);
+        self.core_tree.get_mut_unsafe(node_id).set_children(
+            children,
+        );
 
         Ok(())
     }
@@ -300,7 +302,9 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
 
         let mut children = self.core_tree.get_mut_unsafe(node_id).take_children();
         children.sort_by_key(|a| f(self.core_tree.get_unsafe(a)));
-        self.core_tree.get_mut_unsafe(node_id).set_children(children);
+        self.core_tree.get_mut_unsafe(node_id).set_children(
+            children,
+        );
 
         Result::Ok(())
     }
@@ -606,16 +610,19 @@ impl<'a, T> VecTree<'a, T> {
             self.detach_from_parent(&lower_parent_id, lower_id);
 
             if upper_parent_id.is_some() {
-                self.core_tree.get_mut_unsafe(upper_parent_id.as_ref().unwrap())
+                self.core_tree
+                    .get_mut_unsafe(upper_parent_id.as_ref().unwrap())
                     .replace_child(upper_id.clone(), lower_id.clone());
             } else if self.core_tree.root.as_ref() == Some(upper_id) {
                 self.core_tree.root = Some(lower_id.clone());
             }
 
-            self.core_tree.get_mut_unsafe(upper_id).set_parent(
-                Some(lower_id.clone()),
+            self.core_tree.get_mut_unsafe(upper_id).set_parent(Some(
+                lower_id.clone(),
+            ));
+            self.core_tree.get_mut_unsafe(lower_id).add_child(
+                upper_id.clone(),
             );
-            self.core_tree.get_mut_unsafe(lower_id).add_child(upper_id.clone());
 
         } else {
 
@@ -650,26 +657,34 @@ impl<'a, T> VecTree<'a, T> {
                     // swapping the root with itself??
                 }
             } else {
-                let first_parent_id = self.core_tree.get_unsafe(first_id).parent().cloned().unwrap();
-                let second_parent_id = self.core_tree.get_unsafe(second_id).parent().cloned().unwrap();
+                let first_parent_id = self.core_tree
+                    .get_unsafe(first_id)
+                    .parent()
+                    .cloned()
+                    .unwrap();
+                let second_parent_id = self.core_tree
+                    .get_unsafe(second_id)
+                    .parent()
+                    .cloned()
+                    .unwrap();
 
                 // replace parents
-                self.core_tree.get_mut_unsafe(first_id).set_parent(
-                    Some(second_parent_id.clone()),
-                );
-                self.core_tree.get_mut_unsafe(second_id).set_parent(
-                    Some(first_parent_id.clone()),
-                );
+                self.core_tree.get_mut_unsafe(first_id).set_parent(Some(
+                    second_parent_id
+                        .clone(),
+                ));
+                self.core_tree.get_mut_unsafe(second_id).set_parent(Some(
+                    first_parent_id
+                        .clone(),
+                ));
 
                 // change children
-                self.core_tree.get_mut_unsafe(&first_parent_id).replace_child(
-                    first_id.clone(),
-                    second_id.clone(),
-                );
-                self.core_tree.get_mut_unsafe(&second_parent_id).replace_child(
-                    second_id.clone(),
-                    first_id.clone(),
-                );
+                self.core_tree
+                    .get_mut_unsafe(&first_parent_id)
+                    .replace_child(first_id.clone(), second_id.clone());
+                self.core_tree
+                    .get_mut_unsafe(&second_parent_id)
+                    .replace_child(second_id.clone(), first_id.clone());
             }
         }
 
@@ -688,8 +703,12 @@ impl<'a, T> VecTree<'a, T> {
         //swap children of these nodes
         let first_children = self.core_tree.get_unsafe(first_id).children().clone();
         let second_children = self.core_tree.get_unsafe(second_id).children().clone();
-        self.core_tree.get_mut_unsafe(first_id).set_children(second_children);
-        self.core_tree.get_mut_unsafe(second_id).set_children(first_children);
+        self.core_tree.get_mut_unsafe(first_id).set_children(
+            second_children,
+        );
+        self.core_tree.get_mut_unsafe(second_id).set_children(
+            first_children,
+        );
 
         let first_parent = self.core_tree.get_unsafe(first_id).parent().cloned();
         let second_parent = self.core_tree.get_unsafe(second_id).parent().cloned();
@@ -697,55 +716,64 @@ impl<'a, T> VecTree<'a, T> {
         //todo: some of this could probably be abstracted out into a method or two
         match (first_parent, second_parent) {
             (Some(ref first_parent_id), Some(ref second_parent_id)) => {
-                let first_index = self.core_tree.get_unsafe(first_parent_id)
+                let first_index = self.core_tree
+                    .get_unsafe(first_parent_id)
                     .children()
                     .iter()
                     .position(|id| id == first_id)
                     .unwrap();
-                let second_index = self.core_tree.get_unsafe(second_parent_id)
+                let second_index = self.core_tree
+                    .get_unsafe(second_parent_id)
                     .children()
                     .iter()
                     .position(|id| id == second_id)
                     .unwrap();
 
                 unsafe {
-                    let temp = self.core_tree.get_mut_unsafe(first_parent_id)
+                    let temp = self.core_tree
+                        .get_mut_unsafe(first_parent_id)
                         .children_mut()
                         .get_unchecked_mut(first_index);
                     *temp = second_id.clone();
                 }
                 unsafe {
-                    let temp = self.core_tree.get_mut_unsafe(second_parent_id)
+                    let temp = self.core_tree
+                        .get_mut_unsafe(second_parent_id)
                         .children_mut()
                         .get_unchecked_mut(second_index);
                     *temp = first_id.clone();
                 }
 
-                self.core_tree.get_mut_unsafe(first_id).set_parent(
-                    Some(second_parent_id.clone()),
-                );
-                self.core_tree.get_mut_unsafe(second_id).set_parent(
-                    Some(first_parent_id.clone()),
-                );
+                self.core_tree.get_mut_unsafe(first_id).set_parent(Some(
+                    second_parent_id
+                        .clone(),
+                ));
+                self.core_tree.get_mut_unsafe(second_id).set_parent(Some(
+                    first_parent_id
+                        .clone(),
+                ));
             }
             (Some(ref first_parent_id), None) => {
-                let first_index = self.core_tree.get_unsafe(first_parent_id)
+                let first_index = self.core_tree
+                    .get_unsafe(first_parent_id)
                     .children()
                     .iter()
                     .position(|id| id == first_id)
                     .unwrap();
 
                 unsafe {
-                    let temp = self.core_tree.get_mut_unsafe(first_parent_id)
+                    let temp = self.core_tree
+                        .get_mut_unsafe(first_parent_id)
                         .children_mut()
                         .get_unchecked_mut(first_index);
                     *temp = second_id.clone();
                 }
 
                 self.core_tree.get_mut_unsafe(first_id).set_parent(None);
-                self.core_tree.get_mut_unsafe(second_id).set_parent(
-                    Some(first_parent_id.clone()),
-                );
+                self.core_tree.get_mut_unsafe(second_id).set_parent(Some(
+                    first_parent_id
+                        .clone(),
+                ));
 
                 if let Some(root_id) = self.root_node_id().cloned() {
                     if root_id == second_id.clone() {
@@ -754,22 +782,25 @@ impl<'a, T> VecTree<'a, T> {
                 }
             }
             (None, Some(ref second_parent_id)) => {
-                let second_index = self.core_tree.get_unsafe(second_parent_id)
+                let second_index = self.core_tree
+                    .get_unsafe(second_parent_id)
                     .children()
                     .iter()
                     .position(|id| id == second_id)
                     .unwrap();
 
                 unsafe {
-                    let temp = self.core_tree.get_mut_unsafe(second_parent_id)
+                    let temp = self.core_tree
+                        .get_mut_unsafe(second_parent_id)
                         .children_mut()
                         .get_unchecked_mut(second_index);
                     *temp = first_id.clone();
                 }
 
-                self.core_tree.get_mut_unsafe(first_id).set_parent(
-                    Some(second_parent_id.clone()),
-                );
+                self.core_tree.get_mut_unsafe(first_id).set_parent(Some(
+                    second_parent_id
+                        .clone(),
+                ));
                 self.core_tree.get_mut_unsafe(second_id).set_parent(None);
 
                 if let Some(root_id) = self.root_node_id().cloned() {
@@ -812,7 +843,11 @@ impl<'a, T> VecTree<'a, T> {
 
         if let Some((lower_id, upper_id)) = lower_upper_test {
 
-            let lower_parent = self.core_tree.get_unsafe(lower_id).parent().cloned().unwrap();
+            let lower_parent = self.core_tree
+                .get_unsafe(lower_id)
+                .parent()
+                .cloned()
+                .unwrap();
 
             let (mut upper_children, lower_children) = if upper_id == first_id {
                 (first_children, second_children)
@@ -837,8 +872,12 @@ impl<'a, T> VecTree<'a, T> {
             }
 
             //swap children of these nodes
-            self.core_tree.get_mut_unsafe(upper_id).set_children(lower_children);
-            self.core_tree.get_mut_unsafe(lower_id).set_children(upper_children);
+            self.core_tree.get_mut_unsafe(upper_id).set_children(
+                lower_children,
+            );
+            self.core_tree.get_mut_unsafe(lower_id).set_children(
+                upper_children,
+            );
 
             //add lower to upper
             self.set_as_parent_and_child(upper_id, lower_id);
@@ -859,8 +898,12 @@ impl<'a, T> VecTree<'a, T> {
             }
 
             //swap children of these nodes
-            self.core_tree.get_mut_unsafe(first_id).set_children(second_children);
-            self.core_tree.get_mut_unsafe(second_id).set_children(first_children);
+            self.core_tree.get_mut_unsafe(first_id).set_children(
+                second_children,
+            );
+            self.core_tree.get_mut_unsafe(second_id).set_children(
+                first_children,
+            );
         }
 
         Ok(())
@@ -884,42 +927,34 @@ impl<'a, T> VecTree<'a, T> {
     }
 
     fn set_as_parent_and_child(&mut self, parent_id: &NodeId, child_id: &NodeId) {
-        self.core_tree.get_mut_unsafe(parent_id).add_child(child_id.clone());
-
-        self.core_tree.get_mut_unsafe(child_id).set_parent(
-            Some(parent_id.clone()),
+        self.core_tree.get_mut_unsafe(parent_id).add_child(
+            child_id.clone(),
         );
+
+        self.core_tree.get_mut_unsafe(child_id).set_parent(Some(
+            parent_id.clone(),
+        ));
     }
 
     fn detach_from_parent(&mut self, parent_id: &NodeId, node_id: &NodeId) {
-        self.core_tree.get_mut_unsafe(parent_id).children_mut().retain(
-            |child_id| {
-                child_id != node_id
-            },
-        );
+        self.core_tree
+            .get_mut_unsafe(parent_id)
+            .children_mut()
+            .retain(|child_id| child_id != node_id);
     }
 
     fn remove_node_internal(&mut self, node_id: NodeId) -> VecNode<T> {
 
         let mut node = self.core_tree.remove_node(node_id.clone());
 
-//        if let Some(root_id) = self.root.clone() {
-//            if node_id == root_id {
-//                self.root = None;
-//            }
-//        }
-//
-//        let mut node = self.take_node(node_id.clone());
-
         // The only thing we care about here is dealing with "this" Node's parent's children
         // This Node's children's parent will be handled in different ways depending upon how this
         // method is called.
         if let Some(parent_id) = node.parent() {
-            self.core_tree.get_mut_unsafe(parent_id).children_mut().retain(
-                |child_id| {
-                    child_id != &node_id
-                },
-            );
+            self.core_tree
+                .get_mut_unsafe(parent_id)
+                .children_mut()
+                .retain(|child_id| child_id != &node_id);
         }
 
         // avoid providing the caller with extra copies of NodeIds
@@ -934,7 +969,9 @@ impl<'a, T> VecTree<'a, T> {
     }
 
     fn set_parent(&mut self, node_id: &NodeId, new_parent: Option<NodeId>) {
-        self.core_tree.get_mut_unsafe(node_id).set_parent(new_parent);
+        self.core_tree.get_mut_unsafe(node_id).set_parent(
+            new_parent,
+        );
     }
 
     fn clear_parent_of_children(&mut self, node_id: &NodeId) {

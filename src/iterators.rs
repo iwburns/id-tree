@@ -126,8 +126,12 @@ pub struct VecChildren<'a, D: 'a> {
 impl<'a, D> VecChildren<'a, D> {
     pub(crate) fn new(tree: &'a VecTree<D>, node_id: NodeId) -> VecChildren<'a, D> {
         VecChildren {
-            tree: tree,
-            child_ids: tree.core_tree().get_unsafe(&node_id).children().as_slice().iter(),
+            tree,
+            child_ids: tree.core_tree()
+                .get_unsafe(&node_id)
+                .children()
+                .as_slice()
+                .iter(),
         }
     }
 }
@@ -156,7 +160,13 @@ pub struct VecChildrenIds<'a> {
 
 impl<'a> VecChildrenIds<'a> {
     pub(crate) fn new<T>(tree: &'a VecTree<T>, node_id: NodeId) -> VecChildrenIds<'a> {
-        VecChildrenIds { child_ids: tree.core_tree().get_unsafe(&node_id).children().as_slice().iter() }
+        VecChildrenIds {
+            child_ids: tree.core_tree()
+                .get_unsafe(&node_id)
+                .children()
+                .as_slice()
+                .iter(),
+        }
     }
 }
 
@@ -191,8 +201,8 @@ impl<'a, T> VecPreOrderTraversal<'a, T> {
         data.push_front(node_id);
 
         VecPreOrderTraversal {
-            tree: tree,
-            data: data,
+            tree,
+            data,
         }
     }
 }
@@ -240,7 +250,7 @@ impl<'a, T> VecPostOrderTraversal<'a, T> {
         VecPostOrderTraversal::process_nodes(node_id, tree, &mut ids);
 
         VecPostOrderTraversal {
-            tree: tree,
+            tree,
             ids: ids.into_iter(),
         }
     }
@@ -293,8 +303,8 @@ impl<'a, T> VecLevelOrderTraversal<'a, T> {
         data.push_back(node_id);
 
         VecLevelOrderTraversal {
-            tree: tree,
-            data: data,
+            tree,
+            data,
         }
     }
 }
