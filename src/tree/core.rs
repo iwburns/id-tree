@@ -3,6 +3,13 @@ use snowflake::ProcessUniqueId;
 
 use ::*;
 
+///
+/// A structure for dealing with the core data that defines a Tree.
+///
+/// Hierarchical decisions should not be made at this level.  This structure should only know
+/// how to do the most basic of operations and should take care of the logic that deals with
+/// keeping its internal data structures in sync with one another.
+///
 pub struct CoreTree<N, T>
 where
     N: Node<T>,
@@ -45,20 +52,11 @@ where
     }
 
     ///
-    /// Sets the root of the `Tree`.
-    ///
-    pub fn set_root(&mut self, new_root: N) -> NodeId {
-        let new_root_id = self.insert_new_node(new_root);
-        self.root = Some(new_root_id.clone());
-        new_root_id
-    }
-
-    ///
     /// Inserts a new node and returns a NodeId that points to it.
     ///
     /// This function will attempt to re-use old NodeIds if they exist.
     ///
-    pub fn insert_new_node(&mut self, new_node: N) -> NodeId {
+    pub fn insert(&mut self, new_node: N) -> NodeId {
 
         if let Some(new_node_id) = self.free_ids.pop() {
 
@@ -78,13 +76,12 @@ where
 
     }
 
-
     ///
     /// Removes a node from the tree and returns it.
     ///
     /// This function will save the given NodeId for later use.
     ///
-    pub fn remove_node(&mut self, node_id: NodeId) -> N {
+    pub fn remove(&mut self, node_id: NodeId) -> N {
 
         if Some(&node_id) == self.root.as_ref() {
             self.root = None;
@@ -97,9 +94,85 @@ where
             node
         } else {
             panic!(
-                "CoreTree.remove_node: An invalid NodeId made it past id_tree's internal \
-                checks. Please report this issue!"
+                "CoreTree.remove: An invalid NodeId made it past id_tree's internal checks. \
+                Please report this issue!"
             );
+        }
+    }
+
+    ///
+/// Sets the root of the `Tree`.
+///
+    pub fn set_root(&mut self, new_root: N) -> NodeId {
+        let new_root_id = self.insert(new_root);
+        self.root = Some(new_root_id.clone());
+        new_root_id
+    }
+
+    ///
+    /// Returns an (optional) immutable reference to the NodeId that points to this Tree's root.
+    ///
+    pub fn root(&self) -> Option<&NodeId> {
+        self.root.as_ref()
+    }
+
+    ///
+    /// Return a Result containing an immutable reference to the Node that node_id points to,
+    /// or a NodeIdError if one occurred.
+    ///
+    pub fn get(&self, node_id: &NodeId) -> Result<&N, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            Err(error.expect(
+                "CoreTree.get: Missing an error value on finding an invalid NodeId.",
+            ))
+        } else {
+            Ok(self.get_unsafe(node_id))
+        }
+    }
+
+    ///
+    /// Return a Result containing a mutable reference to the Node that node_id points to,
+    /// or a NodeIdError if one occurred.
+    ///
+    pub fn get_mut(&mut self, node_id: &NodeId) -> Result<&mut N, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            Err(error.expect(
+                "VecTree::get_mut: Missing an error value on finding an invalid NodeId.",
+            ))
+        } else {
+            Ok(self.get_mut_unsafe(node_id))
+        }
+    }
+
+    ///
+    /// Returns an immutable reference to the Node that node_id points to.
+    ///
+    /// This function should only be called after a node_id has been check by
+    /// CoreTree.is_valid_node_id().
+    ///
+    pub fn get_unsafe(&self, node_id: &NodeId) -> &N {
+        unsafe {
+            self.nodes.get_unchecked(node_id.index).as_ref().expect(
+                "CoreTree.get_unsafe: An invalid NodeId made it past id_tree's internal \
+                    checks.  Please report this issue!",
+            )
+        }
+    }
+
+    ///
+    /// Returns a mutable reference to the Node that node_id points to.
+    ///
+    /// This function should only be called after a node_id has been check by
+    /// CoreTree.is_valid_node_id().
+    ///
+    pub fn get_mut_unsafe(&mut self, node_id: &NodeId) -> &mut N {
+        unsafe {
+            self.nodes.get_unchecked_mut(node_id.index).as_mut().expect(
+                "CoreTree.get_mut_unsafe: An invalid NodeId made it past id_tree's internal \
+                    checks.  Please report this issue!",
+            )
         }
     }
 
@@ -140,36 +213,108 @@ where
 
         (true, None)
     }
-
-    ///
-    /// Returns an immutable reference to the Node that node_id points to.
-    ///
-    /// This function should only be called after a node_id has been check by
-    /// CoreTree.is_valid_node_id().
-    ///
-    pub fn get_unsafe(&self, node_id: &NodeId) -> &N {
-        unsafe {
-            self.nodes.get_unchecked(node_id.index).as_ref().expect(
-                "CoreTree.get_unsafe: An invalid NodeId made it past id_tree's internal \
-                    checks.  Please report this issue!",
-            )
-        }
-    }
-
-    ///
-    /// Returns a mutable reference to the Node that node_id points to.
-    ///
-    /// This function should only be called after a node_id has been check by
-    /// CoreTree.is_valid_node_id().
-    ///
-    pub fn get_mut_unsafe(&mut self, node_id: &NodeId) -> &mut N {
-        unsafe {
-            self.nodes.get_unchecked_mut(node_id.index).as_mut().expect(
-                "CoreTree.get_mut_unsafe: An invalid NodeId made it past id_tree's internal \
-                    checks.  Please report this issue!",
-            )
-        }
-    }
 }
 
-//todo: test this stuff.
+#[cfg(test)]
+mod core_tree_tests {
+    use super::*;
+
+    fn new_tree() -> CoreTree<VecNode<i32>, i32> {
+        let root = Some(VecNode::new(1));
+        let node_capacity = 2usize;
+        let swap_capacity = 3usize;
+        CoreTree::new(root, node_capacity, swap_capacity)
+    }
+
+    #[test]
+    fn test_new() {
+        let root = Some(VecNode::new(1));
+        let node_capacity = 2usize;
+        let swap_capacity = 3usize;
+
+        let tree  = CoreTree::new(root, node_capacity, swap_capacity);
+
+        assert!(tree.root.is_some());
+
+        let root_id = tree.root.as_ref().unwrap();
+
+        assert_eq!(tree.get(root_id).unwrap().data(), &1);
+        assert_eq!(tree.nodes.capacity(), node_capacity);
+        assert_eq!(tree.free_ids.capacity(), swap_capacity);
+    }
+
+    #[test]
+    fn test_insert() {
+        let mut tree = new_tree();
+        let four = 4;
+        let node_id = tree.insert(VecNode::new(four));
+
+        assert!(tree.get(&node_id).is_ok());
+        assert_eq!(tree.get(&node_id).unwrap().data(), &four);
+    }
+
+    #[test]
+    fn test_remove() {
+        let mut tree = new_tree();
+        let four = 4;
+        let node_id = tree.insert(VecNode::new(four));
+
+        assert!(tree.get(&node_id).is_ok());
+        assert_eq!(tree.get(&node_id).unwrap().data(), &four);
+
+        let node = tree.remove(node_id);
+        assert_eq!(node.data(), &four);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_remove_twice() {
+        let mut tree = new_tree();
+        let four = 4;
+        let node_id = tree.insert(VecNode::new(four));
+
+        assert!(tree.get(&node_id).is_ok());
+        assert_eq!(tree.get(&node_id).unwrap().data(), &four);
+
+        //save it for later
+        let node_id_clone = node_id.clone();
+
+        let node = tree.remove(node_id);
+        assert_eq!(node.data(), &four);
+
+        //this should panic
+        let _ = tree.remove(node_id_clone);
+    }
+
+    #[test]
+    fn test_set_root() {
+        let one = 1;
+        let node_capacity = 2usize;
+        let swap_capacity = 3usize;
+
+        let mut tree = CoreTree::new(None, node_capacity, swap_capacity);
+
+        assert!(tree.root.is_none());
+
+        let root_id = tree.set_root(VecNode::new(one));
+
+        assert!(tree.root.is_some());
+        assert_eq!(tree.get(&root_id).unwrap().data(), &one);
+    }
+
+    #[test]
+    fn test_root() {
+        let mut tree = new_tree();
+        assert!(tree.root.is_some());
+
+        {
+            let root_id = tree.root();
+            assert!(root_id.is_some());
+            assert_eq!(root_id, tree.root.as_ref());
+        }
+
+        let new_root_id = tree.set_root(VecNode::new(10));
+        assert_eq!(Some(new_root_id).as_ref(), tree.root());
+    }
+
+}

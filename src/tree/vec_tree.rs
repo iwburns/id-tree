@@ -1,6 +1,5 @@
 use std::cmp::Ordering;
 use std::marker::PhantomData;
-use snowflake::ProcessUniqueId;
 use ::*;
 
 use super::core::CoreTree;
@@ -170,7 +169,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
                 let (is_valid, error) = self.core_tree.is_valid_node_id(parent_id);
                 if !is_valid {
                     return Err(error.expect(
-                        "TVecree::insert: Missing an error value but found an \
+                        "VecTree::insert: Missing an error value but found an \
                         invalid NodeId.",
                     ));
                 }
@@ -181,25 +180,11 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
     }
 
     fn get(&self, node_id: &NodeId) -> Result<&VecNode<T>, NodeIdError> {
-        let (is_valid, error) = self.core_tree.is_valid_node_id(node_id);
-        if !is_valid {
-            Err(error.expect(
-                "VecTree::get: Missing an error value on finding an invalid NodeId.",
-            ))
-        } else {
-            Ok(self.core_tree.get_unsafe(node_id))
-        }
+        self.core_tree.get(node_id)
     }
 
     fn get_mut(&mut self, node_id: &NodeId) -> Result<&mut VecNode<T>, NodeIdError> {
-        let (is_valid, error) = self.core_tree.is_valid_node_id(node_id);
-        if !is_valid {
-            Err(error.expect(
-                "VecTree::get_mut: Missing an error value on finding an invalid NodeId.",
-            ))
-        } else {
-            Ok(self.core_tree.get_mut_unsafe(node_id))
-        }
+        self.core_tree.get_mut(node_id)
     }
 
     fn remove(
@@ -337,7 +322,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
     }
 
     fn root_node_id(&self) -> Option<&NodeId> {
-        self.core_tree.root.as_ref()
+        self.core_tree.root()
     }
 
     fn ancestors(&'a self, node_id: &NodeId) -> Result<Self::AncestorsIter, NodeIdError> {
@@ -448,7 +433,7 @@ impl<'a, T> VecTree<'a, T> {
         child: VecNode<T>,
         parent_id: &NodeId,
     ) -> Result<NodeId, NodeIdError> {
-        let new_child_id = self.core_tree.insert_new_node(child);
+        let new_child_id = self.core_tree.insert(child);
         self.set_as_parent_and_child(parent_id, &new_child_id);
         Ok(new_child_id)
     }
@@ -945,7 +930,7 @@ impl<'a, T> VecTree<'a, T> {
 
     fn remove_node_internal(&mut self, node_id: NodeId) -> VecNode<T> {
 
-        let mut node = self.core_tree.remove_node(node_id.clone());
+        let mut node = self.core_tree.remove(node_id.clone());
 
         // The only thing we care about here is dealing with "this" Node's parent's children
         // This Node's children's parent will be handled in different ways depending upon how this
