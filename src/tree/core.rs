@@ -101,8 +101,8 @@ where
     }
 
     ///
-/// Sets the root of the `Tree`.
-///
+    /// Sets the root of the `Tree`.
+    ///
     pub fn set_root(&mut self, new_root: N) -> NodeId {
         let new_root_id = self.insert(new_root);
         self.root = Some(new_root_id.clone());
@@ -179,7 +179,7 @@ where
     ///
     /// Generates a new NodeId for this tree.
     ///
-    pub fn new_node_id(&self, node_index: usize) -> NodeId {
+    fn new_node_id(&self, node_index: usize) -> NodeId {
         NodeId {
             tree_id: self.id,
             index: node_index,
@@ -232,7 +232,7 @@ mod core_tree_tests {
         let node_capacity = 2usize;
         let swap_capacity = 3usize;
 
-        let tree  = CoreTree::new(root, node_capacity, swap_capacity);
+        let tree = CoreTree::new(root, node_capacity, swap_capacity);
 
         assert!(tree.root.is_some());
 
@@ -317,4 +317,157 @@ mod core_tree_tests {
         assert_eq!(Some(new_root_id).as_ref(), tree.root());
     }
 
+    #[test]
+    fn test_get() {
+        let mut tree = new_tree();
+
+        let four = 4;
+        let node_id = tree.insert(VecNode::new(four));
+
+        let node_result = tree.get(&node_id);
+        assert!(node_result.is_ok());
+
+        let node = node_result.unwrap();
+        assert_eq!(node.data(), &four);
+    }
+
+    #[test]
+    fn test_get_mut() {
+        let mut tree = new_tree();
+
+        let four = 4;
+        let node_id = tree.insert(VecNode::new(four));
+
+        let node_result = tree.get_mut(&node_id);
+        assert!(node_result.is_ok());
+
+        let node = node_result.unwrap();
+        assert_eq!(node.data(), &four);
+
+        let five = 5;
+        let four_again = node.replace_data(five);
+        assert_eq!(four_again, four);
+        assert_eq!(node.data(), &five);
+    }
+
+    #[test]
+    fn test_get_unsafe() {
+        let mut tree = new_tree();
+
+        let four = 4;
+        let node_id = tree.insert(VecNode::new(four));
+
+        let node = tree.get_unsafe(&node_id);
+        assert_eq!(node.data(), &four);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_get_unsafe_after_removed() {
+        let mut tree = new_tree();
+        let four = 4;
+        let node_id = tree.insert(VecNode::new(four));
+
+        {
+            let node_ref = tree.get_unsafe(&node_id);
+            assert_eq!(node_ref.data(), &four);
+        }
+
+        //save it for later
+        let node_id_clone = node_id.clone();
+
+        let node = tree.remove(node_id);
+        assert_eq!(node.data(), &four);
+
+        //this should panic
+        let _ = tree.get_unsafe(&node_id_clone);
+    }
+
+    #[test]
+    fn test_get_mut_unsafe() {
+        let mut tree = new_tree();
+
+        let four = 4;
+        let node_id = tree.insert(VecNode::new(four));
+
+        let node = tree.get_mut_unsafe(&node_id);
+        assert_eq!(node.data(), &four);
+
+        let five = 5;
+        let four_again = node.replace_data(five);
+        assert_eq!(four_again, four);
+        assert_eq!(node.data(), &five);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_get_mut_unsafe_after_removed() {
+        let mut tree = new_tree();
+        let four = 4;
+        let node_id = tree.insert(VecNode::new(four));
+
+        {
+            let node_ref = tree.get_mut_unsafe(&node_id);
+            assert_eq!(node_ref.data(), &four);
+        }
+
+        //save it for later
+        let node_id_clone = node_id.clone();
+
+        let node = tree.remove(node_id);
+        assert_eq!(node.data(), &four);
+
+        //this should panic
+        let _ = tree.get_mut_unsafe(&node_id_clone);
+    }
+
+    #[test]
+    fn test_new_node_id() {
+        let tree = new_tree();
+
+        // the index actually doesn't matter because we just care about the tree's id.
+        let new_node_id = tree.new_node_id(0);
+
+        assert_eq!(new_node_id.tree_id, tree.id);
+    }
+
+    #[test]
+    fn test_is_valid_node_id() {
+        let mut tree = new_tree();
+        let node_id = tree.insert(VecNode::new(2));
+
+        let (is_valid, error) = tree.is_valid_node_id(&node_id);
+        assert!(is_valid);
+        assert!(error.is_none());
+    }
+
+    #[test]
+    fn test_is_valid_node_id_wrong_tree() {
+        let tree_a = new_tree();
+        let tree_b = new_tree();
+
+        // the index actually doesn't matter because this is for the wrong tree.
+        let node_id_a = tree_a.new_node_id(0);
+
+        let (is_valid, error) = tree_b.is_valid_node_id(&node_id_a);
+        assert!(!is_valid);
+        assert!(error.is_some());
+        assert_eq!(error.unwrap(), NodeIdError::InvalidNodeIdForTree);
+    }
+
+    #[test]
+    fn test_is_valid_node_id_old_id() {
+        let mut tree = new_tree();
+        let node_id = tree.insert(VecNode::new(2));
+
+        //save it for later
+        let node_id_clone = node_id.clone();
+
+        let node = tree.remove(node_id);
+
+        let (is_valid, error) = tree.is_valid_node_id(&node_id_clone);
+        assert!(!is_valid);
+        assert!(error.is_some());
+        assert_eq!(error.unwrap(), NodeIdError::NodeIdNoLongerValid);
+    }
 }
