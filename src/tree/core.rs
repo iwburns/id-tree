@@ -18,6 +18,9 @@ impl<N, T> CoreTree<N, T>
 where
     N: Node<T>,
 {
+    ///
+    /// Creates a new CoreTree with the specified parameters and returns it.
+    ///
     pub fn new(mut root: Option<N>, node_capacity: usize, swap_capacity: usize) -> CoreTree<N, T> {
 
         let tree_id = ProcessUniqueId::new();
@@ -50,6 +53,11 @@ where
         new_root_id
     }
 
+    ///
+    /// Inserts a new node and returns a NodeId that points to it.
+    ///
+    /// This function will attempt to re-use old NodeIds if they exist.
+    ///
     pub fn insert_new_node(&mut self, new_node: N) -> NodeId {
 
         if let Some(new_node_id) = self.free_ids.pop() {
@@ -70,16 +78,18 @@ where
 
     }
 
+
+    ///
+    /// Removes a node from the tree and returns it.
+    ///
+    /// This function will save the given NodeId for later use.
+    ///
     pub fn remove_node(&mut self, node_id: NodeId) -> N {
 
         if Some(&node_id) == self.root.as_ref() {
             self.root = None;
         }
 
-        self.take_node(node_id)
-    }
-
-    pub fn take_node(&mut self, node_id: NodeId) -> N {
         self.nodes.push(None);
 
         if let Some(node) = self.nodes.swap_remove(node_id.index) {
@@ -87,12 +97,15 @@ where
             node
         } else {
             panic!(
-                "CoreTree::take_node: An invalid NodeId made it past id_tree's internal \
+                "CoreTree.remove_node: An invalid NodeId made it past id_tree's internal \
                 checks. Please report this issue!"
             );
         }
     }
 
+    ///
+    /// Generates a new NodeId for this tree.
+    ///
     pub fn new_node_id(&self, node_index: usize) -> NodeId {
         NodeId {
             tree_id: self.id,
@@ -100,8 +113,12 @@ where
         }
     }
 
-    // Nothing should make it past this function.
-    // If there is a way for a NodeId to be invalid, it should be caught here.
+    ///
+    /// Checks to see if a NodeId is valid.
+    ///
+    /// Nothing should make it past this function. If there is a way for a NodeId to be invalid,
+    /// it should be caught here.
+    ///
     pub fn is_valid_node_id(&self, node_id: &NodeId) -> (bool, Option<NodeIdError>) {
         if node_id.tree_id != self.id {
             return (false, Some(NodeIdError::InvalidNodeIdForTree));
@@ -124,21 +141,31 @@ where
         (true, None)
     }
 
-    //todo: switch to if-let in here?
+    ///
+    /// Returns an immutable reference to the Node that node_id points to.
+    ///
+    /// This function should only be called after a node_id has been check by
+    /// CoreTree.is_valid_node_id().
+    ///
     pub fn get_unsafe(&self, node_id: &NodeId) -> &N {
         unsafe {
             self.nodes.get_unchecked(node_id.index).as_ref().expect(
-                "VecTree::get_unsafe: An invalid NodeId made it past id_tree's internal \
+                "CoreTree.get_unsafe: An invalid NodeId made it past id_tree's internal \
                     checks.  Please report this issue!",
             )
         }
     }
 
-    //todo: switch to if-let in here?
+    ///
+    /// Returns a mutable reference to the Node that node_id points to.
+    ///
+    /// This function should only be called after a node_id has been check by
+    /// CoreTree.is_valid_node_id().
+    ///
     pub fn get_mut_unsafe(&mut self, node_id: &NodeId) -> &mut N {
         unsafe {
             self.nodes.get_unchecked_mut(node_id.index).as_mut().expect(
-                "VecTree::get_mut_unsafe: An invalid NodeId made it past id_tree's internal \
+                "CoreTree.get_mut_unsafe: An invalid NodeId made it past id_tree's internal \
                     checks.  Please report this issue!",
             )
         }
