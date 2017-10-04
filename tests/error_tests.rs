@@ -10,7 +10,21 @@ use id_tree::InsertBehavior::*;
 use id_tree::SwapBehavior::*;
 
 #[test]
-fn test_old_node_id() {
+fn test_insert_into_wrong_tree() {
+    let mut tree_a: VecTree<i32> = VecTreeBuilder::new().build();
+    let mut tree_b: VecTree<i32> = VecTreeBuilder::new().build();
+
+    let root_id = tree_a.insert(VecNode::new(1), AsRoot).ok().unwrap();
+
+    let node_id = tree_b.insert(VecNode::new(2), UnderNode(&root_id));
+    assert!(node_id.is_err());
+
+    let error = node_id.err().unwrap();
+    assert_eq!(error, InvalidNodeIdForTree);
+}
+
+#[test]
+fn test_remove_old_node_id() {
     let mut tree: VecTree<i32> = VecTreeBuilder::new().build();
 
     let root_node = VecNode::new(1);
@@ -29,7 +43,22 @@ fn test_old_node_id() {
 }
 
 #[test]
-fn test_get_node_from_other_tree() {
+fn test_remove_from_wrong_tree() {
+    let mut tree_a = VecTreeBuilder::new().build();
+    let mut tree_b: VecTree<i32> = VecTreeBuilder::new().build();
+
+    let root_id = tree_a.insert(VecNode::new(1), AsRoot).ok().unwrap();
+
+    // oops, wrong tree
+    let root_node = tree_b.remove(root_id, OrphanChildren);
+    assert!(root_node.is_err());
+
+    let error = root_node.err().unwrap();
+    assert_eq!(error, InvalidNodeIdForTree);
+}
+
+#[test]
+fn test_get_node_from_wrong_tree() {
     let mut tree_a: VecTree<i32> = VecTreeBuilder::new().build();
     let tree_b: VecTree<i32> = VecTreeBuilder::new().build();
 

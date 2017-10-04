@@ -213,6 +213,28 @@ where
 
         (true, None)
     }
+
+    pub fn validate_node_id(&self, node_id: &NodeId) -> Result<(), NodeIdError> {
+        if node_id.tree_id != self.id {
+            return Err(NodeIdError::InvalidNodeIdForTree);
+        }
+
+        if node_id.index >= self.nodes.len() {
+            panic!(
+                "NodeId: {:?} is out of bounds. This is most likely a bug in id_tree. Please \
+                report this issue!",
+                node_id
+            );
+        }
+
+        unsafe {
+            if self.nodes.get_unchecked(node_id.index).is_none() {
+                return Err(NodeIdError::NodeIdNoLongerValid);
+            }
+        }
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]

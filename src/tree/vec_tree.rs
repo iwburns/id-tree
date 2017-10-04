@@ -1137,7 +1137,7 @@ mod tree_tests {
     }
 
     #[test]
-    fn test_insert_with_parent() {
+    fn test_insert_under_node() {
         use InsertBehavior::*;
 
         let a = 1;
