@@ -166,13 +166,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
     ) -> Result<NodeId, NodeIdError> {
         match behavior {
             InsertBehavior::UnderNode(parent_id) => {
-                let (is_valid, error) = self.core_tree.is_valid_node_id(parent_id);
-                if !is_valid {
-                    return Err(error.expect(
-                        "VecTree::insert: Missing an error value but found an \
-                        invalid NodeId.",
-                    ));
-                }
+                self.core_tree.validate_node_id(parent_id)?;
                 self.insert_with_parent(node, parent_id)
             }
             InsertBehavior::AsRoot => Ok(self.set_root(node)),

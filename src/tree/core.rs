@@ -186,12 +186,14 @@ where
         }
     }
 
+    /// Deprecated...
     ///
     /// Checks to see if a NodeId is valid.
     ///
     /// Nothing should make it past this function. If there is a way for a NodeId to be invalid,
     /// it should be caught here.
     ///
+    /// Deprecated...
     pub fn is_valid_node_id(&self, node_id: &NodeId) -> (bool, Option<NodeIdError>) {
         if node_id.tree_id != self.id {
             return (false, Some(NodeIdError::InvalidNodeIdForTree));
@@ -214,6 +216,12 @@ where
         (true, None)
     }
 
+    ///
+    /// Checks to see if a NodeId is valid.
+    ///
+    /// Nothing should make it past this function. If there is a way for a NodeId to be invalid,
+    /// it should be caught here.
+    ///
     pub fn validate_node_id(&self, node_id: &NodeId) -> Result<(), NodeIdError> {
         if node_id.tree_id != self.id {
             return Err(NodeIdError::InvalidNodeIdForTree);
@@ -491,5 +499,43 @@ mod core_tree_tests {
         assert!(!is_valid);
         assert!(error.is_some());
         assert_eq!(error.unwrap(), NodeIdError::NodeIdNoLongerValid);
+    }
+
+    #[test]
+    fn test_validate_node_id() {
+        let mut tree = new_tree();
+        let node_id = tree.insert(VecNode::new(2));
+
+        let result = tree.validate_node_id(&node_id);
+        assert!(result.is_ok());
+        assert_eq!(result.ok().unwrap(), ());
+    }
+
+    #[test]
+    fn test_validate_node_id_wrong_tree() {
+        let tree_a = new_tree();
+        let tree_b = new_tree();
+
+        // the index actually doesn't matter because this is for the wrong tree.
+        let node_id_a = tree_a.new_node_id(0);
+
+        let result = tree_b.validate_node_id(&node_id_a);
+        assert!(result.is_err());
+        assert_eq!(result.err().unwrap(), NodeIdError::InvalidNodeIdForTree);
+    }
+
+    #[test]
+    fn test_validate_node_id_old_id() {
+        let mut tree = new_tree();
+        let node_id = tree.insert(VecNode::new(2));
+
+        //save it for later
+        let node_id_clone = node_id.clone();
+
+        let node = tree.remove(node_id);
+
+        let result = tree.validate_node_id(&node_id_clone);
+        assert!(result.is_err());
+        assert_eq!(result.err().unwrap(), NodeIdError::NodeIdNoLongerValid);
     }
 }
