@@ -121,14 +121,8 @@ where
     /// or a NodeIdError if one occurred.
     ///
     pub fn get(&self, node_id: &NodeId) -> Result<&N, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
-        if !is_valid {
-            Err(error.expect(
-                "CoreTree.get: Missing an error value on finding an invalid NodeId.",
-            ))
-        } else {
-            Ok(self.get_unsafe(node_id))
-        }
+        self.validate_node_id(node_id)?;
+        Ok(self.get_unsafe(node_id))
     }
 
     ///
@@ -136,14 +130,8 @@ where
     /// or a NodeIdError if one occurred.
     ///
     pub fn get_mut(&mut self, node_id: &NodeId) -> Result<&mut N, NodeIdError> {
-        let (is_valid, error) = self.is_valid_node_id(node_id);
-        if !is_valid {
-            Err(error.expect(
-                "VecTree::get_mut: Missing an error value on finding an invalid NodeId.",
-            ))
-        } else {
-            Ok(self.get_mut_unsafe(node_id))
-        }
+        self.validate_node_id(node_id)?;
+        Ok(self.get_mut_unsafe(node_id))
     }
 
     ///

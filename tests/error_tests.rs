@@ -10,12 +10,30 @@ use id_tree::InsertBehavior::*;
 use id_tree::SwapBehavior::*;
 
 #[test]
+fn test_insert_with_old_node_id() {
+    let mut tree_a: VecTree<i32> = VecTreeBuilder::new().build();
+
+    let root_id = tree_a.insert(VecNode::new(1), AsRoot).ok().unwrap();
+    let root_id_copy = root_id.clone(); //save it for later
+
+    let _ = tree_a.remove(root_id, DropChildren);
+
+    //inserting under a node that is no longer in this tree.
+    let node_id = tree_a.insert(VecNode::new(2), UnderNode(&root_id_copy));
+    assert!(node_id.is_err());
+
+    let error = node_id.err().unwrap();
+    assert_eq!(error, NodeIdNoLongerValid);
+}
+
+#[test]
 fn test_insert_into_wrong_tree() {
     let mut tree_a: VecTree<i32> = VecTreeBuilder::new().build();
     let mut tree_b: VecTree<i32> = VecTreeBuilder::new().build();
 
     let root_id = tree_a.insert(VecNode::new(1), AsRoot).ok().unwrap();
 
+    //inserting under a node that is in a different tree
     let node_id = tree_b.insert(VecNode::new(2), UnderNode(&root_id));
     assert!(node_id.is_err());
 
@@ -58,6 +76,21 @@ fn test_remove_from_wrong_tree() {
 }
 
 #[test]
+fn test_get_node_with_old_node_id() {
+    let mut tree: VecTree<i32> = VecTreeBuilder::new().build();
+
+    let root_id = tree.insert(VecNode::new(1), AsRoot).unwrap();
+    let root_id_copy = root_id.clone();
+
+    let _ = tree.remove(root_id, DropChildren);
+
+    let root = tree.get(&root_id_copy);
+
+    assert!(root.is_err());
+    assert_eq!(root.err().unwrap(), NodeIdNoLongerValid);
+}
+
+#[test]
 fn test_get_node_from_wrong_tree() {
     let mut tree_a: VecTree<i32> = VecTreeBuilder::new().build();
     let tree_b: VecTree<i32> = VecTreeBuilder::new().build();
@@ -74,7 +107,22 @@ fn test_get_node_from_wrong_tree() {
 }
 
 #[test]
-fn test_get_mut_node_from_other_tree() {
+fn test_get_mut_node_with_old_node_id() {
+    let mut tree: VecTree<i32> = VecTreeBuilder::new().build();
+
+    let root_id = tree.insert(VecNode::new(1), AsRoot).unwrap();
+    let root_id_copy = root_id.clone();
+
+    let _ = tree.remove(root_id, DropChildren);
+
+    let root = tree.get_mut(&root_id_copy);
+
+    assert!(root.is_err());
+    assert_eq!(root.err().unwrap(), NodeIdNoLongerValid);
+}
+
+#[test]
+fn test_get_mut_node_from_wrong_tree() {
     let mut tree_a: VecTree<i32> = VecTreeBuilder::new().build();
     let mut tree_b: VecTree<i32> = VecTreeBuilder::new().build();
 
