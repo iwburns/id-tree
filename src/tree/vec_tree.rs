@@ -186,13 +186,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
         node_id: NodeId,
         behavior: RemoveBehavior,
     ) -> Result<VecNode<T>, NodeIdError> {
-        let (is_valid, error) = self.core_tree.is_valid_node_id(&node_id);
-        if !is_valid {
-            return Err(error.expect(
-                "VecTree::remove: Missing an error value but found an invalid NodeId.",
-            ));
-        }
-
+        self.core_tree.validate_node_id(&node_id)?;
         match behavior {
             RemoveBehavior::DropChildren => self.remove_node_drop_children(node_id),
             RemoveBehavior::LiftChildren => self.remove_node_lift_children(node_id),
