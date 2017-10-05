@@ -226,12 +226,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
     where
         T: Ord,
     {
-        let (is_valid, error) = self.core_tree.is_valid_node_id(node_id);
-        if !is_valid {
-            return Err(error.expect(
-                "VecTree::sort_children: Missing an error value but found an invalid NodeId.",
-            ));
-        }
+        self.core_tree.validate_node_id(node_id)?;
 
         let mut children = self.core_tree.get_mut_unsafe(node_id).take_children();
         children.sort_by_key(|a| self.core_tree.get_unsafe(a).data());
