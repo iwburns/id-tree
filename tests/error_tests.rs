@@ -19,11 +19,10 @@ fn test_insert_with_old_node_id() {
     let _ = tree_a.remove(root_id, DropChildren);
 
     //inserting under a node that is no longer in this tree.
-    let node_id = tree_a.insert(VecNode::new(2), UnderNode(&root_id_copy));
-    assert!(node_id.is_err());
+    let result = tree_a.insert(VecNode::new(2), UnderNode(&root_id_copy));
 
-    let error = node_id.err().unwrap();
-    assert_eq!(error, NodeIdNoLongerValid);
+    assert!(result.is_err());
+    assert_eq!(result.err().unwrap(), NodeIdNoLongerValid);
 }
 
 #[test]
@@ -34,11 +33,10 @@ fn test_insert_into_wrong_tree() {
     let root_id = tree_a.insert(VecNode::new(1), AsRoot).ok().unwrap();
 
     //inserting under a node that is in a different tree
-    let node_id = tree_b.insert(VecNode::new(2), UnderNode(&root_id));
-    assert!(node_id.is_err());
+    let result = tree_b.insert(VecNode::new(2), UnderNode(&root_id));
 
-    let error = node_id.err().unwrap();
-    assert_eq!(error, InvalidNodeIdForTree);
+    assert!(result.is_err());
+    assert_eq!(result.err().unwrap(), InvalidNodeIdForTree);
 }
 
 #[test]
@@ -115,11 +113,11 @@ fn test_remove_lift_children_old_node_id() {
     let root_node = tree.remove(root_id, LiftChildren);
     assert!(root_node.is_ok());
 
-    let root_node_again = tree.remove(root_id_copy, LiftChildren);
-    assert!(root_node_again.is_err());
+    // removing a node that has already been removed
+    let result = tree.remove(root_id_copy, LiftChildren);
 
-    let error = root_node_again.err().unwrap();
-    assert_eq!(error, NodeIdNoLongerValid);
+    assert!(result.is_err());
+    assert_eq!(result.err().unwrap(), NodeIdNoLongerValid);
 }
 
 #[test]
@@ -134,11 +132,11 @@ fn test_remove_orphan_children_old_node_id() {
     let root_node = tree.remove(root_id, OrphanChildren);
     assert!(root_node.is_ok());
 
-    let root_node_again = tree.remove(root_id_copy, OrphanChildren);
-    assert!(root_node_again.is_err());
+    // removing a node that has already been removed
+    let result = tree.remove(root_id_copy, OrphanChildren);
 
-    let error = root_node_again.err().unwrap();
-    assert_eq!(error, NodeIdNoLongerValid);
+    assert!(result.is_err());
+    assert_eq!(result.err().unwrap(), NodeIdNoLongerValid);
 }
 
 #[test]
@@ -153,112 +151,116 @@ fn test_remove_drop_children_old_node_id() {
     let root_node = tree.remove(root_id, DropChildren);
     assert!(root_node.is_ok());
 
-    let root_node_again = tree.remove(root_id_copy, DropChildren);
-    assert!(root_node_again.is_err());
+    // removing a node that has already been removed.
+    let result = tree.remove(root_id_copy, DropChildren);
 
-    let error = root_node_again.err().unwrap();
-    assert_eq!(error, NodeIdNoLongerValid);
+    assert!(result.is_err());
+    assert_eq!(result.err().unwrap(), NodeIdNoLongerValid);
 }
 
 #[test]
 fn test_remove_lift_children_from_wrong_tree() {
-    let mut tree_a: VecTree<i32> = VecTreeBuilder::new().build();
+    let mut tree_a = VecTreeBuilder::new().build();
     let mut tree_b: VecTree<i32> = VecTreeBuilder::new().build();
 
     let root_node_id_a = tree_a.insert(VecNode::new(1), AsRoot).unwrap();
 
     // note use of wrong tree
     let root_node_b = tree_b.remove(root_node_id_a, LiftChildren);
-    assert!(root_node_b.is_err());
 
-    let error = root_node_b.err().unwrap();
-    assert_eq!(error, InvalidNodeIdForTree);
+    assert!(root_node_b.is_err());
+    assert_eq!(root_node_b.err().unwrap(), InvalidNodeIdForTree);
 }
 
 #[test]
 fn test_remove_orphan_children_from_wrong_tree() {
-    let mut tree_a: VecTree<i32> = VecTreeBuilder::new().build();
+    let mut tree_a = VecTreeBuilder::new().build();
     let mut tree_b: VecTree<i32> = VecTreeBuilder::new().build();
 
     let root_node_id_a = tree_a.insert(VecNode::new(1), AsRoot).unwrap();
 
     // note use of wrong tree
     let root_node_b = tree_b.remove(root_node_id_a, OrphanChildren);
-    assert!(root_node_b.is_err());
 
-    let error = root_node_b.err().unwrap();
-    assert_eq!(error, InvalidNodeIdForTree);
+    assert!(root_node_b.is_err());
+    assert_eq!(root_node_b.err().unwrap(), InvalidNodeIdForTree);
 }
 
 #[test]
 fn test_remove_drop_children_from_wrong_tree() {
-    let mut tree_a: VecTree<i32> = VecTreeBuilder::new().build();
+    let mut tree_a = VecTreeBuilder::new().build();
     let mut tree_b: VecTree<i32> = VecTreeBuilder::new().build();
 
     let root_node_id_a = tree_a.insert(VecNode::new(1), AsRoot).unwrap();
 
     // note use of wrong tree
     let root_node_b = tree_b.remove(root_node_id_a, DropChildren);
+
     assert!(root_node_b.is_err());
-
-    let error = root_node_b.err().unwrap();
-    assert_eq!(error, InvalidNodeIdForTree);
+    assert_eq!(root_node_b.err().unwrap(), InvalidNodeIdForTree);
 }
 
 #[test]
-fn test_move_node_into_other_tree() {
-    let mut tree_a: VecTree<i32> = VecTreeBuilder::new().build();
-    let mut tree_b: VecTree<i32> = VecTreeBuilder::new().build();
+fn test_move_node_to_root_with_old_node_id() {
+    let mut tree = VecTreeBuilder::new().build();
 
-    let root_node_a = VecNode::new(1);
-    let root_node_id_a = tree_a.insert(root_node_a, AsRoot).unwrap();
+    let root_id = tree.insert(VecNode::new(1), AsRoot).unwrap();
+    let child_id = tree.insert(VecNode::new(2), UnderNode(&root_id)).unwrap();
+    let child_id_copy = child_id.clone(); //save it for later
 
-    let root_node_b = VecNode::new(1);
-    let root_node_id_b = tree_b.insert(root_node_b, AsRoot).unwrap();
+    let _ = tree.remove(child_id, DropChildren);
 
-    // note use of invalid parent
-    let result = tree_a.move_node(&root_node_id_a, ToParent(&root_node_id_b));
+    // moving node that has already been removed.
+    let result = tree.move_node(&child_id_copy, ToRoot);
+
     assert!(result.is_err());
-
-    let error = result.err().unwrap();
-    assert_eq!(error, InvalidNodeIdForTree);
+    assert_eq!(result.err().unwrap(), NodeIdNoLongerValid);
 }
 
 #[test]
-fn test_move_node_from_other_tree() {
-    let mut tree_a: VecTree<i32> = VecTreeBuilder::new().build();
-    let mut tree_b: VecTree<i32> = VecTreeBuilder::new().build();
+fn test_move_node_to_root_in_wrong_tree() {
+    let mut tree_a = VecTreeBuilder::new().build();
+    let mut tree_b = VecTreeBuilder::new().build();
 
-    let root_node_a = VecNode::new(1);
-    let root_node_id_a = tree_a.insert(root_node_a, AsRoot).unwrap();
+    let _ = tree_a.insert(VecNode::new(1), AsRoot).unwrap();
 
-    let root_node_b = VecNode::new(1);
-    let root_node_id_b = tree_b.insert(root_node_b, AsRoot).unwrap();
+    let root_id_b = tree_b.insert(VecNode::new(2), AsRoot).unwrap();
 
-    // note use of invalid child
-    let result = tree_a.move_node(&root_node_id_b, ToParent(&root_node_id_a));
+    // moving node from another tree.
+    let result = tree_a.move_node(&root_id_b, ToRoot);
+
     assert!(result.is_err());
-
-    let error = result.err().unwrap();
-    assert_eq!(error, InvalidNodeIdForTree);
+    assert_eq!(result.err().unwrap(), InvalidNodeIdForTree);
 }
 
 #[test]
-fn test_move_node_to_root_by_invalid_id() {
-    let mut tree_a: VecTree<i32> = VecTreeBuilder::new().build();
-    let mut tree_b: VecTree<i32> = VecTreeBuilder::new().build();
+fn test_move_node_into_wrong_tree() {
+    let mut tree_a = VecTreeBuilder::new().build();
+    let mut tree_b = VecTreeBuilder::new().build();
+    
+    let root_id_a = tree_a.insert(VecNode::new(1), AsRoot).unwrap();
+    let root_id_b = tree_b.insert(VecNode::new(2), AsRoot).unwrap();
 
-    let root_node_a = VecNode::new(1);
-    let _ = tree_a.insert(root_node_a, AsRoot).unwrap();
+    // moving child from correct tree to parent from the wrong tree
+    let result = tree_a.move_node(&root_id_a, ToParent(&root_id_b));
 
-    let root_node_b = VecNode::new(1);
-    let root_node_id_b = tree_b.insert(root_node_b, AsRoot).unwrap();
-
-    let result = tree_a.move_node(&root_node_id_b, ToRoot);
     assert!(result.is_err());
+    assert_eq!(result.err().unwrap(), InvalidNodeIdForTree);
+}
 
-    let error = result.err().unwrap();
-    assert_eq!(error, InvalidNodeIdForTree);
+#[test]
+fn test_move_node_from_wrong_tree() {
+    let mut tree_a = VecTreeBuilder::new().build();
+    let mut tree_b = VecTreeBuilder::new().build();
+
+    let root_id_a = tree_a.insert(VecNode::new(1), AsRoot).unwrap();
+    let root_id_b = tree_b.insert(VecNode::new(1), AsRoot).unwrap();
+
+    // moving child from wrong tree to parent in correct tree.
+    let result = tree_a.move_node(&root_id_b, ToParent(&root_id_a));
+
+    assert!(result.is_err());
+    assert_eq!(result.err().unwrap(), InvalidNodeIdForTree);
 }
 
 #[test]
