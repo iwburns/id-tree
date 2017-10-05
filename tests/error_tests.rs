@@ -235,7 +235,7 @@ fn test_move_node_to_root_in_wrong_tree() {
 #[test]
 fn test_move_node_to_parent_with_old_parent_id() {
     let mut tree = VecTreeBuilder::new().build();
-    
+
     let root_id = tree.insert(VecNode::new(1), AsRoot).unwrap();
     let child_id = tree.insert(VecNode::new(2), UnderNode(&root_id)).unwrap();
     let root_id_copy = root_id.clone();
@@ -333,7 +333,7 @@ fn test_move_node_to_parent_from_wrong_tree_and_into_wrong_tree() {
 
 #[test]
 fn test_sort_by_with_old_id() {
-    let mut tree: VecTree<i32> = VecTreeBuilder::new().build();
+    let mut tree = VecTreeBuilder::new().build();
 
     let root_id = tree.insert(VecNode::new(1), AsRoot).unwrap();
     let root_id_copy = root_id.clone(); //save it for later
@@ -364,7 +364,7 @@ fn test_sort_by_with_wrong_tree() {
 
 #[test]
 fn test_sort_by_data_with_old_id() {
-    let mut tree: VecTree<i32> = VecTreeBuilder::new().build();
+    let mut tree = VecTreeBuilder::new().build();
 
     let root_id = tree.insert(VecNode::new(1), AsRoot).unwrap();
     let root_id_copy = root_id.clone(); //save it for later
@@ -394,21 +394,34 @@ fn test_sort_by_data_with_wrong_tree() {
 }
 
 #[test]
-fn test_sort_by_key_invalid_id() {
-    let mut tree_a: VecTree<i32> = VecTreeBuilder::new().build();
-    let mut tree_b: VecTree<i32> = VecTreeBuilder::new().build();
+fn test_sort_by_key_with_old_id() {
+    let mut tree = VecTreeBuilder::new().build();
 
-    let root_node_a = VecNode::new(1);
-    let _ = tree_a.insert(root_node_a, AsRoot).unwrap();
+    let root_id = tree.insert(VecNode::new(1), AsRoot).unwrap();
+    let root_id_copy = root_id.clone(); //save it for later
 
-    let root_node_b = VecNode::new(1);
-    let root_node_id_b = tree_b.insert(root_node_b, AsRoot).unwrap();
+    let _ = tree.remove(root_id, DropChildren);
 
-    let result = tree_a.sort_children_by_key(&root_node_id_b, |x| *x.data());
+    // sort children of a node that has been removed.
+    let result = tree.sort_children_by_key(&root_id_copy, |x| *x.data());
+
     assert!(result.is_err());
+    assert_eq!(result.err().unwrap(), NodeIdNoLongerValid);
+}
 
-    let error = result.err().unwrap();
-    assert_eq!(error, InvalidNodeIdForTree);
+#[test]
+fn test_sort_by_key_with_wrong_tree() {
+    let mut tree_a = VecTreeBuilder::new().build();
+    let mut tree_b = VecTreeBuilder::new().build();
+
+    let _ = tree_a.insert(VecNode::new(1), AsRoot).unwrap();
+    let root_id_b = tree_b.insert(VecNode::new(1), AsRoot).unwrap();
+
+    // sort children of node from the wrong tree.
+    let result = tree_a.sort_children_by_key(&root_id_b, |x| *x.data());
+
+    assert!(result.is_err());
+    assert_eq!(result.err().unwrap(), InvalidNodeIdForTree);
 }
 
 #[test]
