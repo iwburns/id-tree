@@ -205,13 +205,12 @@ fn test_move_node_to_root_with_old_node_id() {
     let mut tree = VecTreeBuilder::new().build();
 
     let root_id = tree.insert(VecNode::new(1), AsRoot).unwrap();
-    let child_id = tree.insert(VecNode::new(2), UnderNode(&root_id)).unwrap();
-    let child_id_copy = child_id.clone(); //save it for later
+    let root_id_copy = root_id.clone(); //save it for later
 
-    let _ = tree.remove(child_id, DropChildren);
+    let _ = tree.remove(root_id, DropChildren);
 
     // moving node that has already been removed.
-    let result = tree.move_node(&child_id_copy, ToRoot);
+    let result = tree.move_node(&root_id_copy, ToRoot);
 
     assert!(result.is_err());
     assert_eq!(result.err().unwrap(), NodeIdNoLongerValid);
@@ -234,10 +233,63 @@ fn test_move_node_to_root_in_wrong_tree() {
 }
 
 #[test]
-fn test_move_node_into_wrong_tree() {
+fn test_move_node_to_parent_with_old_parent_id() {
+    let mut tree = VecTreeBuilder::new().build();
+    
+    let root_id = tree.insert(VecNode::new(1), AsRoot).unwrap();
+    let child_id = tree.insert(VecNode::new(2), UnderNode(&root_id)).unwrap();
+    let root_id_copy = root_id.clone();
+
+    let _ = tree.remove(root_id, DropChildren);
+
+    // move node to parent that no longer exists.
+    let result = tree.move_node(&child_id, ToParent(&root_id_copy));
+
+    assert!(result.is_err());
+    assert_eq!(result.err().unwrap(), NodeIdNoLongerValid);
+}
+
+#[test]
+fn test_move_node_to_parent_with_old_child_id() {
+    let mut tree = VecTreeBuilder::new().build();
+
+    let root_id = tree.insert(VecNode::new(1), AsRoot).unwrap();
+    let child_id = tree.insert(VecNode::new(2), UnderNode(&root_id)).unwrap();
+    let child_id_copy = child_id.clone();
+
+    let _ = tree.remove(child_id, DropChildren);
+
+    // move node to parent that no longer exists.
+    let result = tree.move_node(&child_id_copy, ToParent(&root_id));
+
+    assert!(result.is_err());
+    assert_eq!(result.err().unwrap(), NodeIdNoLongerValid);
+}
+
+#[test]
+fn test_move_node_to_parent_with_old_parent_id_and_old_child_id() {
+    let mut tree = VecTreeBuilder::new().build();
+
+    let root_id = tree.insert(VecNode::new(1), AsRoot).unwrap();
+    let child_id = tree.insert(VecNode::new(2), UnderNode(&root_id)).unwrap();
+    let root_id_copy = root_id.clone();
+    let child_id_copy = child_id.clone();
+
+    let _ = tree.remove(child_id, DropChildren);
+    let _ = tree.remove(root_id, DropChildren);
+
+    // move non-existent node to parent that no longer exists.
+    let result = tree.move_node(&child_id_copy, ToParent(&root_id_copy));
+
+    assert!(result.is_err());
+    assert_eq!(result.err().unwrap(), NodeIdNoLongerValid);
+}
+
+#[test]
+fn test_move_node_to_parent_into_wrong_tree() {
     let mut tree_a = VecTreeBuilder::new().build();
     let mut tree_b = VecTreeBuilder::new().build();
-    
+
     let root_id_a = tree_a.insert(VecNode::new(1), AsRoot).unwrap();
     let root_id_b = tree_b.insert(VecNode::new(2), AsRoot).unwrap();
 
@@ -249,7 +301,7 @@ fn test_move_node_into_wrong_tree() {
 }
 
 #[test]
-fn test_move_node_from_wrong_tree() {
+fn test_move_node_to_parent_from_wrong_tree() {
     let mut tree_a = VecTreeBuilder::new().build();
     let mut tree_b = VecTreeBuilder::new().build();
 
@@ -258,6 +310,22 @@ fn test_move_node_from_wrong_tree() {
 
     // moving child from wrong tree to parent in correct tree.
     let result = tree_a.move_node(&root_id_b, ToParent(&root_id_a));
+
+    assert!(result.is_err());
+    assert_eq!(result.err().unwrap(), InvalidNodeIdForTree);
+}
+
+#[test]
+fn test_move_node_to_parent_from_wrong_tree_and_into_wrong_tree() {
+    let mut tree_a = VecTreeBuilder::new().build();
+    let mut tree_b = VecTreeBuilder::new().build();
+    let mut tree_c: VecTree<i32> = VecTreeBuilder::new().build();
+
+    let root_id_a = tree_a.insert(VecNode::new(1), AsRoot).unwrap();
+    let root_id_b = tree_b.insert(VecNode::new(1), AsRoot).unwrap();
+
+    // moving child from wrong tree to parent in correct tree.
+    let result = tree_c.move_node(&root_id_b, ToParent(&root_id_a));
 
     assert!(result.is_err());
     assert_eq!(result.err().unwrap(), InvalidNodeIdForTree);

@@ -195,24 +195,11 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
     }
 
     fn move_node(&mut self, node_id: &NodeId, behavior: MoveBehavior) -> Result<(), NodeIdError> {
-        let (is_valid, error) = self.core_tree.is_valid_node_id(node_id);
-        if !is_valid {
-            return Err(error.expect(
-                "VecTree::move_node: Missing an error value on finding an \
-                invalid NodeId.",
-            ));
-        }
-
+        self.core_tree.validate_node_id(node_id)?;
         match behavior {
             MoveBehavior::ToRoot => self.move_node_to_root(node_id),
             MoveBehavior::ToParent(parent_id) => {
-                let (is_valid, error) = self.core_tree.is_valid_node_id(parent_id);
-                if !is_valid {
-                    return Err(error.expect(
-                        "VecTree::move_node: Missing an error value on finding \
-                        an invalid NodeId.",
-                    ));
-                }
+                self.core_tree.validate_node_id(parent_id)?;
                 self.move_node_to_parent(node_id, parent_id)
             }
         }
