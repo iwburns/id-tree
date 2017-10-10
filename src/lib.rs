@@ -14,35 +14,35 @@
 //! structure that they wish to build and then use this library to do so;  this library will not
 //! make those structural decisions for you.
 //!
-// ! ## Example Usage
-// ! ```
-// ! use id_tree::*;
-// !
-// ! fn main() {
-// !     use id_tree::InsertBehavior::*;
-// !
-// !     //      0
-// !     //     / \
-// !     //    1   2
-// !     //   / \
-// !     //  3   4
-// !     let mut tree: VecTree<i32> = VecTreeBuilder::new()
-// !         .with_node_capacity(5)
-// !         .build();
-// !
-// !     let root_id: NodeId = tree.insert(VecNode::new(0), AsRoot).unwrap();
-// !     let child_id: NodeId = tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
-// !     tree.insert(VecNode::new(2), UnderNode(&root_id)).unwrap();
-// !     tree.insert(VecNode::new(3), UnderNode(&child_id)).unwrap();
-// !     tree.insert(VecNode::new(4), UnderNode(&child_id)).unwrap();
-// !
-// !     println!("Pre-order:");
-// !     for node in tree.traverse_pre_order(&root_id).unwrap() {
-// !         print!("{}, ", node.data());
-// !     }
-// !     // results in the output "0, 1, 3, 4, 2, "
-// ! }
-// ! ```
+//! ## Example Usage
+//! ```
+//! use id_tree::*;
+//!
+//! fn main() {
+//!     use id_tree::InsertBehavior::*;
+//!
+//!     //      0
+//!     //     / \
+//!     //    1   2
+//!     //   / \
+//!     //  3   4
+//!     let mut tree: VecTree<i32> = VecTreeBuilder::new()
+//!         .with_node_capacity(5)
+//!         .build();
+//!
+//!     let root_id: NodeId = tree.insert(VecNode::new(0), AsRoot).unwrap();
+//!     let child_id: NodeId = tree.insert(VecNode::new(1), UnderNode(&root_id)).unwrap();
+//!     tree.insert(VecNode::new(2), UnderNode(&root_id)).unwrap();
+//!     tree.insert(VecNode::new(3), UnderNode(&child_id)).unwrap();
+//!     tree.insert(VecNode::new(4), UnderNode(&child_id)).unwrap();
+//!
+//!     println!("Pre-order:");
+//!     for node in tree.traverse_pre_order(&root_id).unwrap() {
+//!         print!("{}, ", node.data());
+//!     }
+//!     // results in the output "0, 1, 3, 4, 2, "
+//! }
+//! ```
 //!
 //! ## Project Goals
 //! * Allow caller control of as many allocations as possible (through pre-allocation)
