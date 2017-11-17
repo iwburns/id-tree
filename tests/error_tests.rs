@@ -473,10 +473,9 @@ fn swap_sub_trees_of_different_trees() {
 
     // note use of invalid child
     let result = tree_a.swap_nodes(&root_node_id_b, &root_node_id_a, TakeChildren);
-    assert!(result.is_err());
 
-    let error = result.err().unwrap();
-    assert_eq!(error, InvalidNodeIdForTree);
+    assert!(result.is_err());
+    assert_eq!(result.err().unwrap(), InvalidNodeIdForTree);
 }
 
 #[test]
@@ -490,8 +489,7 @@ fn ancestors_different_trees() {
     let ancestors = b.ancestors(&root_id);
 
     assert!(ancestors.is_err());
-    let error = ancestors.err().unwrap();
-    assert_eq!(error, InvalidNodeIdForTree);
+    assert_eq!(ancestors.err().unwrap(), InvalidNodeIdForTree);
 }
 
 #[test]
@@ -501,14 +499,13 @@ fn ancestors_old_id() {
     let root_id = a.insert(VecNode::new(1), AsRoot).unwrap();
     // `.clone()` required to get this error
     let root_id_clone = root_id.clone();
-    let _ = a.remove(root_id, DropChildren).unwrap();
+    a.remove(root_id, DropChildren).unwrap();
 
     // note usage of cloned `NodeId`
     let ancestors = a.ancestors(&root_id_clone);
 
     assert!(ancestors.is_err());
-    let error = ancestors.err().unwrap();
-    assert_eq!(error, NodeIdNoLongerValid);
+    assert_eq!(ancestors.err().unwrap(), NodeIdNoLongerValid);
 }
 
 //#[test]
