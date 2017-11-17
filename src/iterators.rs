@@ -47,17 +47,22 @@ where
     type Item = &'a T::NodeType;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(current_id) = self.node_id.clone() {
-            //todo: switch back to get_unsafe here
-            if let Some(parent_id) = self.tree.get(&current_id).unwrap().parent() {
-                let parent = self.tree.get(parent_id).unwrap();
-                self.node_id = Some(parent_id.clone());
-                return Some(parent);
-            } else {
-                self.node_id = None;
+        let parent_id = self.node_id.as_ref().and_then(|current_id| {
+            let current = unsafe {
+                self.tree.get_unchecked(current_id)
+            };
+            current.parent()
+        });
+
+        let next = parent_id.map(|id| {
+            unsafe {
+                self.tree.get_unchecked(id)
             }
-        }
-        None
+        });
+
+        self.node_id = parent_id.cloned();
+
+        next
     }
 }
 
@@ -99,16 +104,16 @@ where
     type Item = &'a NodeId;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(current_id) = self.node_id.clone() {
-            //todo: switch back to get_unsafe here
-            if let Some(parent_id) = self.tree.get(&current_id).unwrap().parent() {
-                self.node_id = Some(parent_id.clone());
-                return Some(parent_id);
-            } else {
-                self.node_id = None;
-            }
-        }
-        None
+        let next = self.node_id.as_ref().and_then(|current_id| {
+            let current = unsafe {
+                self.tree.get_unchecked(current_id)
+            };
+            current.parent()
+        });
+
+        self.node_id = next.cloned();
+
+        next
     }
 }
 

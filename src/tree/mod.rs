@@ -99,6 +99,50 @@ pub trait Tree<'a, Data> {
     ///
     fn get_mut(&mut self, node_id: &NodeId) -> Result<&mut Self::NodeType, NodeIdError>;
 
+    ///
+    /// Get an immutable reference to a `Node` without doing any validation or bounds checking
+    /// on the given `&NodeId`.
+    ///
+    /// Use with extreme caution.  For a safe alternative see `get`.
+    ///
+    /// ```
+    /// use id_tree::*;
+    /// use id_tree::InsertBehavior::*;
+    ///
+    /// let mut tree: VecTree<i32> = VecTree::new();
+    /// let root_id = tree.insert(VecNode::new(5), AsRoot).unwrap();
+    ///
+    /// let root_node: &Node<i32> = unsafe {
+    ///     tree.get_unchecked(&root_id)
+    /// };
+    ///
+    /// # assert_eq!(root_node.data(), &5);
+    /// ```
+    ///
+    unsafe fn get_unchecked(&self, node_id: &NodeId) -> &Self::NodeType;
+
+    ///
+    /// Get a mutable reference to a `Node` without doing any validation or bounds checking
+    /// on the given `&NodeId`.
+    ///
+    /// Use with extreme caution.  For a safe alternative see `get_mut`.
+    ///
+    /// ```
+    /// use id_tree::*;
+    /// use id_tree::InsertBehavior::*;
+    ///
+    /// let mut tree: VecTree<i32> = VecTree::new();
+    /// let root_id = tree.insert(VecNode::new(5), AsRoot).unwrap();
+    ///
+    /// let root_node: &mut Node<i32> = unsafe {
+    ///     tree.get_unchecked_mut(&root_id)
+    /// };
+    ///
+    /// # assert_eq!(root_node.data(), &5);
+    /// ```
+    ///
+    unsafe fn get_unchecked_mut(&mut self, node_id: &NodeId) -> &mut Self::NodeType;
+
     /// Remove a `Node` from the `Tree`.  The `RemoveBehavior` provided determines what
     /// happens to the removed `Node`'s children.
     ///

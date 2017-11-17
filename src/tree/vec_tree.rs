@@ -181,6 +181,20 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
         self.core_tree.get_mut(node_id)
     }
 
+    //todo: write tests
+    unsafe fn get_unchecked(&self, node_id: &NodeId) -> &VecNode<T> {
+        self.core_tree.nodes.get_unchecked(node_id.index).as_ref().expect(
+            "Called VecTree.get_unchecked() with an invalid NodeId.",
+        )
+    }
+
+    //todo: write tests
+    unsafe fn get_unchecked_mut(&mut self, node_id: &NodeId) -> &mut VecNode<T> {
+        self.core_tree.nodes.get_unchecked_mut(node_id.index).as_mut().expect(
+            "Called VecTree.get_unchecked_mut() with an invalid NodeId.",
+        )
+    }
+
     fn remove(
         &mut self,
         node_id: NodeId,
