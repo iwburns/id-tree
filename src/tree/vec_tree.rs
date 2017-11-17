@@ -300,14 +300,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
     }
 
     fn traverse_post_order(&'a self, node_id: &NodeId) -> Result<Self::PostOrderIter, NodeIdError> {
-        let (is_valid, error) = self.core_tree.is_valid_node_id(node_id);
-        if !is_valid {
-            return Err(error.expect(
-                "VecTree::traverse_post_order: Missing an error value but found an invalid\
-                NodeId.",
-            ));
-        }
-
+        self.core_tree.validate_node_id(node_id)?;
         Ok(VecPostOrderTraversal::new(self, node_id.clone()))
     }
 
