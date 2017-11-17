@@ -1,5 +1,6 @@
-use snowflake::ProcessUniqueId;
 use ::*;
+
+use super::core::CoreTree;
 
 ///
 /// An `OptTree` builder that provides more control over how a `OptTree` is created.
@@ -118,35 +119,13 @@ impl<T> OptTreeBuilder<T> {
     ///         .build();
     /// ```
     ///
-    pub fn build(mut self) -> OptTree<T> {
-
-        let tree_id = ProcessUniqueId::new();
-
-        let mut tree = OptTree {
-            id: tree_id,
-            root: None,
-            nodes: Vec::with_capacity(self.node_capacity),
-            free_ids: Vec::with_capacity(self.swap_capacity),
-        };
-
-        if self.root.is_some() {
-
-            let node_id = NodeId {
-                tree_id: tree_id,
-                index: 0,
-            };
-
-            tree.nodes.push(self.root.take());
-            tree.root = Some(node_id);
+    pub fn build(self) -> OptTree<T> {
+        OptTree {
+            core_tree: CoreTree::new(self.root, self.node_capacity, self.swap_capacity)
         }
-
-        tree
     }
 }
 
 pub struct OptTree<T> {
-    id: ProcessUniqueId,
-    root: Option<NodeId>,
-    pub(crate) nodes: Vec<Option<OptNode<T>>>,
-    free_ids: Vec<NodeId>,
+    core_tree: CoreTree<OptNode<T>, T>,
 }
