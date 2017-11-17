@@ -138,7 +138,7 @@ where
     /// Returns an immutable reference to the Node that node_id points to.
     ///
     /// This function should only be called after a node_id has been check by
-    /// CoreTree.is_valid_node_id().
+    /// CoreTree.validate_node_id().
     ///
     pub fn get_unsafe(&self, node_id: &NodeId) -> &N {
         unsafe {
@@ -153,7 +153,7 @@ where
     /// Returns a mutable reference to the Node that node_id points to.
     ///
     /// This function should only be called after a node_id has been check by
-    /// CoreTree.is_valid_node_id().
+    /// CoreTree.validate_node_id().
     ///
     pub fn get_mut_unsafe(&mut self, node_id: &NodeId) -> &mut N {
         unsafe {
@@ -172,36 +172,6 @@ where
             tree_id: self.id,
             index: node_index,
         }
-    }
-
-    /// Deprecated...
-    ///
-    /// Checks to see if a NodeId is valid.
-    ///
-    /// Nothing should make it past this function. If there is a way for a NodeId to be invalid,
-    /// it should be caught here.
-    ///
-    /// Deprecated...
-    pub fn is_valid_node_id(&self, node_id: &NodeId) -> (bool, Option<NodeIdError>) {
-        if node_id.tree_id != self.id {
-            return (false, Some(NodeIdError::InvalidNodeIdForTree));
-        }
-
-        if node_id.index >= self.nodes.len() {
-            panic!(
-                "NodeId: {:?} is out of bounds. This is most likely a bug in id_tree. Please \
-                report this issue!",
-                node_id
-            );
-        }
-
-        unsafe {
-            if self.nodes.get_unchecked(node_id.index).is_none() {
-                return (false, Some(NodeIdError::NodeIdNoLongerValid));
-            }
-        }
-
-        (true, None)
     }
 
     ///
@@ -447,46 +417,6 @@ mod core_tree_tests {
         let new_node_id = tree.new_node_id(0);
 
         assert_eq!(new_node_id.tree_id, tree.id);
-    }
-
-    #[test]
-    fn test_is_valid_node_id() {
-        let mut tree = new_tree();
-        let node_id = tree.insert(VecNode::new(2));
-
-        let (is_valid, error) = tree.is_valid_node_id(&node_id);
-        assert!(is_valid);
-        assert!(error.is_none());
-    }
-
-    #[test]
-    fn test_is_valid_node_id_wrong_tree() {
-        let tree_a = new_tree();
-        let tree_b = new_tree();
-
-        // the index actually doesn't matter because this is for the wrong tree.
-        let node_id_a = tree_a.new_node_id(0);
-
-        let (is_valid, error) = tree_b.is_valid_node_id(&node_id_a);
-        assert!(!is_valid);
-        assert!(error.is_some());
-        assert_eq!(error.unwrap(), NodeIdError::InvalidNodeIdForTree);
-    }
-
-    #[test]
-    fn test_is_valid_node_id_old_id() {
-        let mut tree = new_tree();
-        let node_id = tree.insert(VecNode::new(2));
-
-        //save it for later
-        let node_id_clone = node_id.clone();
-
-        let node = tree.remove(node_id);
-
-        let (is_valid, error) = tree.is_valid_node_id(&node_id_clone);
-        assert!(!is_valid);
-        assert!(error.is_some());
-        assert_eq!(error.unwrap(), NodeIdError::NodeIdNoLongerValid);
     }
 
     #[test]
