@@ -589,7 +589,7 @@ fn children_ids_old_id() {
     let root_id = a.insert(VecNode::new(1), AsRoot).unwrap();
     // `.clone()` required to get this error
     let root_id_clone = root_id.clone();
-    let _ = a.remove(root_id, DropChildren).unwrap();
+    a.remove(root_id, DropChildren).unwrap();
 
     // note usage of cloned `NodeId`
     let ancestors = a.children_ids(&root_id_clone);
@@ -597,3 +597,34 @@ fn children_ids_old_id() {
     assert!(ancestors.is_err());
     assert_eq!(ancestors.err().unwrap(), NodeIdNoLongerValid);
 }
+
+#[test]
+fn traverse_pre_order_different_trees() {
+    let mut a = VecTree::new();
+    let b = VecTree::<i32>::new();
+
+    let root_id = a.insert(VecNode::new(1), AsRoot).unwrap();
+
+    // note usage of `b` instead of `a`
+    let iter = b.traverse_pre_order(&root_id);
+
+    assert!(iter.is_err());
+    assert_eq!(iter.err().unwrap(), InvalidNodeIdForTree);
+}
+
+#[test]
+fn traverse_pre_order_old_id() {
+    let mut a = VecTree::new();
+
+    let root_id = a.insert(VecNode::new(1), AsRoot).unwrap();
+    // `.clone()` required to get this error
+    let root_id_clone = root_id.clone();
+    a.remove(root_id, DropChildren).unwrap();
+
+    // note usage of cloned `NodeId`
+    let iter = a.traverse_pre_order(&root_id_clone);
+
+    assert!(iter.is_err());
+    assert_eq!(iter.err().unwrap(), NodeIdNoLongerValid);
+}
+
