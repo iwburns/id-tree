@@ -259,19 +259,9 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
         second_id: &NodeId,
         behavior: SwapBehavior,
     ) -> Result<(), NodeIdError> {
-        let (is_valid, error) = self.core_tree.is_valid_node_id(first_id);
-        if !is_valid {
-            return Err(error.expect(
-                "VecTree::swap_nodes: Missing an error value but found an invalid NodeId.",
-            ));
-        }
 
-        let (is_valid, error) = self.core_tree.is_valid_node_id(second_id);
-        if !is_valid {
-            return Err(error.expect(
-                "VecTree::swap_nodes: Missing an error value but found an invalid NodeId.",
-            ));
-        }
+        self.core_tree.validate_node_id(first_id)?;
+        self.core_tree.validate_node_id(second_id)?;
 
         match behavior {
             SwapBehavior::TakeChildren => self.swap_nodes_take_children(first_id, second_id),
