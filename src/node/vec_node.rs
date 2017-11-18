@@ -130,33 +130,33 @@ mod vec_node_tests {
     use snowflake::ProcessUniqueId;
 
     #[test]
-    fn test_new() {
+    fn new() {
         let node = VecNode::new(5);
         assert_eq!(node.children.capacity(), 0);
     }
 
     #[test]
-    fn test_new_with_child_capacity() {
+    fn new_with_child_capacity() {
         let node = VecNode::new_with_child_capacity(5, 6);
         assert_eq!(node.children.capacity(), 6);
     }
 
     #[test]
-    fn test_data() {
+    fn data() {
         let five = 5;
         let node = VecNode::new(five);
         assert_eq!(node.data(), &five);
     }
 
     #[test]
-    fn test_data_mut() {
+    fn data_mut() {
         let mut five = 5;
         let mut node = VecNode::new(five);
         assert_eq!(node.data_mut(), &mut five);
     }
 
     #[test]
-    fn test_parent() {
+    fn parent() {
         let mut node = VecNode::new(5);
         assert!(node.parent().is_none());
 
@@ -172,7 +172,7 @@ mod vec_node_tests {
     }
 
     #[test]
-    fn test_children() {
+    fn children() {
         let mut node = VecNode::new(5);
         assert_eq!(node.children().len(), 0);
 

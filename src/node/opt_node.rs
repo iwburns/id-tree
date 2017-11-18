@@ -160,21 +160,21 @@ mod opt_node_tests {
     use snowflake::ProcessUniqueId;
 
     #[test]
-    fn test_data() {
+    fn data() {
         let five = 5;
         let node = OptNode::new(five);
         assert_eq!(node.data(), &five);
     }
 
     #[test]
-    fn test_data_mut() {
+    fn data_mut() {
         let mut five = 5;
         let mut node = OptNode::new(five);
         assert_eq!(node.data_mut(), &mut five);
     }
 
     #[test]
-    fn test_parent() {
+    fn parent() {
         let mut node = OptNode::new(5);
         assert!(node.parent().is_none());
 
@@ -190,7 +190,7 @@ mod opt_node_tests {
     }
 
     #[test]
-    fn test_prev_sibling() {
+    fn prev_sibling() {
         let mut node = OptNode::new(5);
         assert!(node.prev_sibling().is_none());
 
@@ -206,7 +206,7 @@ mod opt_node_tests {
     }
 
     #[test]
-    fn test_next_sibling() {
+    fn next_sibling() {
         let mut node = OptNode::new(5);
         assert!(node.next_sibling().is_none());
 
@@ -222,7 +222,7 @@ mod opt_node_tests {
     }
 
     #[test]
-    fn test_first_child() {
+    fn first_child() {
         let mut node = OptNode::new(5);
         assert!(node.first_child().is_none());
 
@@ -238,7 +238,7 @@ mod opt_node_tests {
     }
 
     #[test]
-    fn test_last_child() {
+    fn last_child() {
         let mut node = OptNode::new(5);
         assert!(node.last_child().is_none());
 

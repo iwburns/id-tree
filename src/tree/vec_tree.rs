@@ -902,7 +902,7 @@ mod tree_builder_tests {
     use ::*;
 
     #[test]
-    fn test_new() {
+    fn new() {
         let tb: VecTreeBuilder<i32> = VecTreeBuilder::new();
         assert!(tb.root.is_none());
         assert_eq!(tb.node_capacity, 0);
@@ -910,7 +910,7 @@ mod tree_builder_tests {
     }
 
     #[test]
-    fn test_with_root() {
+    fn with_root() {
         let tb: VecTreeBuilder<i32> = VecTreeBuilder::new().with_root(Node::new(5));
 
         assert_eq!(tb.root.unwrap().data(), &5);
@@ -919,7 +919,7 @@ mod tree_builder_tests {
     }
 
     #[test]
-    fn test_with_node_capacity() {
+    fn with_node_capacity() {
         let tb: VecTreeBuilder<i32> = VecTreeBuilder::new().with_node_capacity(10);
 
         assert!(tb.root.is_none());
@@ -928,7 +928,7 @@ mod tree_builder_tests {
     }
 
     #[test]
-    fn test_with_swap_capacity() {
+    fn with_swap_capacity() {
         let tb: VecTreeBuilder<i32> = VecTreeBuilder::new().with_swap_capacity(10);
 
         assert!(tb.root.is_none());
@@ -937,7 +937,7 @@ mod tree_builder_tests {
     }
 
     #[test]
-    fn test_with_all_settings() {
+    fn with_all_settings() {
         let tb: VecTreeBuilder<i32> = VecTreeBuilder::new()
             .with_root(Node::new(5))
             .with_node_capacity(10)
@@ -949,7 +949,7 @@ mod tree_builder_tests {
     }
 
     #[test]
-    fn test_build() {
+    fn build() {
         let tree = VecTreeBuilder::new()
             .with_root(Node::new(5))
             .with_node_capacity(10)
@@ -969,7 +969,7 @@ mod tree_tests {
     use ::*;
 
     #[test]
-    fn test_new() {
+    fn new() {
         let tree: VecTree<i32> = VecTree::new();
 
         assert_eq!(tree.core_tree.root, None);
@@ -978,7 +978,7 @@ mod tree_tests {
     }
 
     #[test]
-    fn test_get() {
+    fn get() {
         let tree = VecTreeBuilder::new().with_root(Node::new(5)).build();
 
         let root_id = tree.core_tree.root.clone().unwrap();
@@ -988,7 +988,7 @@ mod tree_tests {
     }
 
     #[test]
-    fn test_get_mut() {
+    fn get_mut() {
         let mut tree = VecTreeBuilder::new().with_root(Node::new(5)).build();
 
         let root_id = tree.core_tree.root.clone().unwrap();
@@ -1008,7 +1008,7 @@ mod tree_tests {
     }
 
     #[test]
-    fn test_set_root() {
+    fn set_root() {
         use InsertBehavior::*;
 
         let a = 5;
@@ -1046,7 +1046,7 @@ mod tree_tests {
     }
 
     #[test]
-    fn test_root_node_id() {
+    fn root_node_id() {
         let tree = VecTreeBuilder::new().with_root(Node::new(5)).build();
 
         let root_id = tree.core_tree.root.clone().unwrap();
@@ -1056,7 +1056,7 @@ mod tree_tests {
     }
 
     #[test]
-    fn test_insert_under_node() {
+    fn insert_under_node() {
         use InsertBehavior::*;
 
         let a = 1;
@@ -1094,7 +1094,7 @@ mod tree_tests {
     }
 
     #[test]
-    fn test_remove_lift_children() {
+    fn remove_lift_children() {
         use InsertBehavior::*;
         use RemoveBehavior::*;
 
@@ -1130,7 +1130,7 @@ mod tree_tests {
     }
 
     #[test]
-    fn test_remove_orphan_children() {
+    fn remove_orphan_children() {
         use InsertBehavior::*;
         use RemoveBehavior::*;
 
@@ -1162,7 +1162,7 @@ mod tree_tests {
     }
 
     #[test]
-    fn test_remove_root() {
+    fn remove_root() {
         use RemoveBehavior::*;
 
         let mut tree = VecTreeBuilder::new().with_root(Node::new(5)).build();
@@ -1179,7 +1179,7 @@ mod tree_tests {
     }
 
     #[test]
-    fn test_move_node_to_parent() {
+    fn move_node_to_parent() {
         use InsertBehavior::*;
         use MoveBehavior::*;
 
@@ -1255,7 +1255,7 @@ mod tree_tests {
     }
 
     #[test]
-    fn test_move_node_to_root() {
+    fn move_node_to_root() {
         use InsertBehavior::*;
 
         // test move with existing root
@@ -1308,7 +1308,7 @@ mod tree_tests {
     }
 
     #[test]
-    fn test_find_subtree_root_below_upper_id() {
+    fn find_subtree_root_below_upper_id() {
         use InsertBehavior::*;
 
         let mut tree = VecTree::new();
@@ -1341,7 +1341,7 @@ mod tree_tests {
     }
 
     #[test]
-    fn test_swap_nodes_take_children() {
+    fn swap_nodes_take_children() {
         use InsertBehavior::*;
         use SwapBehavior::*;
 
@@ -1421,7 +1421,7 @@ mod tree_tests {
     }
 
     #[test]
-    fn test_swap_nodes_leave_children() {
+    fn swap_nodes_leave_children() {
         use InsertBehavior::*;
         use SwapBehavior::*;
         use MoveBehavior::*;
@@ -1658,7 +1658,7 @@ mod tree_tests {
     }
 
     #[test]
-    fn test_swap_nodes_children_only() {
+    fn swap_nodes_children_only() {
         use InsertBehavior::*;
         use SwapBehavior::*;
 

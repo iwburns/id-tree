@@ -215,7 +215,7 @@ mod core_tree_tests {
     }
 
     #[test]
-    fn test_new() {
+    fn new() {
         let root = Some(VecNode::new(1));
         let node_capacity = 2usize;
         let swap_capacity = 3usize;
@@ -232,7 +232,7 @@ mod core_tree_tests {
     }
 
     #[test]
-    fn test_insert() {
+    fn insert() {
         let mut tree = new_tree();
         let four = 4;
         let node_id = tree.insert(VecNode::new(four));
@@ -242,7 +242,7 @@ mod core_tree_tests {
     }
 
     #[test]
-    fn test_remove() {
+    fn remove() {
         let mut tree = new_tree();
         let four = 4;
         let node_id = tree.insert(VecNode::new(four));
@@ -256,7 +256,7 @@ mod core_tree_tests {
 
     #[test]
     #[should_panic]
-    fn test_remove_twice() {
+    fn remove_twice() {
         let mut tree = new_tree();
         let four = 4;
         let node_id = tree.insert(VecNode::new(four));
@@ -275,7 +275,7 @@ mod core_tree_tests {
     }
 
     #[test]
-    fn test_set_root() {
+    fn set_root() {
         let one = 1;
         let node_capacity = 2usize;
         let swap_capacity = 3usize;
@@ -291,7 +291,7 @@ mod core_tree_tests {
     }
 
     #[test]
-    fn test_root() {
+    fn root() {
         let mut tree = new_tree();
         assert!(tree.root.is_some());
 
@@ -306,7 +306,7 @@ mod core_tree_tests {
     }
 
     #[test]
-    fn test_get() {
+    fn get() {
         let mut tree = new_tree();
 
         let four = 4;
@@ -320,7 +320,7 @@ mod core_tree_tests {
     }
 
     #[test]
-    fn test_get_mut() {
+    fn get_mut() {
         let mut tree = new_tree();
 
         let four = 4;
@@ -339,7 +339,7 @@ mod core_tree_tests {
     }
 
     #[test]
-    fn test_get_unsafe() {
+    fn get_unsafe() {
         let mut tree = new_tree();
 
         let four = 4;
@@ -351,7 +351,7 @@ mod core_tree_tests {
 
     #[test]
     #[should_panic]
-    fn test_get_unsafe_after_removed() {
+    fn get_unsafe_after_removed() {
         let mut tree = new_tree();
         let four = 4;
         let node_id = tree.insert(VecNode::new(four));
@@ -372,7 +372,7 @@ mod core_tree_tests {
     }
 
     #[test]
-    fn test_get_mut_unsafe() {
+    fn get_mut_unsafe() {
         let mut tree = new_tree();
 
         let four = 4;
@@ -389,7 +389,7 @@ mod core_tree_tests {
 
     #[test]
     #[should_panic]
-    fn test_get_mut_unsafe_after_removed() {
+    fn get_mut_unsafe_after_removed() {
         let mut tree = new_tree();
         let four = 4;
         let node_id = tree.insert(VecNode::new(four));
@@ -410,7 +410,7 @@ mod core_tree_tests {
     }
 
     #[test]
-    fn test_new_node_id() {
+    fn new_node_id() {
         let tree = new_tree();
 
         // the index actually doesn't matter because we just care about the tree's id.
@@ -420,7 +420,7 @@ mod core_tree_tests {
     }
 
     #[test]
-    fn test_validate_node_id() {
+    fn validate_node_id() {
         let mut tree = new_tree();
         let node_id = tree.insert(VecNode::new(2));
 
@@ -430,7 +430,7 @@ mod core_tree_tests {
     }
 
     #[test]
-    fn test_validate_node_id_wrong_tree() {
+    fn validate_node_id_wrong_tree() {
         let tree_a = new_tree();
         let tree_b = new_tree();
 
@@ -443,7 +443,7 @@ mod core_tree_tests {
     }
 
     #[test]
-    fn test_validate_node_id_old_id() {
+    fn validate_node_id_old_id() {
         let mut tree = new_tree();
         let node_id = tree.insert(VecNode::new(2));
 

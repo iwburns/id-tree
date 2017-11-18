@@ -337,7 +337,7 @@ mod tests {
     use behaviors::InsertBehavior::*;
 
     #[test]
-    fn test_ancestors() {
+    fn ancestors() {
         let mut tree = VecTree::new();
 
         let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
@@ -365,7 +365,7 @@ mod tests {
     }
 
     #[test]
-    fn test_ancestor_ids() {
+    fn ancestor_ids() {
         let mut tree = VecTree::new();
 
         let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
@@ -393,7 +393,7 @@ mod tests {
     }
 
     #[test]
-    fn test_children() {
+    fn children() {
         let mut tree = VecTree::new();
 
         let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
@@ -419,7 +419,7 @@ mod tests {
     }
 
     #[test]
-    fn test_children_ids() {
+    fn children_ids() {
         let mut tree = VecTree::new();
 
         let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
@@ -445,7 +445,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pre_order_traversal() {
+    fn pre_order_traversal() {
         let mut tree = VecTree::new();
 
         //      0
@@ -480,7 +480,7 @@ mod tests {
     }
 
     #[test]
-    fn test_post_order_traversal() {
+    fn post_order_traversal() {
         let mut tree = VecTree::new();
 
         //      0
@@ -515,7 +515,7 @@ mod tests {
     }
 
     #[test]
-    fn test_level_order_traversal() {
+    fn level_order_traversal() {
         let mut tree = VecTree::new();
 
         //      0
