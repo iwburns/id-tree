@@ -176,6 +176,39 @@ impl<T> Tree<T> {
         TreeBuilder::new().build()
     }
 
+    ///
+    /// Returns the maximum height of the `Tree`.
+    ///
+    /// ```
+    /// use id_tree::*;
+    /// use id_tree::InsertBehavior::*;
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// assert_eq!(0, tree.height());
+    ///
+    /// let root_id = tree.insert(Node::new(1), AsRoot).unwrap();
+    /// assert_eq!(1, tree.height());
+    ///
+    /// tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+    /// assert_eq!(2, tree.height());
+    /// ```
+    ///
+    pub fn height(&self) -> usize {
+        match self.root {
+            Some(ref id) => self.height_of_node(id),
+            _ => 0,
+        }
+    }
+
+    fn height_of_node(&self, node: &NodeId) -> usize {
+        let mut h = 0;
+        for n in self.children_ids(node).unwrap() {
+            h = std::cmp::max(h, self.height_of_node(n));
+        }
+
+        h + 1
+    }
+
     /// Inserts a new `Node` into the `Tree`.  The `InsertBehavior` provided will determine where
     /// the `Node` is inserted.
     ///
@@ -2381,5 +2414,39 @@ mod tree_tests {
             let node_1_children = tree.get(&node_1_id).unwrap().children();
             assert_eq!(node_1_children[0], node_2_id);
         }
+    }
+
+    #[test]
+    fn test_tree_height() {
+        use InsertBehavior::*;
+        use RemoveBehavior::*;
+
+        // empty tree
+        let mut tree = Tree::new();
+        assert_eq!(0, tree.height());
+
+        // the tree with single root node
+        let root_id = tree.insert(Node::new(1), AsRoot).unwrap();
+        assert_eq!(1, tree.height());
+
+        // root node with single child
+        let child_1_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+        assert_eq!(2, tree.height());
+
+        // root node with two children
+        let child_2_id = tree.insert(Node::new(3), UnderNode(&root_id)).unwrap();
+        assert_eq!(2, tree.height());
+
+        // grandson
+        tree.insert(Node::new(4), UnderNode(&child_1_id)).unwrap();
+        assert_eq!(3, tree.height());
+
+        // remove child_1 and gradson
+        tree.remove_node(child_1_id, DropChildren).unwrap();
+        assert_eq!(2, tree.height());
+
+        // remove child_2
+        tree.remove_node(child_2_id, LiftChildren).unwrap();
+        assert_eq!(1, tree.height());
     }
 }
