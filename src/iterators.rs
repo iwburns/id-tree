@@ -7,6 +7,8 @@ use tree::*;
 use node::*;
 use NodeId;
 
+//todo: tests for OptTree versions of iterators.
+
 ///
 /// An Iterator over the ancestors of a `Node`.
 ///
@@ -152,7 +154,34 @@ impl<'a, D> Iterator for VecChildren<'a, D> {
     }
 }
 
-//todo: add an OptChildren iterator
+///
+/// An Iterator over the children of an `OptNode`.
+///
+/// Iterates of the child `OptNode`s of a given `OptNode` in the `OptTree`.  Each call to `next`
+/// will return an immutable reference to the next child `OptNode`.
+///
+pub struct OptChildren<'a, T: 'a> {
+    tree: &'a OptTree<'a, T>,
+    node_id: Option<NodeId>,
+}
+
+impl<'a, T> OptChildren<'a, T> {
+    pub(crate) fn new(tree: &'a OptTree<T>, node_id: NodeId) -> OptChildren<'a, T> {
+        let base_node = unsafe { tree.get_unchecked(&node_id) };
+        OptChildren {
+            tree,
+            node_id: base_node.first_child().cloned(),
+        }
+    }
+}
+
+impl<'a, T> Iterator for OptChildren<'a, T> {
+    type Item = &'a OptNode<T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        unimplemented!()
+    }
+}
 
 ///
 /// An Iterator over the children of a `VecNode`.
@@ -183,7 +212,33 @@ impl<'a> Iterator for VecChildrenIds<'a> {
     }
 }
 
-//todo: add an OptChildrenIds iterator
+///
+/// An Iterator over the children of an `OptNode`.
+///
+/// Iterates over `NodeId`s instead of over the `OptNode`s themselves.
+///
+pub struct OptChildrenIds<'a, T: 'a> {
+    tree: &'a OptTree<'a, T>,
+    node_id: Option<NodeId>,
+}
+
+impl<'a, T> OptChildrenIds<'a, T> {
+    pub(crate) fn new(tree: &'a OptTree<T>, node_id: NodeId) -> OptChildrenIds<'a, T> {
+        let base_node = unsafe { tree.get_unchecked(&node_id) };
+        OptChildrenIds {
+            tree,
+            node_id: base_node.first_child().cloned(),
+        }
+    }
+}
+
+impl<'a, T> Iterator for OptChildrenIds<'a, T> {
+    type Item = &'a NodeId;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        unimplemented!()
+    }
+}
 
 ///
 /// An Iterator over the sub-tree relative to a given `VecNode`.
@@ -337,7 +392,7 @@ mod tests {
     use behaviors::InsertBehavior::*;
 
     #[test]
-    fn ancestors() {
+    fn vec_ancestors() {
         let mut tree = VecTree::new();
 
         let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
@@ -365,7 +420,7 @@ mod tests {
     }
 
     #[test]
-    fn ancestor_ids() {
+    fn vec_ancestor_ids() {
         let mut tree = VecTree::new();
 
         let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
@@ -393,7 +448,7 @@ mod tests {
     }
 
     #[test]
-    fn children() {
+    fn vec_children() {
         let mut tree = VecTree::new();
 
         let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
@@ -419,7 +474,7 @@ mod tests {
     }
 
     #[test]
-    fn children_ids() {
+    fn vec_children_ids() {
         let mut tree = VecTree::new();
 
         let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
@@ -445,7 +500,7 @@ mod tests {
     }
 
     #[test]
-    fn pre_order_traversal() {
+    fn vec_pre_order_traversal() {
         let mut tree = VecTree::new();
 
         //      0
@@ -480,7 +535,7 @@ mod tests {
     }
 
     #[test]
-    fn post_order_traversal() {
+    fn vec_post_order_traversal() {
         let mut tree = VecTree::new();
 
         //      0
@@ -515,7 +570,7 @@ mod tests {
     }
 
     #[test]
-    fn level_order_traversal() {
+    fn vec_level_order_traversal() {
         let mut tree = VecTree::new();
 
         //      0
