@@ -36,6 +36,25 @@ pub trait Tree<'a, Data> {
     fn new() -> Self;
 
     ///
+    /// Returns the maximum height of the `Tree`.
+    ///
+    /// ```
+    /// use id_tree::*;
+    /// use id_tree::InsertBehavior::*;
+    ///
+    /// let mut tree = VecTree::new();
+    /// assert_eq!(0, tree.height());
+    ///
+    /// let root_id = tree.insert(VecNode::new(1), AsRoot).unwrap();
+    /// assert_eq!(1, tree.height());
+    ///
+    /// tree.insert(VecNode::new(2), UnderNode(&root_id)).unwrap();
+    /// assert_eq!(2, tree.height());
+    /// ```
+    ///
+    fn height(&self) -> usize;
+
+    ///
     /// Inserts a new `Node` into the `Tree`.  The `InsertBehavior` provided will determine
     /// where the `Node` is inserted.
     ///
