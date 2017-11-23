@@ -433,7 +433,7 @@ fn swap_nodes_old_first_id() {
     let child_a = tree.insert(VecNode::new(2), UnderNode(&root_id)).unwrap();
     let child_b = tree.insert(VecNode::new(3), UnderNode(&root_id)).unwrap();
 
-    let child_a_copy = child_a.clone();  //save it for later
+    let child_a_copy = child_a.clone(); //save it for later
     tree.remove(child_a, DropChildren).unwrap();
 
     let result = tree.swap_nodes(&child_a_copy, &child_b, TakeChildren);
@@ -451,7 +451,7 @@ fn swap_nodes_old_second_id() {
     let child_a = tree.insert(VecNode::new(2), UnderNode(&root_id)).unwrap();
     let child_b = tree.insert(VecNode::new(3), UnderNode(&root_id)).unwrap();
 
-    let child_a_copy = child_a.clone();  //save it for later
+    let child_a_copy = child_a.clone(); //save it for later
     tree.remove(child_a, DropChildren).unwrap();
 
     let result = tree.swap_nodes(&child_b, &child_a_copy, TakeChildren);

@@ -50,17 +50,11 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         let parent_id = self.node_id.as_ref().and_then(|current_id| {
-            let current = unsafe {
-                self.tree.get_unchecked(current_id)
-            };
+            let current = unsafe { self.tree.get_unchecked(current_id) };
             current.parent()
         });
 
-        let next = parent_id.map(|id| {
-            unsafe {
-                self.tree.get_unchecked(id)
-            }
-        });
+        let next = parent_id.map(|id| unsafe { self.tree.get_unchecked(id) });
 
         self.node_id = parent_id.cloned();
 
@@ -107,9 +101,7 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         let next = self.node_id.as_ref().and_then(|current_id| {
-            let current = unsafe {
-                self.tree.get_unchecked(current_id)
-            };
+            let current = unsafe { self.tree.get_unchecked(current_id) };
             current.parent()
         });
 
