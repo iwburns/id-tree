@@ -364,7 +364,7 @@ impl<'a, T> VecTree<'a, T> {
     }
 
     ///
-    /// Add a new `NodeVec` to the tree as the child of a `NodeVec` specified by the given
+    /// Add a new `VecNode` to the tree as the child of a `VecNode` specified by the given
     /// `NodeId`.
     ///
     fn insert_with_parent(
