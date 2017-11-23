@@ -162,7 +162,7 @@ impl<'a, T> Tree<'a, T> for VecTree<'a, T> {
     fn height(&self) -> usize {
         match self.core_tree.root {
             Some(ref root_id) => self.height_of_node(root_id),
-            _ => 0
+            _ => 0,
         }
     }
 
@@ -355,6 +355,7 @@ impl<'a, T> VecTree<'a, T> {
     ///
     fn height_of_node(&self, node: &NodeId) -> usize {
         let mut height = 0;
+
         for node_id in self.children_ids(node).unwrap() {
             height = std::cmp::max(height, self.height_of_node(node_id));
         }
