@@ -12,8 +12,8 @@ use NodeIdError;
 
 use node::Node;
 
-pub trait Tree<'a, Data> {
-    type NodeType: Node<Data>;
+pub trait Tree<'a, T> {
+    type NodeType: Node<T>;
     type AncestorsIter: Iterator;
     type AncestorIdsIter: Iterator;
     type ChildrenIter: Iterator;
@@ -284,7 +284,7 @@ pub trait Tree<'a, Data> {
     ///
     fn sort_children_by_data(&mut self, node_id: &NodeId) -> Result<(), NodeIdError>
     where
-        Data: Ord;
+        T: Ord;
 
     ///
     /// Sorts the children of one node, in-place, using f to extract a key by which to order the

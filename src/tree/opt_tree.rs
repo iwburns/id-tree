@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+use std::marker::PhantomData;
 use ::*;
 
 use super::core::CoreTree;
@@ -119,13 +121,15 @@ impl<T> OptTreeBuilder<T> {
     ///         .build();
     /// ```
     ///
-    pub fn build(self) -> OptTree<T> {
+    pub fn build<'a>(self) -> OptTree<'a, T> {
         OptTree {
-            core_tree: CoreTree::new(self.root, self.node_capacity, self.swap_capacity)
+            core_tree: CoreTree::new(self.root, self.node_capacity, self.swap_capacity),
+            phantom: PhantomData
         }
     }
 }
 
-pub struct OptTree<T> {
+pub struct OptTree<'a, T: 'a> {
     core_tree: CoreTree<OptNode<T>, T>,
+    phantom: PhantomData<&'a T>,
 }
