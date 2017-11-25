@@ -54,16 +54,14 @@ impl<'a, T> Tree<'a, T> for OptTree<'a, T> {
         }
     }
 
-    //todo: test
     fn get(&self, node_id: &NodeId) -> Result<&OptNode<T>, NodeIdError> {
         self.core_tree.get(node_id)
     }
 
     fn get_mut(&mut self, node_id: &NodeId) -> Result<&mut OptNode<T>, NodeIdError> {
-        unimplemented!()
+        self.core_tree.get_mut(node_id)
     }
 
-    //todo: test
     unsafe fn get_unchecked(&self, node_id: &NodeId) -> &OptNode<T> {
         self.core_tree
             .nodes
@@ -72,7 +70,6 @@ impl<'a, T> Tree<'a, T> for OptTree<'a, T> {
             .expect("Called VecTree.get_unchecked() with an invalid NodeId.")
     }
 
-    //todo: test
     unsafe fn get_unchecked_mut(&mut self, node_id: &NodeId) -> &mut OptNode<T> {
         self.core_tree
             .nodes
@@ -254,6 +251,64 @@ mod opt_tree_tests {
         assert_eq!(tree.core_tree.root, None);
         assert_eq!(tree.core_tree.nodes.len(), 0);
         assert_eq!(tree.core_tree.free_ids.len(), 0);
+    }
+
+    #[test]
+    fn get() {
+        let (root_id, tree) = new_tree();
+
+        let root = tree.get(&root_id).unwrap();
+
+        assert_eq!(root.data(), &1);
+    }
+
+    #[test]
+    fn get_mut() {
+        let (root_id, mut tree) = new_tree();
+
+        {
+            let root = tree.get(&root_id).unwrap();
+            assert_eq!(root.data(), &1);
+        }
+
+        {
+            let root = tree.get_mut(&root_id).unwrap();
+            assert_eq!(root.data(), &1);
+            *root.data_mut() = 6;
+            assert_eq!(root.data(), &6);
+        }
+
+        let root = tree.get(&root_id).unwrap();
+        assert_eq!(root.data(), &6);
+    }
+
+    #[test]
+    fn get_unchecked() {
+        let (root_id, tree) = new_tree();
+
+        let root = unsafe { tree.get_unchecked(&root_id) };
+
+        assert_eq!(root.data(), &1);
+    }
+
+    #[test]
+    fn get_unchecked_mut() {
+        let (root_id, mut tree) = new_tree();
+
+        {
+            let root = unsafe { tree.get_unchecked(&root_id) };
+            assert_eq!(root.data(), &1);
+        }
+
+        {
+            let root = unsafe { tree.get_unchecked_mut(&root_id) };
+            assert_eq!(root.data(), &1);
+            *root.data_mut() = 6;
+            assert_eq!(root.data(), &6);
+        }
+
+        let root = unsafe { tree.get_unchecked(&root_id) };
+        assert_eq!(root.data(), &6);
     }
 
     #[test]

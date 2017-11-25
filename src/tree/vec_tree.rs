@@ -878,7 +878,17 @@ mod tree_tests {
     }
 
     #[test]
-    fn set_root() {
+    fn root_node_id() {
+        let tree = VecTreeBuilder::new().with_root(Node::new(5)).build();
+
+        let root_id = tree.core_tree.root.clone().unwrap();
+        let root_node_id = tree.root_node_id().unwrap();
+
+        assert_eq!(&root_id, root_node_id);
+    }
+
+    #[test]
+    fn insert_as_root() {
         use InsertBehavior::*;
 
         let a = 5;
@@ -913,16 +923,6 @@ mod tree_tests {
             let node_b_child_ref = tree.get(&node_b_child_id).unwrap();
             assert_eq!(node_b_child_ref.data(), &a);
         }
-    }
-
-    #[test]
-    fn root_node_id() {
-        let tree = VecTreeBuilder::new().with_root(Node::new(5)).build();
-
-        let root_id = tree.core_tree.root.clone().unwrap();
-        let root_node_id = tree.root_node_id().unwrap();
-
-        assert_eq!(&root_id, root_node_id);
     }
 
     #[test]
@@ -1029,6 +1029,31 @@ mod tree_tests {
 
         assert!(node_2_ref.parent().is_none());
         assert!(node_3_ref.parent().is_none());
+    }
+
+    #[test]
+    fn remove_drop_children() {
+        use InsertBehavior::*;
+        use RemoveBehavior::*;
+        use NodeIdError::*;
+
+        let (root_id, mut tree) = new_tree();
+
+        let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+        let node_2 = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+
+        let root = tree.remove(root_id, DropChildren).unwrap();
+
+        assert!(root.children().is_empty());
+        assert!(root.parent().is_none());
+
+        let result = tree.get(&node_1);
+        assert!(result.is_err());
+        assert_eq!(result.err().unwrap(), NodeIdNoLongerValid);
+
+        let result = tree.get(&node_2);
+        assert!(result.is_err());
+        assert_eq!(result.err().unwrap(), NodeIdNoLongerValid);
     }
 
     #[test]
