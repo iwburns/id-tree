@@ -204,7 +204,7 @@ pub struct OptTreeBuilder<T> {
     swap_capacity: usize,
 }
 
-impl<T> OptTreeBuilder<T> {
+impl<'a, T> OptTreeBuilder<T> {
     ///
     /// Creates a new `OptTreeBuilder` with the default settings.
     ///
@@ -312,10 +312,78 @@ impl<T> OptTreeBuilder<T> {
     ///         .build();
     /// ```
     ///
-    pub fn build<'a>(self) -> OptTree<'a, T> {
+    pub fn build(self) -> OptTree<'a, T> {
         OptTree {
             core_tree: CoreTree::new(self.root, self.node_capacity, self.swap_capacity),
             phantom: PhantomData,
         }
+    }
+}
+
+#[cfg(test)]
+mod opt_tree_builder_tests {
+    use ::*;
+
+    #[test]
+    fn new() {
+        let tb: OptTreeBuilder<i32> = OptTreeBuilder::new();
+
+        assert!(tb.root.is_none());
+        assert_eq!(tb.node_capacity, 0);
+        assert_eq!(tb.swap_capacity, 0);
+    }
+
+    #[test]
+    fn with_root() {
+        let tb = OptTreeBuilder::new().with_root(Node::new(5));
+
+        assert_eq!(tb.root.unwrap().data(), &5);
+        assert_eq!(tb.node_capacity, 0);
+        assert_eq!(tb.swap_capacity, 0);
+    }
+
+    #[test]
+    fn with_node_capacity() {
+        let tb: OptTreeBuilder<i32> = OptTreeBuilder::new().with_node_capacity(10);
+
+        assert!(tb.root.is_none());
+        assert_eq!(tb.node_capacity, 10);
+        assert_eq!(tb.swap_capacity, 0);
+    }
+
+    #[test]
+    fn with_swap_capacity() {
+        let tb: OptTreeBuilder<i32> = OptTreeBuilder::new().with_swap_capacity(10);
+
+        assert!(tb.root.is_none());
+        assert_eq!(tb.node_capacity, 0);
+        assert_eq!(tb.swap_capacity, 10);
+    }
+
+    #[test]
+    fn with_all_settings() {
+        let tb = OptTreeBuilder::new()
+            .with_root(Node::new(5))
+            .with_node_capacity(10)
+            .with_swap_capacity(3);
+
+        assert_eq!(tb.root.unwrap().data(), &5);
+        assert_eq!(tb.node_capacity, 10);
+        assert_eq!(tb.swap_capacity, 3);
+    }
+
+    #[test]
+    fn build() {
+        let tree = OptTreeBuilder::new()
+            .with_root(Node::new(5))
+            .with_node_capacity(10)
+            .with_swap_capacity(3)
+            .build();
+
+        let root = tree.get(tree.root_node_id().unwrap()).unwrap();
+
+        assert_eq!(root.data(), &5);
+        assert_eq!(tree.core_tree.nodes.capacity(), 10);
+        assert_eq!(tree.core_tree.free_ids.capacity(), 3);
     }
 }

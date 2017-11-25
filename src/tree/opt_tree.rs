@@ -124,8 +124,9 @@ impl<'a, T> Tree<'a, T> for OptTree<'a, T> {
         unimplemented!()
     }
 
+    //todo: test
     fn root_node_id(&self) -> Option<&NodeId> {
-        unimplemented!()
+        self.core_tree.root()
     }
 
     fn ancestors(&'a self, node_id: &NodeId) -> Result<Self::AncestorsIter, NodeIdError> {
