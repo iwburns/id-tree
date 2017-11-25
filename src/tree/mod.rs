@@ -1,9 +1,11 @@
+mod builders;
 mod core;
-mod vec_tree;
 mod opt_tree;
+mod vec_tree;
 
-pub use self::vec_tree::*;
+pub use self::builders::*;
 pub use self::opt_tree::*;
+pub use self::vec_tree::*;
 
 use std::cmp::Ordering;
 use behaviors::*;

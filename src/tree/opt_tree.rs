@@ -310,8 +310,8 @@ impl<'a, T> OptTree<'a, T> {
                 last_child.set_next_sibling(Some(new_id.clone()));
             }
             //todo: find a better error message for these.
-            (Some(first_id), None) => panic!("Found an OptNode in an invalid state."),
-            (None, Some(last_id)) => panic!("Found an OptNode in an invalid state."),
+            (Some(_), None) => panic!("Found an OptNode in an invalid state."),
+            (None, Some(_)) => panic!("Found an OptNode in an invalid state."),
             (None, None) => {
                 let parent = unsafe { self.get_unchecked_mut(parent_id) };
                 parent.set_first_child(Some(new_id.clone()));
