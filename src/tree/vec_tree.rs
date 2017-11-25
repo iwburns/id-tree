@@ -820,6 +820,109 @@ mod tree_tests {
     }
 
     #[test]
+    fn height() {
+        use InsertBehavior::*;
+        use RemoveBehavior::*;
+
+        // empty tree
+        let mut tree = VecTree::new();
+        assert_eq!(0, tree.height());
+
+        // the tree with single root node
+        let root_id = tree.insert(Node::new(1), AsRoot).unwrap();
+        assert_eq!(1, tree.height());
+
+        // root node with single child
+        let child_1_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+        assert_eq!(2, tree.height());
+
+        // root node with two children
+        let child_2_id = tree.insert(Node::new(3), UnderNode(&root_id)).unwrap();
+        assert_eq!(2, tree.height());
+
+        // grandson
+        tree.insert(Node::new(4), UnderNode(&child_1_id)).unwrap();
+        assert_eq!(3, tree.height());
+
+        // remove child_1 and grandson
+        tree.remove(child_1_id, DropChildren).unwrap();
+        assert_eq!(2, tree.height());
+
+        // remove child_2
+        tree.remove(child_2_id, LiftChildren).unwrap();
+        assert_eq!(1, tree.height());
+    }
+
+    #[test]
+    fn insert() {
+        use InsertBehavior::*;
+
+        let (root_id, mut tree) = new_tree();
+
+        {
+            let root = tree.get(&root_id).unwrap();
+            assert_eq!(root.parent(), None);
+            assert!(root.children().is_empty());
+        }
+
+        let child_1 = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+
+        {
+            let root = tree.get(&root_id).unwrap();
+            assert_eq!(root.parent(), None);
+            assert_eq!(root.children().len(), 1);
+            assert_eq!(root.children()[0], child_1);
+
+            let child = tree.get(&child_1).unwrap();
+            assert_eq!(child.parent(), Some(&root_id));
+            assert!(child.children().is_empty());
+        }
+
+        let child_2 = tree.insert(Node::new(3), UnderNode(&root_id)).unwrap();
+
+        {
+            let root = tree.get(&root_id).unwrap();
+            assert_eq!(root.parent(), None);
+            assert_eq!(root.children().len(), 2);
+            assert_eq!(root.children()[0], child_1);
+            assert_eq!(root.children()[1], child_2);
+
+            let child = tree.get(&child_1).unwrap();
+            assert_eq!(child.parent(), Some(&root_id));
+            assert!(child.children().is_empty());
+
+            let child = tree.get(&child_2).unwrap();
+            assert_eq!(child.parent(), Some(&root_id));
+            assert!(child.children().is_empty());
+        }
+
+        let new_root = tree.insert(Node::new(0), AsRoot).unwrap();
+        let old_root = root_id;
+
+        {
+            let root = tree.get(&new_root).unwrap();
+            assert_eq!(root.parent(), None);
+            assert_eq!(root.children().len(), 1);
+            assert_eq!(root.children()[0], old_root);
+
+            // the old root
+            let parent = tree.get(&old_root).unwrap();
+            assert_eq!(parent.parent(), Some(&new_root));
+            assert_eq!(parent.children().len(), 2);
+            assert_eq!(parent.children()[0], child_1);
+            assert_eq!(parent.children()[1], child_2);
+
+            let child = tree.get(&child_1).unwrap();
+            assert_eq!(child.parent(), Some(&old_root));
+            assert!(child.children().is_empty());
+
+            let child = tree.get(&child_2).unwrap();
+            assert_eq!(child.parent(), Some(&old_root));
+            assert!(child.children().is_empty());
+        }
+    }
+
+    #[test]
     fn get() {
         let (root_id, tree) = new_tree();
 
@@ -885,82 +988,6 @@ mod tree_tests {
         let root_node_id = tree.root_node_id().unwrap();
 
         assert_eq!(&root_id, root_node_id);
-    }
-
-    #[test]
-    fn insert_as_root() {
-        use InsertBehavior::*;
-
-        let a = 5;
-        let b = 6;
-        let node_a = Node::new(a);
-        let node_b = Node::new(b);
-
-        let mut tree = VecTreeBuilder::new().build();
-
-        let node_a_id = tree.insert(node_a, AsRoot).unwrap();
-        let root_id = tree.core_tree.root.clone().unwrap();
-        assert_eq!(node_a_id, root_id);
-
-        {
-            let node_a_ref = tree.get(&node_a_id).unwrap();
-            let root_ref = tree.get(&root_id).unwrap();
-            assert_eq!(node_a_ref.data(), &a);
-            assert_eq!(root_ref.data(), &a);
-        }
-
-        let node_b_id = tree.insert(node_b, AsRoot).unwrap();
-        let root_id = tree.core_tree.root.clone().unwrap();
-        assert_eq!(node_b_id, root_id);
-
-        {
-            let node_b_ref = tree.get(&node_b_id).unwrap();
-            let root_ref = tree.get(&root_id).unwrap();
-            assert_eq!(node_b_ref.data(), &b);
-            assert_eq!(root_ref.data(), &b);
-
-            let node_b_child_id = node_b_ref.children().get(0).unwrap();
-            let node_b_child_ref = tree.get(&node_b_child_id).unwrap();
-            assert_eq!(node_b_child_ref.data(), &a);
-        }
-    }
-
-    #[test]
-    fn insert_under_node() {
-        use InsertBehavior::*;
-
-        let a = 1;
-        let b = 2;
-        let r = 5;
-
-        let mut tree = VecTreeBuilder::new().with_root(Node::new(r)).build();
-
-        let node_a = Node::new(a);
-        let node_b = Node::new(b);
-
-        let root_id = tree.core_tree.root.clone().unwrap();
-        let node_a_id = tree.insert(node_a, UnderNode(&root_id)).unwrap();
-        let node_b_id = tree.insert(node_b, UnderNode(&root_id)).unwrap();
-
-        let node_a_ref = tree.get(&node_a_id).unwrap();
-        let node_b_ref = tree.get(&node_b_id).unwrap();
-        assert_eq!(node_a_ref.data(), &a);
-        assert_eq!(node_b_ref.data(), &b);
-
-        assert_eq!(node_a_ref.parent().unwrap().clone(), root_id);
-        assert_eq!(node_b_ref.parent().unwrap().clone(), root_id);
-
-        let root_node_ref = tree.get(&root_id).unwrap();
-        let root_children: &Vec<NodeId> = root_node_ref.children();
-
-        let child_1_id = root_children.get(0).unwrap();
-        let child_2_id = root_children.get(1).unwrap();
-
-        let child_1_ref = tree.get(&child_1_id).unwrap();
-        let child_2_ref = tree.get(&child_2_id).unwrap();
-
-        assert_eq!(child_1_ref.data(), &a);
-        assert_eq!(child_2_ref.data(), &b);
     }
 
     #[test]

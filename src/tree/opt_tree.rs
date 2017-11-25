@@ -253,6 +253,98 @@ mod opt_tree_tests {
         assert_eq!(tree.core_tree.free_ids.len(), 0);
     }
 
+    // tests both UnderNode and AsRoot
+    #[test]
+    fn insert() {
+        let (root_id, mut tree) = new_tree();
+
+        {
+            let root = tree.get(&root_id).unwrap();
+            assert_eq!(root.parent(), None);
+            assert_eq!(root.first_child(), None);
+            assert_eq!(root.last_child(), None);
+            assert_eq!(root.prev_sibling(), None);
+            assert_eq!(root.next_sibling(), None);
+        }
+
+        let child_1 = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+
+        {
+            let root = tree.get(&root_id).unwrap();
+            assert_eq!(root.parent(), None);
+            assert_eq!(root.first_child(), Some(&child_1));
+            assert_eq!(root.last_child(), Some(&child_1));
+            assert_eq!(root.prev_sibling(), None);
+            assert_eq!(root.next_sibling(), None);
+
+            let child = tree.get(&child_1).unwrap();
+            assert_eq!(child.parent(), Some(&root_id));
+            assert_eq!(child.first_child(), None);
+            assert_eq!(child.last_child(), None);
+            assert_eq!(child.prev_sibling(), None);
+            assert_eq!(child.next_sibling(), None);
+        }
+
+        let child_2 = tree.insert(Node::new(3), UnderNode(&root_id)).unwrap();
+
+        {
+            let root = tree.get(&root_id).unwrap();
+            assert_eq!(root.parent(), None);
+            assert_eq!(root.first_child(), Some(&child_1));
+            assert_eq!(root.last_child(), Some(&child_2));
+            assert_eq!(root.prev_sibling(), None);
+            assert_eq!(root.next_sibling(), None);
+
+            let child = tree.get(&child_1).unwrap();
+            assert_eq!(child.parent(), Some(&root_id));
+            assert_eq!(child.first_child(), None);
+            assert_eq!(child.last_child(), None);
+            assert_eq!(child.prev_sibling(), None);
+            assert_eq!(child.next_sibling(), Some(&child_2));
+
+            let child = tree.get(&child_2).unwrap();
+            assert_eq!(child.parent(), Some(&root_id));
+            assert_eq!(child.first_child(), None);
+            assert_eq!(child.last_child(), None);
+            assert_eq!(child.prev_sibling(), Some(&child_1));
+            assert_eq!(child.next_sibling(), None);
+        }
+
+        let new_root = tree.insert(Node::new(0), AsRoot).unwrap();
+        let old_root = root_id;
+
+        {
+            let root = tree.get(&new_root).unwrap();
+            assert_eq!(root.parent(), None);
+            assert_eq!(root.first_child(), Some(&old_root));
+            assert_eq!(root.last_child(), Some(&old_root));
+            assert_eq!(root.prev_sibling(), None);
+            assert_eq!(root.next_sibling(), None);
+
+            // the old root
+            let parent = tree.get(&old_root).unwrap();
+            assert_eq!(parent.parent(), Some(&new_root));
+            assert_eq!(parent.first_child(), Some(&child_1));
+            assert_eq!(parent.last_child(), Some(&child_2));
+            assert_eq!(parent.prev_sibling(), None);
+            assert_eq!(parent.next_sibling(), None);
+
+            let child = tree.get(&child_1).unwrap();
+            assert_eq!(child.parent(), Some(&old_root));
+            assert_eq!(child.first_child(), None);
+            assert_eq!(child.last_child(), None);
+            assert_eq!(child.prev_sibling(), None);
+            assert_eq!(child.next_sibling(), Some(&child_2));
+
+            let child = tree.get(&child_2).unwrap();
+            assert_eq!(child.parent(), Some(&old_root));
+            assert_eq!(child.first_child(), None);
+            assert_eq!(child.last_child(), None);
+            assert_eq!(child.prev_sibling(), Some(&child_1));
+            assert_eq!(child.next_sibling(), None);
+        }
+    }
+
     #[test]
     fn get() {
         let (root_id, tree) = new_tree();
@@ -309,77 +401,5 @@ mod opt_tree_tests {
 
         let root = unsafe { tree.get_unchecked(&root_id) };
         assert_eq!(root.data(), &6);
-    }
-
-    #[test]
-    fn insert() {
-        let (root_id, mut tree) = new_tree();
-
-        assert_eq!(tree.get(&root_id).unwrap().parent(), None);
-        assert_eq!(tree.get(&root_id).unwrap().first_child(), None);
-        assert_eq!(tree.get(&root_id).unwrap().last_child(), None);
-        assert_eq!(tree.get(&root_id).unwrap().prev_sibling(), None);
-        assert_eq!(tree.get(&root_id).unwrap().next_sibling(), None);
-
-        let child_1 = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
-
-        assert_eq!(tree.get(&root_id).unwrap().parent(), None);
-        assert_eq!(tree.get(&root_id).unwrap().first_child(), Some(&child_1));
-        assert_eq!(tree.get(&root_id).unwrap().last_child(), Some(&child_1));
-        assert_eq!(tree.get(&root_id).unwrap().prev_sibling(), None);
-        assert_eq!(tree.get(&root_id).unwrap().next_sibling(), None);
-
-        assert_eq!(tree.get(&child_1).unwrap().parent(), Some(&root_id));
-        assert_eq!(tree.get(&child_1).unwrap().first_child(), None);
-        assert_eq!(tree.get(&child_1).unwrap().last_child(), None);
-        assert_eq!(tree.get(&child_1).unwrap().prev_sibling(), None);
-        assert_eq!(tree.get(&child_1).unwrap().next_sibling(), None);
-
-        let child_2 = tree.insert(Node::new(3), UnderNode(&root_id)).unwrap();
-
-        assert_eq!(tree.get(&root_id).unwrap().parent(), None);
-        assert_eq!(tree.get(&root_id).unwrap().first_child(), Some(&child_1));
-        assert_eq!(tree.get(&root_id).unwrap().last_child(), Some(&child_2));
-        assert_eq!(tree.get(&root_id).unwrap().prev_sibling(), None);
-        assert_eq!(tree.get(&root_id).unwrap().next_sibling(), None);
-
-        assert_eq!(tree.get(&child_1).unwrap().parent(), Some(&root_id));
-        assert_eq!(tree.get(&child_1).unwrap().first_child(), None);
-        assert_eq!(tree.get(&child_1).unwrap().last_child(), None);
-        assert_eq!(tree.get(&child_1).unwrap().prev_sibling(), None);
-        assert_eq!(tree.get(&child_1).unwrap().next_sibling(), Some(&child_2));
-
-        assert_eq!(tree.get(&child_2).unwrap().parent(), Some(&root_id));
-        assert_eq!(tree.get(&child_2).unwrap().first_child(), None);
-        assert_eq!(tree.get(&child_2).unwrap().last_child(), None);
-        assert_eq!(tree.get(&child_2).unwrap().prev_sibling(), Some(&child_1));
-        assert_eq!(tree.get(&child_2).unwrap().next_sibling(), None);
-
-        let new_root = tree.insert(Node::new(0), AsRoot).unwrap();
-        let old_root = root_id;
-
-        assert_eq!(tree.get(&old_root).unwrap().parent(), Some(&new_root));
-        assert_eq!(tree.get(&old_root).unwrap().first_child(), Some(&child_1));
-        assert_eq!(tree.get(&old_root).unwrap().last_child(), Some(&child_2));
-        assert_eq!(tree.get(&old_root).unwrap().prev_sibling(), None);
-        assert_eq!(tree.get(&old_root).unwrap().next_sibling(), None);
-
-        assert_eq!(tree.get(&new_root).unwrap().parent(), None);
-        assert_eq!(tree.get(&new_root).unwrap().first_child(), Some(&old_root));
-        assert_eq!(tree.get(&new_root).unwrap().last_child(), Some(&old_root));
-        assert_eq!(tree.get(&new_root).unwrap().prev_sibling(), None);
-        assert_eq!(tree.get(&new_root).unwrap().next_sibling(), None);
-
-        assert_eq!(tree.get(&child_1).unwrap().parent(), Some(&old_root));
-        assert_eq!(tree.get(&child_1).unwrap().first_child(), None);
-        assert_eq!(tree.get(&child_1).unwrap().last_child(), None);
-        assert_eq!(tree.get(&child_1).unwrap().prev_sibling(), None);
-        assert_eq!(tree.get(&child_1).unwrap().next_sibling(), Some(&child_2));
-
-        assert_eq!(tree.get(&child_2).unwrap().parent(), Some(&old_root));
-        assert_eq!(tree.get(&child_2).unwrap().first_child(), None);
-        assert_eq!(tree.get(&child_2).unwrap().last_child(), None);
-        assert_eq!(tree.get(&child_2).unwrap().prev_sibling(), Some(&child_1));
-        assert_eq!(tree.get(&child_2).unwrap().next_sibling(), None);
     }
 }
