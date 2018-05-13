@@ -30,16 +30,15 @@ impl<'a, T> Iterator for Ancestors<'a, T> {
     type Item = &'a Node<T>;
 
     fn next(&mut self) -> Option<&'a Node<T>> {
-        if let Some(current_id) = self.node_id.clone() {
-            if let Some(parent_id) = self.tree.get_unsafe(&current_id).parent() {
-                let parent = self.tree.get_unsafe(parent_id);
+        self.node_id
+            .as_ref()
+            .and_then(|current_id| self.tree.get(current_id).ok())
+            .and_then(|node_ref| node_ref.parent())
+            .and_then(|parent_id| {
                 self.node_id = Some(parent_id.clone());
-                return Some(parent);
-            } else {
-                self.node_id = None;
-            }
-        }
-        None
+
+                self.tree.get(parent_id).ok()
+            })
     }
 }
 
@@ -66,15 +65,15 @@ impl<'a, T> Iterator for AncestorIds<'a, T> {
     type Item = &'a NodeId;
 
     fn next(&mut self) -> Option<&'a NodeId> {
-        if let Some(current_id) = self.node_id.clone() {
-            if let Some(parent_id) = self.tree.get_unsafe(&current_id).parent() {
+        self.node_id
+            .as_ref()
+            .and_then(|current_id| self.tree.get(current_id).ok())
+            .and_then(|node_ref| node_ref.parent())
+            .and_then(|parent_id| {
                 self.node_id = Some(parent_id.clone());
-                return Some(parent_id);
-            } else {
-                self.node_id = None;
-            }
-        }
-        None
+
+                Some(parent_id)
+            })
     }
 }
 
@@ -102,10 +101,9 @@ impl<'a, T> Iterator for Children<'a, T> {
     type Item = &'a Node<T>;
 
     fn next(&mut self) -> Option<&'a Node<T>> {
-        if let Some(next_child_id) = self.child_ids.next() {
-            return Some(self.tree.get_unsafe(next_child_id));
-        }
-        None
+        self.child_ids
+            .next()
+            .and_then(|child_id| self.tree.get(child_id).ok())
     }
 }
 
@@ -148,7 +146,7 @@ pub struct PreOrderTraversal<'a, T: 'a> {
 impl<'a, T> PreOrderTraversal<'a, T> {
     pub(crate) fn new(tree: &'a Tree<T>, node_id: NodeId) -> PreOrderTraversal<T> {
         // over allocating, but all at once instead of re-sizing and re-allocating as we go
-        let mut data = VecDeque::with_capacity(tree.nodes.capacity());
+        let mut data = VecDeque::with_capacity(tree.capacity());
 
         data.push_front(node_id);
 
@@ -163,19 +161,18 @@ impl<'a, T> Iterator for PreOrderTraversal<'a, T> {
     type Item = &'a Node<T>;
 
     fn next(&mut self) -> Option<&'a Node<T>> {
-        let id = self.data.pop_front();
+        self.data
+            .pop_front()
+            .as_ref()
+            .and_then(|node_id| self.tree.get(node_id).ok())
+            .and_then(|node_ref| {
+                // prepend child_ids
+                for child_id in node_ref.children().iter().rev() {
+                    self.data.push_front(child_id.clone());
+                }
 
-        if let Some(ref node_id) = id {
-            let node_ref = self.tree.get_unsafe(node_id);
-
-            // prepend child_ids
-            for child_id in node_ref.children().iter().rev() {
-                self.data.push_front(child_id.clone());
-            }
-
-            return Some(node_ref);
-        }
-        None
+                Some(node_ref)
+            })
     }
 }
 
@@ -193,7 +190,7 @@ pub struct PostOrderTraversal<'a, T: 'a> {
 impl<'a, T> PostOrderTraversal<'a, T> {
     pub(crate) fn new(tree: &'a Tree<T>, node_id: NodeId) -> PostOrderTraversal<T> {
         // over allocating, but all at once instead of re-sizing and re-allocating as we go
-        let mut ids = Vec::with_capacity(tree.nodes.capacity());
+        let mut ids = Vec::with_capacity(tree.capacity());
 
         PostOrderTraversal::process_nodes(node_id, tree, &mut ids);
 
@@ -204,7 +201,7 @@ impl<'a, T> PostOrderTraversal<'a, T> {
     }
 
     fn process_nodes(starting_id: NodeId, tree: &Tree<T>, ids: &mut Vec<NodeId>) {
-        let node = tree.get_unsafe(&starting_id);
+        let node = tree.get(&starting_id).unwrap();
 
         for child_id in node.children() {
             PostOrderTraversal::process_nodes(child_id.clone(), tree, ids);
@@ -218,13 +215,10 @@ impl<'a, T> Iterator for PostOrderTraversal<'a, T> {
     type Item = &'a Node<T>;
 
     fn next(&mut self) -> Option<&'a Node<T>> {
-        let id = self.ids.next();
-
-        if let Some(ref node_id) = id {
-            return Some(self.tree.get_unsafe(node_id));
-        }
-
-        None
+        self.ids
+            .next()
+            .as_ref()
+            .and_then(|node_id| self.tree.get(node_id).ok())
     }
 }
 
@@ -242,7 +236,7 @@ pub struct LevelOrderTraversal<'a, T: 'a> {
 impl<'a, T> LevelOrderTraversal<'a, T> {
     pub(crate) fn new(tree: &'a Tree<T>, node_id: NodeId) -> LevelOrderTraversal<T> {
         // over allocating, but all at once instead of re-sizing and re-allocating as we go
-        let mut data = VecDeque::with_capacity(tree.nodes.capacity());
+        let mut data = VecDeque::with_capacity(tree.capacity());
 
         data.push_back(node_id);
 
@@ -257,19 +251,17 @@ impl<'a, T> Iterator for LevelOrderTraversal<'a, T> {
     type Item = &'a Node<T>;
 
     fn next(&mut self) -> Option<&'a Node<T>> {
-        let id = self.data.pop_front();
+        self.data
+            .pop_front()
+            .as_ref()
+            .and_then(|node_id| self.tree.get(node_id).ok())
+            .and_then(|node_ref| {
+                for child_id in node_ref.children() {
+                    self.data.push_back(child_id.clone());
+                }
 
-        if let Some(ref node_id_ref) = id {
-            let node_ref = self.tree.get_unsafe(node_id_ref);
-
-            for child_id in node_ref.children() {
-                self.data.push_back(child_id.clone());
-            }
-
-            return Some(node_ref);
-        }
-
-        None
+                Some(node_ref)
+            })
     }
 }
 
