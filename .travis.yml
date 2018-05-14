@@ -24,7 +24,8 @@ matrix:
 before_script:
   - export PATH=$HOME/.cargo/bin:$PATH
   - which cargo-coverage && which cargo-coveralls || cargo install cargo-travis
-  - which rustfmt || cargo install rustfmt
+  - rustup toolchain install nightly
+  - rustup run nightly cargo install rustfmt-nightly --force
 
 script:
   - |
