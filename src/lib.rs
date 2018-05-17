@@ -74,22 +74,22 @@ mod iterators;
 mod node;
 mod tree;
 
-pub use behaviors::RemoveBehavior;
-pub use behaviors::MoveBehavior;
 pub use behaviors::InsertBehavior;
+pub use behaviors::MoveBehavior;
+pub use behaviors::RemoveBehavior;
 pub use behaviors::SwapBehavior;
 pub use error::NodeIdError;
-pub use node::NodeBuilder;
-pub use node::Node;
-pub use tree::TreeBuilder;
-pub use tree::Tree;
-pub use iterators::Ancestors;
 pub use iterators::AncestorIds;
+pub use iterators::Ancestors;
 pub use iterators::Children;
 pub use iterators::ChildrenIds;
-pub use iterators::PreOrderTraversal;
-pub use iterators::PostOrderTraversal;
 pub use iterators::LevelOrderTraversal;
+pub use iterators::PostOrderTraversal;
+pub use iterators::PreOrderTraversal;
+pub use node::Node;
+pub use node::NodeBuilder;
+pub use tree::Tree;
+pub use tree::TreeBuilder;
 
 ///
 /// An identifier used to differentiate between `Node`s within a `Tree`.
