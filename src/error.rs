@@ -18,7 +18,7 @@ impl NodeIdError {
             NodeIdError::InvalidNodeIdForTree => "The given NodeId belongs to a different Tree.",
             NodeIdError::NodeIdNoLongerValid => {
                 "The given NodeId is no longer valid. The Node in question has been \
-                removed."
+                 removed."
             }
         }
     }

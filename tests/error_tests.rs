@@ -1,13 +1,13 @@
 extern crate id_tree;
 
-use id_tree::NodeIdError::*;
-use id_tree::Node;
-use id_tree::TreeBuilder;
-use id_tree::Tree;
-use id_tree::RemoveBehavior::*;
-use id_tree::MoveBehavior::*;
 use id_tree::InsertBehavior::*;
+use id_tree::MoveBehavior::*;
+use id_tree::Node;
+use id_tree::NodeIdError::*;
+use id_tree::RemoveBehavior::*;
 use id_tree::SwapBehavior::*;
+use id_tree::Tree;
+use id_tree::TreeBuilder;
 
 #[test]
 fn test_old_node_id() {

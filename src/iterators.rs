@@ -1,10 +1,10 @@
+use std::collections::VecDeque;
 use std::slice::Iter;
 use std::vec::IntoIter;
-use std::collections::VecDeque;
 
-use Tree;
 use Node;
 use NodeId;
+use Tree;
 
 ///
 /// An Iterator over the ancestors of a `Node`.
@@ -120,7 +120,9 @@ pub struct ChildrenIds<'a> {
 
 impl<'a> ChildrenIds<'a> {
     pub(crate) fn new<T>(tree: &'a Tree<T>, node_id: NodeId) -> ChildrenIds<'a> {
-        ChildrenIds { child_ids: tree.get_unsafe(&node_id).children().as_slice().iter() }
+        ChildrenIds {
+            child_ids: tree.get_unsafe(&node_id).children().as_slice().iter(),
+        }
     }
 }
 
@@ -145,7 +147,6 @@ pub struct PreOrderTraversal<'a, T: 'a> {
 
 impl<'a, T> PreOrderTraversal<'a, T> {
     pub(crate) fn new(tree: &'a Tree<T>, node_id: NodeId) -> PreOrderTraversal<T> {
-
         // over allocating, but all at once instead of re-sizing and re-allocating as we go
         let mut data = VecDeque::with_capacity(tree.nodes.capacity());
 
@@ -191,7 +192,6 @@ pub struct PostOrderTraversal<'a, T: 'a> {
 
 impl<'a, T> PostOrderTraversal<'a, T> {
     pub(crate) fn new(tree: &'a Tree<T>, node_id: NodeId) -> PostOrderTraversal<T> {
-
         // over allocating, but all at once instead of re-sizing and re-allocating as we go
         let mut ids = Vec::with_capacity(tree.nodes.capacity());
 
@@ -241,7 +241,6 @@ pub struct LevelOrderTraversal<'a, T: 'a> {
 
 impl<'a, T> LevelOrderTraversal<'a, T> {
     pub(crate) fn new(tree: &'a Tree<T>, node_id: NodeId) -> LevelOrderTraversal<T> {
-
         // over allocating, but all at once instead of re-sizing and re-allocating as we go
         let mut data = VecDeque::with_capacity(tree.nodes.capacity());
 
@@ -261,7 +260,6 @@ impl<'a, T> Iterator for LevelOrderTraversal<'a, T> {
         let id = self.data.pop_front();
 
         if let Some(ref node_id_ref) = id {
-
             let node_ref = self.tree.get_unsafe(node_id_ref);
 
             for child_id in node_ref.children() {
@@ -278,9 +276,9 @@ impl<'a, T> Iterator for LevelOrderTraversal<'a, T> {
 #[cfg(test)]
 mod tests {
 
-    use Tree;
-    use Node;
     use InsertBehavior::*;
+    use Node;
+    use Tree;
 
     #[test]
     fn test_ancestors() {

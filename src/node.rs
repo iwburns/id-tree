@@ -246,9 +246,9 @@ mod node_builder_tests {
 
 #[cfg(test)]
 mod node_tests {
-    use super::Node;
     use super::super::NodeId;
     use super::super::snowflake::ProcessUniqueId;
+    use super::Node;
 
     #[test]
     fn test_new() {
