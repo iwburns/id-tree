@@ -24,11 +24,11 @@ matrix:
 before_script:
   - export PATH=$HOME/.cargo/bin:$PATH
   - which cargo-coverage && which cargo-coveralls || cargo install cargo-travis
-  - which rustfmt || cargo install rustfmt
+  - rustup component add rustfmt-preview
 
 script:
   - |
-      cargo fmt -- --write-mode=diff &&
+      rustfmt --write-mode=diff **/*.rs &&
       cargo build &&
       cargo test &&
       cargo bench &&
