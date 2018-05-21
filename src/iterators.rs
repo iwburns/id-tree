@@ -31,8 +31,8 @@ impl<'a, T> Iterator for Ancestors<'a, T> {
 
     fn next(&mut self) -> Option<&'a Node<T>> {
         self.node_id
-            .as_ref()
-            .and_then(|current_id| self.tree.get(current_id).ok())
+            .take()
+            .and_then(|current_id| self.tree.get(&current_id).ok())
             .and_then(|node_ref| node_ref.parent())
             .and_then(|parent_id| {
                 self.node_id = Some(parent_id.clone());
@@ -66,8 +66,8 @@ impl<'a, T> Iterator for AncestorIds<'a, T> {
 
     fn next(&mut self) -> Option<&'a NodeId> {
         self.node_id
-            .as_ref()
-            .and_then(|current_id| self.tree.get(current_id).ok())
+            .take()
+            .and_then(|current_id| self.tree.get(&current_id).ok())
             .and_then(|node_ref| node_ref.parent())
             .and_then(|parent_id| {
                 self.node_id = Some(parent_id.clone());
@@ -163,8 +163,7 @@ impl<'a, T> Iterator for PreOrderTraversal<'a, T> {
     fn next(&mut self) -> Option<&'a Node<T>> {
         self.data
             .pop_front()
-            .as_ref()
-            .and_then(|node_id| self.tree.get(node_id).ok())
+            .and_then(|node_id| self.tree.get(&node_id).ok())
             .and_then(|node_ref| {
                 // prepend child_ids
                 for child_id in node_ref.children().iter().rev() {
@@ -217,8 +216,7 @@ impl<'a, T> Iterator for PostOrderTraversal<'a, T> {
     fn next(&mut self) -> Option<&'a Node<T>> {
         self.ids
             .next()
-            .as_ref()
-            .and_then(|node_id| self.tree.get(node_id).ok())
+            .and_then(|node_id| self.tree.get(&node_id).ok())
     }
 }
 
@@ -253,8 +251,7 @@ impl<'a, T> Iterator for LevelOrderTraversal<'a, T> {
     fn next(&mut self) -> Option<&'a Node<T>> {
         self.data
             .pop_front()
-            .as_ref()
-            .and_then(|node_id| self.tree.get(node_id).ok())
+            .and_then(|node_id| self.tree.get(&node_id).ok())
             .and_then(|node_ref| {
                 for child_id in node_ref.children() {
                     self.data.push_back(child_id.clone());
