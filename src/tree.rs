@@ -175,6 +175,13 @@ impl<T> Tree<T> {
     }
 
     ///
+    /// Returns the number of elements the tree can hold without reallocating.
+    ///
+    pub fn capacity(&self) -> usize {
+        self.nodes.capacity()
+    }
+
+    ///
     /// Returns the maximum height of the `Tree`.
     ///
     /// ```
@@ -1464,7 +1471,7 @@ mod tree_builder_tests {
         let root = tree.get(tree.root_node_id().unwrap()).unwrap();
 
         assert_eq!(root.data(), &5);
-        assert_eq!(tree.nodes.capacity(), 10);
+        assert_eq!(tree.capacity(), 10);
         assert_eq!(tree.free_ids.capacity(), 3);
     }
 }
