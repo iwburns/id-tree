@@ -18,6 +18,8 @@ fn main() {
     tree.insert(Node::new(3), UnderNode(&child_id)).unwrap();
     tree.insert(Node::new(4), UnderNode(&child_id)).unwrap();
 
+    println!("Debug: {:?}", tree);
+
     println!("Post-order:");
 
     for node in tree.traverse_post_order(&root_id).unwrap() {
