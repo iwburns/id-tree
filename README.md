@@ -63,5 +63,6 @@ fn main() {
 * Comparison-based node insertion of any kind
 
 ## Contributors
+* [Cecile Tonglet](https://github.com/cecton)
 * [Drakulix](https://github.com/Drakulix)
 * [石博文](https://github.com/sbwtw)
