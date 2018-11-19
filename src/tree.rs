@@ -481,7 +481,8 @@ impl<T> Tree<T> {
         node_id: &NodeId,
         parent_id: &NodeId,
     ) -> Result<(), NodeIdError> {
-        if let Some(subtree_root_id) = self.find_subtree_root_between_ids(parent_id, node_id)
+        if let Some(subtree_root_id) = self
+            .find_subtree_root_between_ids(parent_id, node_id)
             .cloned()
         {
             // node_id is above parent_id, this is a move "down" the tree.
@@ -752,7 +753,8 @@ impl<T> Tree<T> {
         first_id: &NodeId,
         second_id: &NodeId,
     ) -> Result<(), NodeIdError> {
-        let lower_upper_test = self.find_subtree_root_between_ids(first_id, second_id)
+        let lower_upper_test = self
+            .find_subtree_root_between_ids(first_id, second_id)
             .map(|_| (first_id, second_id))
             .or_else(|| {
                 self.find_subtree_root_between_ids(second_id, first_id)
@@ -861,25 +863,29 @@ impl<T> Tree<T> {
         //todo: some of this could probably be abstracted out into a method or two
         match (first_parent, second_parent) {
             (Some(ref first_parent_id), Some(ref second_parent_id)) => {
-                let first_index = self.get_unsafe(first_parent_id)
+                let first_index = self
+                    .get_unsafe(first_parent_id)
                     .children()
                     .iter()
                     .position(|id| id == first_id)
                     .unwrap();
-                let second_index = self.get_unsafe(second_parent_id)
+                let second_index = self
+                    .get_unsafe(second_parent_id)
                     .children()
                     .iter()
                     .position(|id| id == second_id)
                     .unwrap();
 
                 unsafe {
-                    let temp = self.get_mut_unsafe(first_parent_id)
+                    let temp = self
+                        .get_mut_unsafe(first_parent_id)
                         .children_mut()
                         .get_unchecked_mut(first_index);
                     *temp = second_id.clone();
                 }
                 unsafe {
-                    let temp = self.get_mut_unsafe(second_parent_id)
+                    let temp = self
+                        .get_mut_unsafe(second_parent_id)
                         .children_mut()
                         .get_unchecked_mut(second_index);
                     *temp = first_id.clone();
@@ -891,14 +897,16 @@ impl<T> Tree<T> {
                     .set_parent(Some(first_parent_id.clone()));
             }
             (Some(ref first_parent_id), None) => {
-                let first_index = self.get_unsafe(first_parent_id)
+                let first_index = self
+                    .get_unsafe(first_parent_id)
                     .children()
                     .iter()
                     .position(|id| id == first_id)
                     .unwrap();
 
                 unsafe {
-                    let temp = self.get_mut_unsafe(first_parent_id)
+                    let temp = self
+                        .get_mut_unsafe(first_parent_id)
                         .children_mut()
                         .get_unchecked_mut(first_index);
                     *temp = second_id.clone();
@@ -915,14 +923,16 @@ impl<T> Tree<T> {
                 }
             }
             (None, Some(ref second_parent_id)) => {
-                let second_index = self.get_unsafe(second_parent_id)
+                let second_index = self
+                    .get_unsafe(second_parent_id)
                     .children()
                     .iter()
                     .position(|id| id == second_id)
                     .unwrap();
 
                 unsafe {
-                    let temp = self.get_mut_unsafe(second_parent_id)
+                    let temp = self
+                        .get_mut_unsafe(second_parent_id)
                         .children_mut()
                         .get_unchecked_mut(second_index);
                     *temp = first_id.clone();
@@ -957,7 +967,8 @@ impl<T> Tree<T> {
         first_id: &NodeId,
         second_id: &NodeId,
     ) -> Result<(), NodeIdError> {
-        let lower_upper_test = self.find_subtree_root_between_ids(first_id, second_id)
+        let lower_upper_test = self
+            .find_subtree_root_between_ids(first_id, second_id)
             .map(|_| (first_id, second_id))
             .or_else(|| {
                 self.find_subtree_root_between_ids(second_id, first_id)
@@ -1119,7 +1130,9 @@ impl<T> Tree<T> {
     pub fn children(&self, node_id: &NodeId) -> Result<Children<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
-            return Err(error.expect("Tree::children: Missing an error value but found an invalid NodeId."));
+            return Err(
+                error.expect("Tree::children: Missing an error value but found an invalid NodeId.")
+            );
         }
 
         Ok(Children::new(self, node_id.clone()))
@@ -1312,7 +1325,8 @@ impl<T> Tree<T> {
 
     fn insert_new_node(&mut self, new_node: Node<T>) -> NodeId {
         if !self.free_ids.is_empty() {
-            let new_node_id: NodeId = self.free_ids
+            let new_node_id: NodeId = self
+                .free_ids
                 .pop()
                 .expect("Tree::insert_new_node: Couldn't pop from Vec with len() > 0.");
 
@@ -1811,10 +1825,13 @@ mod tree_tests {
 
             assert_eq!(tree.root_node_id(), Some(&node_2_id));
             assert!(tree.get(&node_2_id).unwrap().children().contains(&root_id));
-            assert!(!tree.get(&node_1_id,)
-                .unwrap()
-                .children()
-                .contains(&node_2_id,));
+            assert!(
+                !tree
+                    .get(&node_1_id,)
+                    .unwrap()
+                    .children()
+                    .contains(&node_2_id,)
+            );
         }
 
         // test move with existing root and with orphan
@@ -2400,14 +2417,20 @@ mod tree_tests {
                     .children()
                     .contains(&node_6_id,)
             );
-            assert!(!tree.get(&node_1_id,)
-                .unwrap()
-                .children()
-                .contains(&node_3_id,));
-            assert!(!tree.get(&node_1_id,)
-                .unwrap()
-                .children()
-                .contains(&node_4_id,));
+            assert!(
+                !tree
+                    .get(&node_1_id,)
+                    .unwrap()
+                    .children()
+                    .contains(&node_3_id,)
+            );
+            assert!(
+                !tree
+                    .get(&node_1_id,)
+                    .unwrap()
+                    .children()
+                    .contains(&node_4_id,)
+            );
             assert!(
                 tree.get(&node_6_id,)
                     .unwrap()

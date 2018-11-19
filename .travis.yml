@@ -19,6 +19,7 @@ rust:
   - nightly
 matrix:
   allow_failures:
+    - rust: beta
     - rust: nightly
 
 before_script:
@@ -28,7 +29,7 @@ before_script:
 
 script:
   - |
-      rustfmt --write-mode=diff **/*.rs &&
+      rustfmt --check **/*.rs &&
       cargo build &&
       cargo test &&
       cargo bench &&

@@ -194,7 +194,8 @@ impl<T> Node<T> {
     }
 
     pub(crate) fn replace_child(&mut self, old: NodeId, new: NodeId) {
-        let index = self.children()
+        let index = self
+            .children()
             .iter()
             .enumerate()
             .find(|&(_, id)| id == &old)
@@ -246,8 +247,8 @@ mod node_builder_tests {
 
 #[cfg(test)]
 mod node_tests {
-    use super::super::NodeId;
     use super::super::snowflake::ProcessUniqueId;
+    use super::super::NodeId;
     use super::Node;
 
     #[test]
