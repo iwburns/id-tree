@@ -153,6 +153,7 @@ impl<T> TreeBuilder<T> {
 /// **If this ever happens please report the issue.** `Panic`s are not expected behavior for this
 /// library, but they can happen due to bugs.
 ///
+#[derive(Debug)]
 pub struct Tree<T> {
     id: ProcessUniqueId,
     root: Option<NodeId>,

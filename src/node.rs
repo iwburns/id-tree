@@ -75,6 +75,7 @@ impl<T> NodeBuilder<T> {
 ///
 /// A container that wraps data in a given `Tree`.
 ///
+#[derive(Debug)]
 pub struct Node<T> {
     data: T,
     parent: Option<NodeId>,
