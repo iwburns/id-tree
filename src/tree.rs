@@ -1423,6 +1423,49 @@ impl<T> Tree<T> {
     }
 }
 
+impl<T> Clone for Tree<T>
+where
+    T: Clone,
+{
+    fn clone(&self) -> Self {
+        let tree_id = ProcessUniqueId::new();
+
+        Tree {
+            id: tree_id,
+            root: self.root.as_ref().map(|x| NodeId {
+                tree_id,
+                index: x.index,
+            }),
+            nodes: self
+                .nodes
+                .iter()
+                .map(|x| {
+                    x.as_ref().map(|y| Node {
+                        data: y.data.clone(),
+                        parent: y.parent.as_ref().map(|z| NodeId {
+                            tree_id,
+                            index: z.index,
+                        }),
+                        children: y
+                            .children
+                            .iter()
+                            .map(|z| NodeId {
+                                tree_id,
+                                index: z.index,
+                            }).collect(),
+                    })
+                }).collect(),
+            free_ids: self
+                .free_ids
+                .iter()
+                .map(|x| NodeId {
+                    tree_id,
+                    index: x.index,
+                }).collect(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tree_builder_tests {
     use super::super::Node;
@@ -2524,5 +2567,49 @@ mod tree_tests {
         // remove child_2
         tree.remove_node(child_2_id, LiftChildren).unwrap();
         assert_eq!(1, tree.height());
+    }
+
+    #[test]
+    fn test_cloned() {
+        use InsertBehavior::*;
+
+        let mut tree = Tree::new();
+        let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+        let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+        let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+        let _node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
+        let node_4_id = tree.insert(Node::new(4), UnderNode(&node_2_id)).unwrap();
+        tree.take_node(node_4_id);
+
+        let cloned = tree.clone();
+        assert!(cloned.root.is_some());
+        let tree_id = cloned.id;
+
+        // ensure cloned tree has a new id
+        assert_ne!(tree.id, tree_id);
+
+        // ensure cloned tree's root is using the new tree id
+        assert_eq!(cloned.root.as_ref().map(|x| x.tree_id), Some(tree_id));
+
+        // ensure cloned tree's free_ids is using the new tree id
+        assert_eq!(cloned.free_ids[0].tree_id, tree_id);
+
+        // ensure nodes' parent are using the new tree id
+        assert_eq!(
+            cloned.nodes[1]
+                .as_ref()
+                .map(|x| x.parent.as_ref().map(|x| x.tree_id)),
+            Some(Some(tree_id))
+        );
+
+        // ensure nodes' children are using the new tree id
+        assert_eq!(
+            cloned
+                .children(cloned.root.as_ref().unwrap())
+                .unwrap()
+                .next()
+                .map(|x| x.parent.as_ref().map(|x| x.tree_id)),
+            Some(Some(tree_id))
+        );
     }
 }

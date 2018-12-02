@@ -77,9 +77,9 @@ impl<T> NodeBuilder<T> {
 ///
 #[derive(Debug)]
 pub struct Node<T> {
-    data: T,
-    parent: Option<NodeId>,
-    children: Vec<NodeId>,
+    pub(crate) data: T,
+    pub(crate) parent: Option<NodeId>,
+    pub(crate) children: Vec<NodeId>,
 }
 
 impl<T> Node<T> {
