@@ -1422,6 +1422,11 @@ impl<T> Tree<T> {
         }
     }
 }
+impl<T> Default for Tree<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[cfg(test)]
 mod tree_builder_tests {
