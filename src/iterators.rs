@@ -178,6 +178,51 @@ impl<'a, T> Iterator for PreOrderTraversal<'a, T> {
 ///
 /// An Iterator over the sub-tree relative to a given `Node`.
 ///
+/// Iterates over all of the `NodeIds`s in the sub-tree of a given `NodeId` in the `Tree`.  Each call to
+/// `next` will return the next `NodeId` in Pre-Order Traversal order.
+///
+pub struct PreOrderTraversalIds<'a, T: 'a> {
+    tree: &'a Tree<T>,
+    data: VecDeque<NodeId>,
+}
+
+impl<'a, T> PreOrderTraversalIds<'a, T> {
+    pub(crate) fn new(tree: &'a Tree<T>, node_id: NodeId) -> PreOrderTraversalIds<'a, T> {
+        // over allocating, but all at once instead of re-sizing and re-allocating as we go
+        let mut data = VecDeque::with_capacity(tree.capacity());
+
+        data.push_front(node_id);
+
+        PreOrderTraversalIds {
+            tree: tree,
+            data: data,
+        }
+    }
+}
+
+impl<'a, T> Iterator for PreOrderTraversalIds<'a, T> {
+    type Item = NodeId;
+
+    fn next(&mut self) -> Option<NodeId> {
+        self.data
+            .pop_front()
+            .and_then(|node_id| {
+                self.tree.get(&node_id).ok()
+                    .and_then(|node_ref| {
+                        // prepend child_ids
+                        for child_id in node_ref.children().iter().rev() {
+                            self.data.push_front(child_id.clone());
+                        }
+
+                        Some(node_id)
+                    })
+        })
+    }
+}
+
+///
+/// An Iterator over the sub-tree relative to a given `Node`.
+///
 /// Iterates over all of the `Node`s in the sub-tree of a given `Node` in the `Tree`.  Each call to
 /// `next` will return an immutable reference to the next `Node` in Post-Order Traversal order.
 ///
@@ -223,6 +268,49 @@ impl<'a, T> Iterator for PostOrderTraversal<'a, T> {
 ///
 /// An Iterator over the sub-tree relative to a given `Node`.
 ///
+/// Iterates over all of the `NodeId`s in the sub-tree of a given `NodeId` in the `Tree`.  Each call to
+/// `next` will return the next `NodeId` in Post-Order Traversal order.
+///
+pub struct PostOrderTraversalIds<'a, T: 'a> {
+    tree: &'a Tree<T>,
+    ids: IntoIter<NodeId>,
+}
+
+impl<'a, T> PostOrderTraversalIds<'a, T> {
+    pub(crate) fn new(tree: &'a Tree<T>, node_id: NodeId) -> PostOrderTraversalIds<T> {
+        // over allocating, but all at once instead of re-sizing and re-allocating as we go
+        let mut ids = Vec::with_capacity(tree.capacity());
+
+        PostOrderTraversalIds::process_nodes(node_id, tree, &mut ids);
+
+        PostOrderTraversalIds {
+            tree: tree,
+            ids: ids.into_iter(),
+        }
+    }
+
+    fn process_nodes(starting_id: NodeId, tree: &Tree<T>, ids: &mut Vec<NodeId>) {
+        let node = tree.get(&starting_id).unwrap();
+
+        for child_id in node.children() {
+            PostOrderTraversalIds::process_nodes(child_id.clone(), tree, ids);
+        }
+
+        ids.push(starting_id);
+    }
+}
+
+impl<'a, T> Iterator for PostOrderTraversalIds<'a, T> {
+    type Item = NodeId;
+
+    fn next(&mut self) -> Option<NodeId> {
+        self.ids.next()
+    }
+}
+
+///
+/// An Iterator over the sub-tree relative to a given `Node`.
+///
 /// Iterates over all of the `Node`s in the sub-tree of a given `Node` in the `Tree`.  Each call to
 /// `next` will return an immutable reference to the next `Node` in Level-Order Traversal order.
 ///
@@ -259,6 +347,50 @@ impl<'a, T> Iterator for LevelOrderTraversal<'a, T> {
 
                 Some(node_ref)
             })
+    }
+}
+
+///
+/// An Iterator over the sub-tree relative to a given `Node`.
+///
+/// Iterates over all of the `NodeId`s in the sub-tree of a given `NodeId` in the `Tree`.  Each call to
+/// `next` will return the next `NodeId` in Level-Order TraversalIds order.
+///
+pub struct LevelOrderTraversalIds<'a, T: 'a> {
+    tree: &'a Tree<T>,
+    data: VecDeque<NodeId>,
+}
+
+impl<'a, T> LevelOrderTraversalIds<'a, T> {
+    pub(crate) fn new(tree: &'a Tree<T>, node_id: NodeId) -> LevelOrderTraversalIds<T> {
+        // over allocating, but all at once instead of re-sizing and re-allocating as we go
+        let mut data = VecDeque::with_capacity(tree.capacity());
+
+        data.push_back(node_id);
+
+        LevelOrderTraversalIds {
+            tree: tree,
+            data: data,
+        }
+    }
+}
+
+impl<'a, T> Iterator for LevelOrderTraversalIds<'a, T> {
+    type Item = NodeId;
+
+    fn next(&mut self) -> Option<NodeId> {
+        self.data
+            .pop_front()
+            .and_then(|node_id| {
+                self.tree.get(&node_id).ok()
+                    .and_then(|node_ref| {
+                        for child_id in node_ref.children() {
+                            self.data.push_back(child_id.clone());
+                        }
+
+                        Some(node_id)
+                    })
+        })
     }
 }
 
@@ -413,6 +545,41 @@ mod tests {
     }
 
     #[test]
+    fn test_pre_order_traversal_ids() {
+        let mut tree = Tree::new();
+
+        //      0
+        //     / \
+        //    1   2
+        //   /
+        //  3
+        let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+        let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+        let node_2 = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+        let node_3 = tree.insert(Node::new(3), UnderNode(&node_1)).unwrap();
+
+        let data = [0, 1, 3, 2];
+        for (index, node_id) in tree.traverse_pre_order_ids(&root_id).unwrap().enumerate() {
+            assert_eq!(tree.get(&node_id).unwrap().data(), &data[index]);
+        }
+
+        let data = [1, 3];
+        for (index, node_id) in tree.traverse_pre_order_ids(&node_1).unwrap().enumerate() {
+            assert_eq!(tree.get(&node_id).unwrap().data(), &data[index]);
+        }
+
+        let data = [2];
+        for (index, node_id) in tree.traverse_pre_order_ids(&node_2).unwrap().enumerate() {
+            assert_eq!(tree.get(&node_id).unwrap().data(), &data[index]);
+        }
+
+        let data = [3];
+        for (index, node_id) in tree.traverse_pre_order_ids(&node_3).unwrap().enumerate() {
+            assert_eq!(tree.get(&node_id).unwrap().data(), &data[index]);
+        }
+    }
+
+    #[test]
     fn test_post_order_traversal() {
         let mut tree = Tree::new();
 
@@ -448,6 +615,41 @@ mod tests {
     }
 
     #[test]
+    fn test_post_order_traversal_ids() {
+        let mut tree = Tree::new();
+
+        //      0
+        //     / \
+        //    1   2
+        //   /
+        //  3
+        let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+        let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+        let node_2 = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+        let node_3 = tree.insert(Node::new(3), UnderNode(&node_1)).unwrap();
+
+        let data = [3, 1, 2, 0];
+        for (index, node_id) in tree.traverse_post_order_ids(&root_id).unwrap().enumerate() {
+            assert_eq!(tree.get(&node_id).unwrap().data(), &data[index]);
+        }
+
+        let data = [3, 1];
+        for (index, node_id) in tree.traverse_post_order_ids(&node_1).unwrap().enumerate() {
+            assert_eq!(tree.get(&node_id).unwrap().data(), &data[index]);
+        }
+
+        let data = [2];
+        for (index, node_id) in tree.traverse_post_order_ids(&node_2).unwrap().enumerate() {
+            assert_eq!(tree.get(&node_id).unwrap().data(), &data[index]);
+        }
+
+        let data = [3];
+        for (index, node_id) in tree.traverse_post_order_ids(&node_3).unwrap().enumerate() {
+            assert_eq!(tree.get(&node_id).unwrap().data(), &data[index]);
+        }
+    }
+
+    #[test]
     fn test_level_order_traversal() {
         let mut tree = Tree::new();
 
@@ -479,6 +681,41 @@ mod tests {
         let data = [3];
         for (index, node) in tree.traverse_level_order(&node_3).unwrap().enumerate() {
             assert_eq!(node.data(), &data[index]);
+        }
+    }
+
+    #[test]
+    fn test_level_order_traversal_ids() {
+        let mut tree = Tree::new();
+
+        //      0
+        //     / \
+        //    1   2
+        //   /
+        //  3
+        let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+        let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+        let node_2 = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+        let node_3 = tree.insert(Node::new(3), UnderNode(&node_1)).unwrap();
+
+        let data = [0, 1, 2, 3];
+        for (index, node_id) in tree.traverse_level_order_ids(&root_id).unwrap().enumerate() {
+            assert_eq!(tree.get(&node_id).unwrap().data(), &data[index]);
+        }
+
+        let data = [1, 3];
+        for (index, node_id) in tree.traverse_level_order_ids(&node_1).unwrap().enumerate() {
+            assert_eq!(tree.get(&node_id).unwrap().data(), &data[index]);
+        }
+
+        let data = [2];
+        for (index, node_id) in tree.traverse_level_order_ids(&node_2).unwrap().enumerate() {
+            assert_eq!(tree.get(&node_id).unwrap().data(), &data[index]);
+        }
+
+        let data = [3];
+        for (index, node_id) in tree.traverse_level_order_ids(&node_3).unwrap().enumerate() {
+            assert_eq!(tree.get(&node_id).unwrap().data(), &data[index]);
         }
     }
 }
