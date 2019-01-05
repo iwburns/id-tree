@@ -82,6 +82,15 @@ pub struct Node<T> {
     pub(crate) children: Vec<NodeId>,
 }
 
+impl<T> PartialEq for Node<T>
+where
+    T: PartialEq,
+{
+    fn eq(&self, other: &Node<T>) -> bool {
+        self.data == other.data
+    }
+}
+
 impl<T> Node<T> {
     ///
     /// Creates a new `Node` with the data provided.
@@ -313,5 +322,15 @@ mod node_tests {
 
         assert_eq!(node.children().len(), 1);
         assert_eq!(node.children().get(0).unwrap(), &child_id);
+    }
+
+    #[test]
+    fn test_partial_eq() {
+        let node1 = Node::new(42);
+        let node2 = Node::new(42);
+        let node3 = Node::new(23);
+        assert_eq!(node1, node2);
+        assert_ne!(node1, node3);
+        assert_ne!(node2, node3);
     }
 }

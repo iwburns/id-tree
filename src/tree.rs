@@ -1423,6 +1423,42 @@ impl<T> Tree<T> {
     }
 }
 
+impl<T> PartialEq for Tree<T>
+where
+    T: PartialEq,
+{
+    fn eq(&self, other: &Tree<T>) -> bool {
+        if self.nodes.iter().filter(|x| x.is_some()).count()
+            != other.nodes.iter().filter(|x| x.is_some()).count()
+        {
+            return false;
+        }
+
+        for ((i, node1), (j, node2)) in self
+            .nodes
+            .iter()
+            .enumerate()
+            .filter_map(|(i, x)| (*x).as_ref().map(|x| (i, x)))
+            .zip(
+                other
+                    .nodes
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(i, x)| (*x).as_ref().map(|x| (i, x))),
+            )
+        {
+            let parent1_node = node1.parent.as_ref().and_then(|x| self.get(x).ok());
+            let parent2_node = node2.parent.as_ref().and_then(|x| other.get(x).ok());
+
+            if i != j || node1 != node2 || parent1_node != parent2_node {
+                return false;
+            }
+        }
+
+        true
+    }
+}
+
 impl<T> Clone for Tree<T>
 where
     T: Clone,
@@ -2538,7 +2574,75 @@ mod tree_tests {
     }
 
     #[test]
-    fn test_cloned() {
+    fn test_partial_eq() {
+        use InsertBehavior::*;
+
+        let mut tree = Tree::new();
+        let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+        let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+        tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+        tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
+
+        // ensure PartialEq doesn't work when the number of used nodes are not equal
+        {
+            let mut other = Tree::new();
+            let root_id = other.insert(Node::new(0), AsRoot).unwrap();
+            other.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            other.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            assert_ne!(tree, other);
+        }
+
+        // ensure PartialEq doesn't work when the data is not equal
+        {
+            let mut other = Tree::new();
+            let root_id = other.insert(Node::new(0), AsRoot).unwrap();
+            let id = other.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            other.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            other.insert(Node::new(4), UnderNode(&id)).unwrap();
+            assert_ne!(tree, other);
+        }
+
+        // ensure PartialEq doesn't work when the parents aren't equal
+        {
+            let mut other = Tree::new();
+            let root_id = other.insert(Node::new(0), AsRoot).unwrap();
+            other.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            let id = other.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            other.insert(Node::new(3), UnderNode(&id)).unwrap();
+            assert_ne!(tree, other);
+        }
+
+        // ensure PartialEq works even if the number of free spots in Tree.nodes is different
+        {
+            let mut other = Tree::new();
+            let root_id = other.insert(Node::new(0), AsRoot).unwrap();
+            let id = other.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            other.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            other.insert(Node::new(3), UnderNode(&id)).unwrap();
+            let to_delete = other.insert(Node::new(42), UnderNode(&root_id)).unwrap();
+            other.take_node(to_delete);
+            assert_ne!(
+                tree.nodes.iter().filter(|x| x.is_none()).count(),
+                other.nodes.iter().filter(|x| x.is_none()).count()
+            );
+            assert_eq!(tree, other);
+        }
+
+        // ensure PartialEq doesn't work when the Node's index are different
+        {
+            let mut other = Tree::new();
+            let root_id = other.insert(Node::new(0), AsRoot).unwrap();
+            let to_delete = other.insert(Node::new(42), UnderNode(&root_id)).unwrap();
+            let id = other.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            other.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            other.insert(Node::new(3), UnderNode(&id)).unwrap();
+            other.take_node(to_delete);
+            assert_ne!(tree, other);
+        }
+    }
+
+    #[test]
+    fn test_clone() {
         use InsertBehavior::*;
 
         let mut tree = Tree::new();
@@ -2579,5 +2683,8 @@ mod tree_tests {
                 .map(|x| x.parent.as_ref().map(|x| x.tree_id)),
             Some(Some(tree_id))
         );
+
+        // ensure the tree and the cloned tree are equal
+        assert_eq!(tree, cloned);
     }
 }
