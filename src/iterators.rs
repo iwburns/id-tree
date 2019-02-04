@@ -6,6 +6,12 @@ use Node;
 use NodeId;
 use Tree;
 
+// Note: The Clone trait is implemented manually throughout this file because a #[derive(Clone)]
+// forces the type parameters of the iterator to also implement Clone, even though
+// the iterator only ever holds a reference to the data of that type. E.g. cloning
+// AncestorIds<'a, T> requires T: Clone, but AncestorIds only holds a reference to some data &T.
+// By implementing the trait manually, we circumvent that requirement.
+
 ///
 /// An Iterator over the ancestors of a `Node`.
 ///
@@ -39,6 +45,15 @@ impl<'a, T> Iterator for Ancestors<'a, T> {
 
                 self.tree.get(parent_id).ok()
             })
+    }
+}
+
+impl<'a, T> Clone for Ancestors<'a, T> {
+    fn clone(&self) -> Self {
+        Ancestors {
+            tree: &self.tree,
+            node_id: self.node_id.clone(),
+        }
     }
 }
 
@@ -77,6 +92,15 @@ impl<'a, T> Iterator for AncestorIds<'a, T> {
     }
 }
 
+impl<'a, T> Clone for AncestorIds<'a, T> {
+    fn clone(&self) -> Self {
+        AncestorIds {
+            tree: &self.tree,
+            node_id: self.node_id.clone(),
+        }
+    }
+}
+
 ///
 /// An Iterator over the children of a `Node`.
 ///
@@ -107,11 +131,21 @@ impl<'a, T> Iterator for Children<'a, T> {
     }
 }
 
+impl<'a, T> Clone for Children<'a, T> {
+    fn clone(&self) -> Self {
+        Children {
+            tree: &self.tree,
+            child_ids: self.child_ids.clone(),
+        }
+    }
+}
+
 ///
 /// An Iterator over the children of a `Node`.
 ///
 /// Iterates over `NodeId`s instead of over the `Node`s themselves.
 ///
+#[derive(Clone)]
 pub struct ChildrenIds<'a> {
     child_ids: Iter<'a, NodeId>,
 }
@@ -175,6 +209,15 @@ impl<'a, T> Iterator for PreOrderTraversal<'a, T> {
     }
 }
 
+impl<'a, T> Clone for PreOrderTraversal<'a, T> {
+    fn clone(&self) -> Self {
+        PreOrderTraversal {
+            tree: &self.tree,
+            data: self.data.clone(),
+        }
+    }
+}
+
 ///
 /// An Iterator over the sub-tree relative to a given `Node`.
 ///
@@ -214,6 +257,15 @@ impl<'a, T> Iterator for PreOrderTraversalIds<'a, T> {
                 Some(node_id)
             })
         })
+    }
+}
+
+impl<'a, T> Clone for PreOrderTraversalIds<'a, T> {
+    fn clone(&self) -> Self {
+        PreOrderTraversalIds {
+            tree: &self.tree,
+            data: self.data.clone(),
+        }
     }
 }
 
@@ -262,12 +314,22 @@ impl<'a, T> Iterator for PostOrderTraversal<'a, T> {
     }
 }
 
+impl<'a, T> Clone for PostOrderTraversal<'a, T> {
+    fn clone(&self) -> Self {
+        PostOrderTraversal {
+            tree: &self.tree,
+            ids: self.ids.clone(),
+        }
+    }
+}
+
 ///
 /// An Iterator over the sub-tree relative to a given `Node`.
 ///
 /// Iterates over all of the `NodeId`s in the sub-tree of a given `NodeId` in the `Tree`.  Each call to
 /// `next` will return the next `NodeId` in Post-Order Traversal order.
 ///
+#[derive(Clone)]
 pub struct PostOrderTraversalIds {
     ids: IntoIter<NodeId>,
 }
@@ -345,6 +407,15 @@ impl<'a, T> Iterator for LevelOrderTraversal<'a, T> {
     }
 }
 
+impl<'a, T> Clone for LevelOrderTraversal<'a, T> {
+    fn clone(&self) -> Self {
+        LevelOrderTraversal {
+            tree: &self.tree,
+            data: self.data.clone(),
+        }
+    }
+}
+
 ///
 /// An Iterator over the sub-tree relative to a given `Node`.
 ///
@@ -383,6 +454,15 @@ impl<'a, T> Iterator for LevelOrderTraversalIds<'a, T> {
                 Some(node_id)
             })
         })
+    }
+}
+
+impl<'a, T> Clone for LevelOrderTraversalIds<'a, T> {
+    fn clone(&self) -> Self {
+        LevelOrderTraversalIds {
+            tree: &self.tree,
+            data: self.data.clone(),
+        }
     }
 }
 
