@@ -1428,6 +1428,88 @@ impl<T> Default for Tree<T> {
     }
 }
 
+impl<T> PartialEq for Tree<T>
+where
+    T: PartialEq,
+{
+    fn eq(&self, other: &Tree<T>) -> bool {
+        if self.nodes.iter().filter(|x| x.is_some()).count()
+            != other.nodes.iter().filter(|x| x.is_some()).count()
+        {
+            return false;
+        }
+
+        for ((i, node1), (j, node2)) in self
+            .nodes
+            .iter()
+            .enumerate()
+            .filter_map(|(i, x)| (*x).as_ref().map(|x| (i, x)))
+            .zip(
+                other
+                    .nodes
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(i, x)| (*x).as_ref().map(|x| (i, x))),
+            )
+        {
+            let parent1_node = node1.parent.as_ref().and_then(|x| self.get(x).ok());
+            let parent2_node = node2.parent.as_ref().and_then(|x| other.get(x).ok());
+
+            if i != j || node1 != node2 || parent1_node != parent2_node {
+                return false;
+            }
+        }
+
+        true
+    }
+}
+
+impl<T> Clone for Tree<T>
+where
+    T: Clone,
+{
+    fn clone(&self) -> Self {
+        let tree_id = ProcessUniqueId::new();
+
+        Tree {
+            id: tree_id,
+            root: self.root.as_ref().map(|x| NodeId {
+                tree_id,
+                index: x.index,
+            }),
+            nodes: self
+                .nodes
+                .iter()
+                .map(|x| {
+                    x.as_ref().map(|y| Node {
+                        data: y.data.clone(),
+                        parent: y.parent.as_ref().map(|z| NodeId {
+                            tree_id,
+                            index: z.index,
+                        }),
+                        children: y
+                            .children
+                            .iter()
+                            .map(|z| NodeId {
+                                tree_id,
+                                index: z.index,
+                            })
+                            .collect(),
+                    })
+                })
+                .collect(),
+            free_ids: self
+                .free_ids
+                .iter()
+                .map(|x| NodeId {
+                    tree_id,
+                    index: x.index,
+                })
+                .collect(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tree_builder_tests {
     use super::super::Node;
@@ -1729,12 +1811,11 @@ mod tree_tests {
         tree.move_node(&node_3_id, ToParent(&node_2_id)).unwrap();
         assert!(tree.get(&root_id).unwrap().children().contains(&node_1_id));
         assert!(tree.get(&root_id).unwrap().children().contains(&node_2_id));
-        assert!(
-            tree.get(&node_2_id,)
-                .unwrap()
-                .children()
-                .contains(&node_3_id,)
-        );
+        assert!(tree
+            .get(&node_2_id,)
+            .unwrap()
+            .children()
+            .contains(&node_3_id,));
 
         // move 3 "up" the tree
         tree.move_node(&node_3_id, ToParent(&root_id)).unwrap();
@@ -1746,23 +1827,21 @@ mod tree_tests {
         tree.move_node(&node_3_id, ToParent(&node_1_id)).unwrap();
         assert!(tree.get(&root_id).unwrap().children().contains(&node_1_id));
         assert!(tree.get(&root_id).unwrap().children().contains(&node_2_id));
-        assert!(
-            tree.get(&node_1_id,)
-                .unwrap()
-                .children()
-                .contains(&node_3_id,)
-        );
+        assert!(tree
+            .get(&node_1_id,)
+            .unwrap()
+            .children()
+            .contains(&node_3_id,));
 
         // move 1 "down" the tree
         tree.move_node(&node_1_id, ToParent(&node_3_id)).unwrap();
         assert!(tree.get(&root_id).unwrap().children().contains(&node_2_id));
         assert!(tree.get(&root_id).unwrap().children().contains(&node_3_id));
-        assert!(
-            tree.get(&node_3_id,)
-                .unwrap()
-                .children()
-                .contains(&node_1_id,)
-        );
+        assert!(tree
+            .get(&node_3_id,)
+            .unwrap()
+            .children()
+            .contains(&node_1_id,));
 
         // note: node_1 is at the lowest point in the tree before these insertions.
         let node_4_id = tree.insert(Node::new(4), UnderNode(&node_1_id)).unwrap();
@@ -1772,47 +1851,41 @@ mod tree_tests {
         tree.move_node(&node_3_id, ToParent(&node_5_id)).unwrap();
         assert!(tree.get(&root_id).unwrap().children().contains(&node_2_id));
         assert!(tree.get(&root_id).unwrap().children().contains(&node_1_id));
-        assert!(
-            tree.get(&node_1_id,)
-                .unwrap()
-                .children()
-                .contains(&node_4_id,)
-        );
-        assert!(
-            tree.get(&node_4_id,)
-                .unwrap()
-                .children()
-                .contains(&node_5_id,)
-        );
-        assert!(
-            tree.get(&node_5_id,)
-                .unwrap()
-                .children()
-                .contains(&node_3_id,)
-        );
+        assert!(tree
+            .get(&node_1_id,)
+            .unwrap()
+            .children()
+            .contains(&node_4_id,));
+        assert!(tree
+            .get(&node_4_id,)
+            .unwrap()
+            .children()
+            .contains(&node_5_id,));
+        assert!(tree
+            .get(&node_5_id,)
+            .unwrap()
+            .children()
+            .contains(&node_3_id,));
 
         // move root "down" the tree
         tree.move_node(&root_id, ToParent(&node_2_id)).unwrap();
         assert!(tree.get(&node_2_id).unwrap().children().contains(&root_id));
         assert!(tree.get(&root_id).unwrap().children().contains(&node_1_id));
-        assert!(
-            tree.get(&node_1_id,)
-                .unwrap()
-                .children()
-                .contains(&node_4_id,)
-        );
-        assert!(
-            tree.get(&node_4_id,)
-                .unwrap()
-                .children()
-                .contains(&node_5_id,)
-        );
-        assert!(
-            tree.get(&node_5_id,)
-                .unwrap()
-                .children()
-                .contains(&node_3_id,)
-        );
+        assert!(tree
+            .get(&node_1_id,)
+            .unwrap()
+            .children()
+            .contains(&node_4_id,));
+        assert!(tree
+            .get(&node_4_id,)
+            .unwrap()
+            .children()
+            .contains(&node_5_id,));
+        assert!(tree
+            .get(&node_5_id,)
+            .unwrap()
+            .children()
+            .contains(&node_3_id,));
         assert_eq!(tree.root_node_id(), Some(&node_2_id));
     }
 
@@ -1831,13 +1904,11 @@ mod tree_tests {
 
             assert_eq!(tree.root_node_id(), Some(&node_2_id));
             assert!(tree.get(&node_2_id).unwrap().children().contains(&root_id));
-            assert!(
-                !tree
-                    .get(&node_1_id,)
-                    .unwrap()
-                    .children()
-                    .contains(&node_2_id,)
-            );
+            assert!(!tree
+                .get(&node_1_id,)
+                .unwrap()
+                .children()
+                .contains(&node_2_id,));
         }
 
         // test move with existing root and with orphan
@@ -1866,12 +1937,11 @@ mod tree_tests {
             tree.move_node_to_root(&node_1_id).unwrap();
 
             assert_eq!(tree.root_node_id(), Some(&node_1_id));
-            assert!(
-                tree.get(&node_1_id,)
-                    .unwrap()
-                    .children()
-                    .contains(&node_2_id,)
-            );
+            assert!(tree
+                .get(&node_1_id,)
+                .unwrap()
+                .children()
+                .contains(&node_2_id,));
             assert_eq!(tree.get(&node_1_id).unwrap().children().len(), 1);
         }
     }
@@ -1926,18 +1996,16 @@ mod tree_tests {
             tree.swap_nodes(&node_3_id, &node_4_id, TakeChildren)
                 .unwrap();
 
-            assert!(
-                tree.get(&node_1_id,)
-                    .unwrap()
-                    .children()
-                    .contains(&node_4_id,)
-            );
-            assert!(
-                tree.get(&node_2_id,)
-                    .unwrap()
-                    .children()
-                    .contains(&node_3_id,)
-            );
+            assert!(tree
+                .get(&node_1_id,)
+                .unwrap()
+                .children()
+                .contains(&node_4_id,));
+            assert!(tree
+                .get(&node_2_id,)
+                .unwrap()
+                .children()
+                .contains(&node_3_id,));
         }
 
         // test ordering via swap
@@ -1985,12 +2053,11 @@ mod tree_tests {
             tree.swap_nodes(&node_1_id, &node_3_id, TakeChildren)
                 .unwrap();
 
-            assert!(
-                tree.get(&node_3_id,)
-                    .unwrap()
-                    .children()
-                    .contains(&node_1_id,)
-            );
+            assert!(tree
+                .get(&node_3_id,)
+                .unwrap()
+                .children()
+                .contains(&node_1_id,));
 
             let children = tree.get(&root_id).unwrap().children();
             assert!(children[0] == node_3_id);
@@ -2036,18 +2103,16 @@ mod tree_tests {
             assert_eq!(tree.get(&node_3_id).unwrap().parent(), Some(&node_2_id));
             assert_eq!(tree.get(&node_4_id).unwrap().parent(), Some(&node_1_id));
 
-            assert!(
-                tree.get(&node_1_id,)
-                    .unwrap()
-                    .children()
-                    .contains(&node_4_id,)
-            );
-            assert!(
-                tree.get(&node_2_id,)
-                    .unwrap()
-                    .children()
-                    .contains(&node_3_id,)
-            );
+            assert!(tree
+                .get(&node_1_id,)
+                .unwrap()
+                .children()
+                .contains(&node_4_id,));
+            assert!(tree
+                .get(&node_2_id,)
+                .unwrap()
+                .children()
+                .contains(&node_3_id,));
         }
 
         // test down swap (with no space between nodes)
@@ -2081,12 +2146,11 @@ mod tree_tests {
             assert_eq!(tree.get(&node_3_id).unwrap().parent(), Some(&root_id));
             assert_eq!(tree.get(&node_1_id).unwrap().parent(), Some(&node_3_id));
 
-            assert!(
-                tree.get(&node_3_id,)
-                    .unwrap()
-                    .children()
-                    .contains(&node_1_id,)
-            );
+            assert!(tree
+                .get(&node_3_id,)
+                .unwrap()
+                .children()
+                .contains(&node_1_id,));
             assert_eq!(tree.get(&node_1_id).unwrap().children().len(), 0);
         }
 
@@ -2127,18 +2191,16 @@ mod tree_tests {
             assert_eq!(tree.get(&node_1_id).unwrap().parent(), Some(&node_3_id));
             assert_eq!(tree.get(&node_5_id).unwrap().parent(), Some(&root_id));
 
-            assert!(
-                tree.get(&node_3_id,)
-                    .unwrap()
-                    .children()
-                    .contains(&node_1_id,)
-            );
-            assert!(
-                tree.get(&node_5_id,)
-                    .unwrap()
-                    .children()
-                    .contains(&node_3_id,)
-            );
+            assert!(tree
+                .get(&node_3_id,)
+                .unwrap()
+                .children()
+                .contains(&node_1_id,));
+            assert!(tree
+                .get(&node_5_id,)
+                .unwrap()
+                .children()
+                .contains(&node_3_id,));
             assert_eq!(tree.get(&node_1_id).unwrap().children().len(), 0);
         }
 
@@ -2206,18 +2268,16 @@ mod tree_tests {
             assert_eq!(tree.get(&node_3_id).unwrap().parent(), Some(&node_2_id));
             assert_eq!(tree.get(&node_4_id).unwrap().parent(), Some(&node_1_id));
 
-            assert!(
-                tree.get(&node_2_id,)
-                    .unwrap()
-                    .children()
-                    .contains(&node_3_id,)
-            );
-            assert!(
-                tree.get(&node_1_id,)
-                    .unwrap()
-                    .children()
-                    .contains(&node_4_id,)
-            );
+            assert!(tree
+                .get(&node_2_id,)
+                .unwrap()
+                .children()
+                .contains(&node_3_id,));
+            assert!(tree
+                .get(&node_1_id,)
+                .unwrap()
+                .children()
+                .contains(&node_4_id,));
         }
 
         // test orphaned swap (1 is root)
@@ -2247,18 +2307,16 @@ mod tree_tests {
             assert_eq!(tree.get(&node_3_id).unwrap().parent(), Some(&node_2_id));
             assert_eq!(tree.get(&node_4_id).unwrap().parent(), Some(&node_1_id));
 
-            assert!(
-                tree.get(&node_2_id,)
-                    .unwrap()
-                    .children()
-                    .contains(&node_3_id,)
-            );
-            assert!(
-                tree.get(&node_1_id,)
-                    .unwrap()
-                    .children()
-                    .contains(&node_4_id,)
-            );
+            assert!(tree
+                .get(&node_2_id,)
+                .unwrap()
+                .children()
+                .contains(&node_3_id,));
+            assert!(tree
+                .get(&node_1_id,)
+                .unwrap()
+                .children()
+                .contains(&node_4_id,));
         }
     }
 
@@ -2301,24 +2359,21 @@ mod tree_tests {
             assert_eq!(tree.get(&node_4_id).unwrap().parent(), Some(&node_2_id));
             assert_eq!(tree.get(&node_5_id).unwrap().parent(), Some(&node_1_id));
 
-            assert!(
-                tree.get(&node_1_id,)
-                    .unwrap()
-                    .children()
-                    .contains(&node_5_id,)
-            );
-            assert!(
-                tree.get(&node_2_id,)
-                    .unwrap()
-                    .children()
-                    .contains(&node_3_id,)
-            );
-            assert!(
-                tree.get(&node_2_id,)
-                    .unwrap()
-                    .children()
-                    .contains(&node_4_id,)
-            );
+            assert!(tree
+                .get(&node_1_id,)
+                .unwrap()
+                .children()
+                .contains(&node_5_id,));
+            assert!(tree
+                .get(&node_2_id,)
+                .unwrap()
+                .children()
+                .contains(&node_3_id,));
+            assert!(tree
+                .get(&node_2_id,)
+                .unwrap()
+                .children()
+                .contains(&node_4_id,));
         }
 
         // test down swap (with no space between nodes)
@@ -2367,12 +2422,11 @@ mod tree_tests {
             let node_1_children = tree.get(&node_1_id).unwrap().children();
             assert_eq!(node_1_children[0], node_6_id);
             assert_eq!(node_1_children[1], node_3_id);
-            assert!(
-                tree.get(&node_3_id,)
-                    .unwrap()
-                    .children()
-                    .contains(&node_4_id,)
-            );
+            assert!(tree
+                .get(&node_3_id,)
+                .unwrap()
+                .children()
+                .contains(&node_4_id,));
         }
 
         // test down swap (with space between nodes)
@@ -2417,38 +2471,31 @@ mod tree_tests {
             assert_eq!(tree.get(&node_4_id).unwrap().parent(), Some(&node_6_id));
             assert_eq!(tree.get(&node_6_id).unwrap().parent(), Some(&node_1_id));
 
-            assert!(
-                tree.get(&node_1_id,)
-                    .unwrap()
-                    .children()
-                    .contains(&node_6_id,)
-            );
-            assert!(
-                !tree
-                    .get(&node_1_id,)
-                    .unwrap()
-                    .children()
-                    .contains(&node_3_id,)
-            );
-            assert!(
-                !tree
-                    .get(&node_1_id,)
-                    .unwrap()
-                    .children()
-                    .contains(&node_4_id,)
-            );
-            assert!(
-                tree.get(&node_6_id,)
-                    .unwrap()
-                    .children()
-                    .contains(&node_3_id,)
-            );
-            assert!(
-                tree.get(&node_6_id,)
-                    .unwrap()
-                    .children()
-                    .contains(&node_4_id,)
-            );
+            assert!(tree
+                .get(&node_1_id,)
+                .unwrap()
+                .children()
+                .contains(&node_6_id,));
+            assert!(!tree
+                .get(&node_1_id,)
+                .unwrap()
+                .children()
+                .contains(&node_3_id,));
+            assert!(!tree
+                .get(&node_1_id,)
+                .unwrap()
+                .children()
+                .contains(&node_4_id,));
+            assert!(tree
+                .get(&node_6_id,)
+                .unwrap()
+                .children()
+                .contains(&node_3_id,));
+            assert!(tree
+                .get(&node_6_id,)
+                .unwrap()
+                .children()
+                .contains(&node_4_id,));
         }
 
         // test down swap (with root)
@@ -2529,5 +2576,120 @@ mod tree_tests {
         // remove child_2
         tree.remove_node(child_2_id, LiftChildren).unwrap();
         assert_eq!(1, tree.height());
+    }
+
+    #[test]
+    fn test_partial_eq() {
+        use InsertBehavior::*;
+
+        let mut tree = Tree::new();
+        let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+        let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+        tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+        tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
+
+        // ensure PartialEq doesn't work when the number of used nodes are not equal
+        {
+            let mut other = Tree::new();
+            let root_id = other.insert(Node::new(0), AsRoot).unwrap();
+            other.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            other.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            assert_ne!(tree, other);
+        }
+
+        // ensure PartialEq doesn't work when the data is not equal
+        {
+            let mut other = Tree::new();
+            let root_id = other.insert(Node::new(0), AsRoot).unwrap();
+            let id = other.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            other.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            other.insert(Node::new(4), UnderNode(&id)).unwrap();
+            assert_ne!(tree, other);
+        }
+
+        // ensure PartialEq doesn't work when the parents aren't equal
+        {
+            let mut other = Tree::new();
+            let root_id = other.insert(Node::new(0), AsRoot).unwrap();
+            other.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            let id = other.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            other.insert(Node::new(3), UnderNode(&id)).unwrap();
+            assert_ne!(tree, other);
+        }
+
+        // ensure PartialEq works even if the number of free spots in Tree.nodes is different
+        {
+            let mut other = Tree::new();
+            let root_id = other.insert(Node::new(0), AsRoot).unwrap();
+            let id = other.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            other.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            other.insert(Node::new(3), UnderNode(&id)).unwrap();
+            let to_delete = other.insert(Node::new(42), UnderNode(&root_id)).unwrap();
+            other.take_node(to_delete);
+            assert_ne!(
+                tree.nodes.iter().filter(|x| x.is_none()).count(),
+                other.nodes.iter().filter(|x| x.is_none()).count()
+            );
+            assert_eq!(tree, other);
+        }
+
+        // ensure PartialEq doesn't work when the Node's index are different
+        {
+            let mut other = Tree::new();
+            let root_id = other.insert(Node::new(0), AsRoot).unwrap();
+            let to_delete = other.insert(Node::new(42), UnderNode(&root_id)).unwrap();
+            let id = other.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+            other.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+            other.insert(Node::new(3), UnderNode(&id)).unwrap();
+            other.take_node(to_delete);
+            assert_ne!(tree, other);
+        }
+    }
+
+    #[test]
+    fn test_clone() {
+        use InsertBehavior::*;
+
+        let mut tree = Tree::new();
+        let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+        let node_1_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+        let node_2_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+        let _node_3_id = tree.insert(Node::new(3), UnderNode(&node_1_id)).unwrap();
+        let node_4_id = tree.insert(Node::new(4), UnderNode(&node_2_id)).unwrap();
+        tree.take_node(node_4_id);
+
+        let cloned = tree.clone();
+        assert!(cloned.root.is_some());
+        let tree_id = cloned.id;
+
+        // ensure cloned tree has a new id
+        assert_ne!(tree.id, tree_id);
+
+        // ensure cloned tree's root is using the new tree id
+        assert_eq!(cloned.root.as_ref().map(|x| x.tree_id), Some(tree_id));
+
+        // ensure cloned tree's free_ids is using the new tree id
+        assert_eq!(cloned.free_ids[0].tree_id, tree_id);
+
+        // ensure nodes' parent are using the new tree id
+        assert_eq!(
+            cloned.nodes[1]
+                .as_ref()
+                .map(|x| x.parent.as_ref().map(|x| x.tree_id)),
+            Some(Some(tree_id))
+        );
+
+        // ensure nodes' children are using the new tree id
+        assert_eq!(
+            cloned
+                .children(cloned.root.as_ref().unwrap())
+                .unwrap()
+                .next()
+                .map(|x| x.parent.as_ref().map(|x| x.tree_id)),
+            Some(Some(tree_id))
+        );
+
+        // ensure the tree and the cloned tree are equal
+        assert_eq!(tree, cloned);
     }
 }
