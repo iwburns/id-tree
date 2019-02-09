@@ -1,6 +1,6 @@
 [package]
 name = "id_tree"
-version = "1.3.0"
+version = "1.4.0"
 authors = ["Ian Burns <iwburns8@gmail.com>"]
 description = "A library for creating and modifying Tree structures."
 documentation = "https://docs.rs/id_tree"
