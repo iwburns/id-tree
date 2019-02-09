@@ -204,18 +204,15 @@ impl<'a, T> Iterator for PreOrderTraversalIds<'a, T> {
     type Item = NodeId;
 
     fn next(&mut self) -> Option<NodeId> {
-        self.data
-            .pop_front()
-            .and_then(|node_id| {
-                self.tree.get(&node_id).ok()
-                    .and_then(|node_ref| {
-                        // prepend child_ids
-                        for child_id in node_ref.children().iter().rev() {
-                            self.data.push_front(child_id.clone());
-                        }
+        self.data.pop_front().and_then(|node_id| {
+            self.tree.get(&node_id).ok().and_then(|node_ref| {
+                // prepend child_ids
+                for child_id in node_ref.children().iter().rev() {
+                    self.data.push_front(child_id.clone());
+                }
 
-                        Some(node_id)
-                    })
+                Some(node_id)
+            })
         })
     }
 }
@@ -379,17 +376,14 @@ impl<'a, T> Iterator for LevelOrderTraversalIds<'a, T> {
     type Item = NodeId;
 
     fn next(&mut self) -> Option<NodeId> {
-        self.data
-            .pop_front()
-            .and_then(|node_id| {
-                self.tree.get(&node_id).ok()
-                    .and_then(|node_ref| {
-                        for child_id in node_ref.children() {
-                            self.data.push_back(child_id.clone());
-                        }
+        self.data.pop_front().and_then(|node_id| {
+            self.tree.get(&node_id).ok().and_then(|node_ref| {
+                for child_id in node_ref.children() {
+                    self.data.push_back(child_id.clone());
+                }
 
-                        Some(node_id)
-                    })
+                Some(node_id)
+            })
         })
     }
 }
