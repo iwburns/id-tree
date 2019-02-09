@@ -1202,6 +1202,40 @@ impl<T> Tree<T> {
         Ok(PreOrderTraversal::new(self, node_id.clone()))
     }
 
+    /// Returns a `PreOrderTraversalIds` iterator (or a `NodeIdError` if one occurred).
+    ///
+    /// Allows iteration over all of the `NodeId`s in the sub-tree below a given `NodeId`.  This
+    /// iterator will always include that sub-tree "root" specified by the `NodeId` given.
+    ///
+    /// ```
+    /// use id_tree::*;
+    /// use id_tree::InsertBehavior::*;
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+    /// tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    ///
+    /// let mut nodes = tree.traverse_pre_order_ids(&root_id).unwrap();
+    ///
+    /// assert_eq!(tree.get(&nodes.next().unwrap()).unwrap().data(), &0);
+    /// assert_eq!(tree.get(&nodes.next().unwrap()).unwrap().data(), &1);
+    /// assert!(nodes.next().is_none());
+    /// ```
+    ///
+    pub fn traverse_pre_order_ids(
+        &self,
+        node_id: &NodeId,
+    ) -> Result<PreOrderTraversalIds<T>, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(&node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::traverse_pre_order_ids: Missing an error value but found an invalid NodeId.",
+            ));
+        }
+
+        Ok(PreOrderTraversalIds::new(self, node_id.clone()))
+    }
+
     /// Returns a `PostOrderTraversal` iterator (or a `NodeIdError` if one occurred).
     ///
     /// Allows iteration over all of the `Node`s in the sub-tree below a given `Node`.  This
@@ -1236,6 +1270,40 @@ impl<T> Tree<T> {
         Ok(PostOrderTraversal::new(self, node_id.clone()))
     }
 
+    /// Returns a `PostOrderTraversalIds` iterator (or a `NodeIdError` if one occurred).
+    ///
+    /// Allows iteration over all of the `NodeId`s in the sub-tree below a given `NodeId`.  This
+    /// iterator will always include that sub-tree "root" specified by the `NodeId` given.
+    ///
+    /// ```
+    /// use id_tree::*;
+    /// use id_tree::InsertBehavior::*;
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+    /// tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    ///
+    /// let mut nodes = tree.traverse_post_order_ids(&root_id).unwrap();
+    ///
+    /// assert_eq!(tree.get(&nodes.next().unwrap()).unwrap().data(), &1);
+    /// assert_eq!(tree.get(&nodes.next().unwrap()).unwrap().data(), &0);
+    /// assert!(nodes.next().is_none());
+    /// ```
+    ///
+    pub fn traverse_post_order_ids(
+        &self,
+        node_id: &NodeId,
+    ) -> Result<PostOrderTraversalIds<T>, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::traverse_post_order_ids: Missing an error value but found an invalid NodeId.",
+            ));
+        }
+
+        Ok(PostOrderTraversalIds::new(self, node_id.clone()))
+    }
+
     /// Returns a `LevelOrderTraversal` iterator (or a `NodeIdError` if one occurred).
     ///
     /// Allows iteration over all of the `Node`s in the sub-tree below a given `Node`.  This
@@ -1268,6 +1336,40 @@ impl<T> Tree<T> {
         }
 
         Ok(LevelOrderTraversal::new(self, node_id.clone()))
+    }
+
+    /// Returns a `LevelOrderTraversalIds` iterator (or a `NodeIdError` if one occurred).
+    ///
+    /// Allows iteration over all of the `NodeIds`s in the sub-tree below a given `NodeId`.  This
+    /// iterator will always include that sub-tree "root" specified by the `NodeId` given.
+    ///
+    /// ```
+    /// use id_tree::*;
+    /// use id_tree::InsertBehavior::*;
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+    /// tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    ///
+    /// let mut nodes = tree.traverse_level_order_ids(&root_id).unwrap();
+    ///
+    /// assert_eq!(tree.get(&nodes.next().unwrap()).unwrap().data(), &0);
+    /// assert_eq!(tree.get(&nodes.next().unwrap()).unwrap().data(), &1);
+    /// assert!(nodes.next().is_none());
+    /// ```
+    ///
+    pub fn traverse_level_order_ids(
+        &self,
+        node_id: &NodeId,
+    ) -> Result<LevelOrderTraversalIds<T>, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::traverse_level_order: Missing an error value but found an invalid NodeId.",
+            ));
+        }
+
+        Ok(LevelOrderTraversalIds::new(self, node_id.clone()))
     }
 
     // Nothing should make it past this function.
