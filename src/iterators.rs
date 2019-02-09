@@ -268,25 +268,23 @@ impl<'a, T> Iterator for PostOrderTraversal<'a, T> {
 /// Iterates over all of the `NodeId`s in the sub-tree of a given `NodeId` in the `Tree`.  Each call to
 /// `next` will return the next `NodeId` in Post-Order Traversal order.
 ///
-pub struct PostOrderTraversalIds<'a, T: 'a> {
-    tree: &'a Tree<T>,
+pub struct PostOrderTraversalIds {
     ids: IntoIter<NodeId>,
 }
 
-impl<'a, T> PostOrderTraversalIds<'a, T> {
-    pub(crate) fn new(tree: &'a Tree<T>, node_id: NodeId) -> PostOrderTraversalIds<T> {
+impl PostOrderTraversalIds {
+    pub(crate) fn new<T>(tree: &Tree<T>, node_id: NodeId) -> PostOrderTraversalIds {
         // over allocating, but all at once instead of re-sizing and re-allocating as we go
         let mut ids = Vec::with_capacity(tree.capacity());
 
         PostOrderTraversalIds::process_nodes(node_id, tree, &mut ids);
 
         PostOrderTraversalIds {
-            tree: tree,
             ids: ids.into_iter(),
         }
     }
 
-    fn process_nodes(starting_id: NodeId, tree: &Tree<T>, ids: &mut Vec<NodeId>) {
+    fn process_nodes<T>(starting_id: NodeId, tree: &Tree<T>, ids: &mut Vec<NodeId>) {
         let node = tree.get(&starting_id).unwrap();
 
         for child_id in node.children() {
@@ -297,7 +295,7 @@ impl<'a, T> PostOrderTraversalIds<'a, T> {
     }
 }
 
-impl<'a, T> Iterator for PostOrderTraversalIds<'a, T> {
+impl Iterator for PostOrderTraversalIds {
     type Item = NodeId;
 
     fn next(&mut self) -> Option<NodeId> {
