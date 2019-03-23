@@ -6,6 +6,12 @@ use Node;
 use NodeId;
 use Tree;
 
+// Note: The Clone trait is implemented manually throughout this file because a #[derive(Clone)]
+// forces the type parameters of the iterator to also implement Clone, even though
+// the iterator only ever holds a reference to the data of that type. E.g. cloning
+// AncestorIds<'a, T> requires T: Clone, but AncestorIds only holds a reference to some data &T.
+// By implementing the trait manually, we circumvent that requirement.
+
 ///
 /// An Iterator over the ancestors of a `Node`.
 ///
@@ -39,6 +45,15 @@ impl<'a, T> Iterator for Ancestors<'a, T> {
 
                 self.tree.get(parent_id).ok()
             })
+    }
+}
+
+impl<'a, T> Clone for Ancestors<'a, T> {
+    fn clone(&self) -> Self {
+        Ancestors {
+            tree: &self.tree,
+            node_id: self.node_id.clone(),
+        }
     }
 }
 
@@ -77,6 +92,15 @@ impl<'a, T> Iterator for AncestorIds<'a, T> {
     }
 }
 
+impl<'a, T> Clone for AncestorIds<'a, T> {
+    fn clone(&self) -> Self {
+        AncestorIds {
+            tree: &self.tree,
+            node_id: self.node_id.clone(),
+        }
+    }
+}
+
 ///
 /// An Iterator over the children of a `Node`.
 ///
@@ -107,11 +131,21 @@ impl<'a, T> Iterator for Children<'a, T> {
     }
 }
 
+impl<'a, T> Clone for Children<'a, T> {
+    fn clone(&self) -> Self {
+        Children {
+            tree: &self.tree,
+            child_ids: self.child_ids.clone(),
+        }
+    }
+}
+
 ///
 /// An Iterator over the children of a `Node`.
 ///
 /// Iterates over `NodeId`s instead of over the `Node`s themselves.
 ///
+#[derive(Clone)]
 pub struct ChildrenIds<'a> {
     child_ids: Iter<'a, NodeId>,
 }
@@ -175,6 +209,15 @@ impl<'a, T> Iterator for PreOrderTraversal<'a, T> {
     }
 }
 
+impl<'a, T> Clone for PreOrderTraversal<'a, T> {
+    fn clone(&self) -> Self {
+        PreOrderTraversal {
+            tree: &self.tree,
+            data: self.data.clone(),
+        }
+    }
+}
+
 ///
 /// An Iterator over the sub-tree relative to a given `Node`.
 ///
@@ -214,6 +257,15 @@ impl<'a, T> Iterator for PreOrderTraversalIds<'a, T> {
                 Some(node_id)
             })
         })
+    }
+}
+
+impl<'a, T> Clone for PreOrderTraversalIds<'a, T> {
+    fn clone(&self) -> Self {
+        PreOrderTraversalIds {
+            tree: &self.tree,
+            data: self.data.clone(),
+        }
     }
 }
 
@@ -262,12 +314,22 @@ impl<'a, T> Iterator for PostOrderTraversal<'a, T> {
     }
 }
 
+impl<'a, T> Clone for PostOrderTraversal<'a, T> {
+    fn clone(&self) -> Self {
+        PostOrderTraversal {
+            tree: &self.tree,
+            ids: self.ids.clone(),
+        }
+    }
+}
+
 ///
 /// An Iterator over the sub-tree relative to a given `Node`.
 ///
 /// Iterates over all of the `NodeId`s in the sub-tree of a given `NodeId` in the `Tree`.  Each call to
 /// `next` will return the next `NodeId` in Post-Order Traversal order.
 ///
+#[derive(Clone)]
 pub struct PostOrderTraversalIds {
     ids: IntoIter<NodeId>,
 }
@@ -345,6 +407,15 @@ impl<'a, T> Iterator for LevelOrderTraversal<'a, T> {
     }
 }
 
+impl<'a, T> Clone for LevelOrderTraversal<'a, T> {
+    fn clone(&self) -> Self {
+        LevelOrderTraversal {
+            tree: &self.tree,
+            data: self.data.clone(),
+        }
+    }
+}
+
 ///
 /// An Iterator over the sub-tree relative to a given `Node`.
 ///
@@ -386,6 +457,15 @@ impl<'a, T> Iterator for LevelOrderTraversalIds<'a, T> {
     }
 }
 
+impl<'a, T> Clone for LevelOrderTraversalIds<'a, T> {
+    fn clone(&self) -> Self {
+        LevelOrderTraversalIds {
+            tree: &self.tree,
+            data: self.data.clone(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -422,6 +502,36 @@ mod tests {
     }
 
     #[test]
+    fn test_ancestors_clone() {
+        let mut tree = Tree::new();
+
+        let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+        let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+        let node_2 = tree.insert(Node::new(2), UnderNode(&node_1)).unwrap();
+
+        let node_2_ancestors = tree.ancestors(&node_2).unwrap();
+        let node_2_ancestors_clone = node_2_ancestors.clone();
+
+        // Clone is a separate entity
+        let data = [1, 0];
+        for (index, (node, clone_it_node)) in
+            node_2_ancestors.zip(node_2_ancestors_clone).enumerate()
+        {
+            assert_eq!(node.data(), &data[index]);
+            assert_eq!(clone_it_node.data(), &data[index]);
+        }
+
+        // State is copied over to clone
+        let mut node_2_ancestors = tree.ancestors(&node_2).unwrap();
+
+        node_2_ancestors.next();
+
+        let mut node_2_ancestors_clone = node_2_ancestors.clone();
+
+        assert_eq!(node_2_ancestors_clone.next(), Some(&Node::new(0)));
+    }
+
+    #[test]
     fn test_ancestor_ids() {
         let mut tree = Tree::new();
 
@@ -447,6 +557,37 @@ mod tests {
         for (index, node_id) in tree.ancestor_ids(&node_3).unwrap().enumerate() {
             assert_eq!(tree.get(node_id).unwrap().data(), &data[index]);
         }
+    }
+
+    #[test]
+    fn test_ancestor_ids_clone() {
+        let mut tree = Tree::new();
+
+        let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+        let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+        let node_2 = tree.insert(Node::new(2), UnderNode(&node_1)).unwrap();
+
+        let node_2_ancestor_ids = tree.ancestor_ids(&node_2).unwrap();
+        let node_2_ancestor_ids_clone = node_2_ancestor_ids.clone();
+
+        // Clone is a separate entity
+        let data = [1, 0];
+        for (index, (node_id, clone_it_node_id)) in node_2_ancestor_ids
+            .zip(node_2_ancestor_ids_clone)
+            .enumerate()
+        {
+            assert_eq!(tree.get(node_id).unwrap().data(), &data[index]);
+            assert_eq!(tree.get(clone_it_node_id).unwrap().data(), &data[index]);
+        }
+
+        // State is copied over to clone
+        let mut node_2_ancestor_ids = tree.ancestor_ids(&node_2).unwrap();
+
+        node_2_ancestor_ids.next();
+
+        let mut node_2_ancestor_ids_clone = node_2_ancestor_ids.clone();
+
+        assert_eq!(node_2_ancestor_ids_clone.next(), Some(&root_id));
     }
 
     #[test]
@@ -476,6 +617,34 @@ mod tests {
     }
 
     #[test]
+    fn test_children_clone() {
+        let mut tree = Tree::new();
+
+        let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+        tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+        tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+
+        let root_children = tree.children(&root_id).unwrap();
+        let root_children_clone = root_children.clone();
+
+        // Clone is a separate entity
+        let data = [1, 2];
+        for (index, (node, clone_it_node)) in root_children.zip(root_children_clone).enumerate() {
+            assert_eq!(node.data(), &data[index]);
+            assert_eq!(clone_it_node.data(), &data[index]);
+        }
+
+        // State is copied over to clone
+        let mut root_children = tree.children(&root_id).unwrap();
+
+        root_children.next();
+
+        let mut root_children_clone = root_children.clone();
+
+        assert_eq!(root_children_clone.next(), Some(&Node::new(2)));
+    }
+
+    #[test]
     fn test_children_ids() {
         let mut tree = Tree::new();
 
@@ -499,6 +668,36 @@ mod tests {
 
         let children_ids = tree.children_ids(&node_3).unwrap();
         assert_eq!(children_ids.count(), 0);
+    }
+
+    #[test]
+    fn test_children_ids_clone() {
+        let mut tree = Tree::new();
+
+        let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+        tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+        let node_2 = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+
+        let root_children_ids = tree.children_ids(&root_id).unwrap();
+        let root_children_ids_clone = root_children_ids.clone();
+
+        // Clone is a separate entity
+        let data = [1, 2];
+        for (index, (node_id, clone_it_node_id)) in
+            root_children_ids.zip(root_children_ids_clone).enumerate()
+        {
+            assert_eq!(tree.get(node_id).unwrap().data(), &data[index]);
+            assert_eq!(tree.get(clone_it_node_id).unwrap().data(), &data[index]);
+        }
+
+        // State is copied over to clone
+        let mut root_children_ids = tree.children_ids(&root_id).unwrap();
+
+        root_children_ids.next();
+
+        let mut root_children_ids_clone = root_children_ids.clone();
+
+        assert_eq!(root_children_ids_clone.next(), Some(&node_2));
     }
 
     #[test]
@@ -537,6 +736,43 @@ mod tests {
     }
 
     #[test]
+    fn test_pre_order_traversal_clone() {
+        let mut tree = Tree::new();
+
+        //      0
+        //     / \
+        //    1   2
+        //   /
+        //  3
+        let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+        let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+        tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+        tree.insert(Node::new(3), UnderNode(&node_1)).unwrap();
+
+        let traversal_from_root = tree.traverse_pre_order(&root_id).unwrap();
+        let traversal_from_root_clone = traversal_from_root.clone();
+
+        // Clone is a separate entity
+        let data = [0, 1, 3, 2];
+        for (index, (node, clone_it_node)) in traversal_from_root
+            .zip(traversal_from_root_clone)
+            .enumerate()
+        {
+            assert_eq!(node.data(), &data[index]);
+            assert_eq!(clone_it_node.data(), &data[index]);
+        }
+
+        // State is copied over to clone
+        let mut traversal_from_root = tree.traverse_pre_order(&root_id).unwrap();
+
+        traversal_from_root.next();
+
+        let mut traversal_from_root_clone = traversal_from_root.clone();
+
+        assert_eq!(traversal_from_root_clone.next(), Some(&Node::new(1)));
+    }
+
+    #[test]
     fn test_pre_order_traversal_ids() {
         let mut tree = Tree::new();
 
@@ -569,6 +805,43 @@ mod tests {
         for (index, node_id) in tree.traverse_pre_order_ids(&node_3).unwrap().enumerate() {
             assert_eq!(tree.get(&node_id).unwrap().data(), &data[index]);
         }
+    }
+
+    #[test]
+    fn test_pre_order_traversal_ids_clone() {
+        let mut tree = Tree::new();
+
+        //      0
+        //     / \
+        //    1   2
+        //   /
+        //  3
+        let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+        let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+        tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+        tree.insert(Node::new(3), UnderNode(&node_1)).unwrap();
+
+        let traversal_from_root_ids = tree.traverse_pre_order_ids(&root_id).unwrap();
+        let traversal_from_root_ids_clone = traversal_from_root_ids.clone();
+
+        // Clone is a separate entity
+        let data = [0, 1, 3, 2];
+        for (index, (node_id, clone_it_node_id)) in traversal_from_root_ids
+            .zip(traversal_from_root_ids_clone)
+            .enumerate()
+        {
+            assert_eq!(tree.get(&node_id).unwrap().data(), &data[index]);
+            assert_eq!(tree.get(&clone_it_node_id).unwrap().data(), &data[index]);
+        }
+
+        // State is copied over to clone
+        let mut traversal_from_root_ids = tree.traverse_pre_order_ids(&root_id).unwrap();
+
+        traversal_from_root_ids.next();
+
+        let mut traversal_from_root_ids_clone = traversal_from_root_ids.clone();
+
+        assert_eq!(traversal_from_root_ids_clone.next(), Some(node_1));
     }
 
     #[test]
@@ -607,6 +880,42 @@ mod tests {
     }
 
     #[test]
+    fn test_post_order_traversal_clone() {
+        let mut tree = Tree::new();
+
+        //      0
+        //     / \
+        //    1   2
+        //   /
+        //  3
+        let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+        let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+        tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+        tree.insert(Node::new(3), UnderNode(&node_1)).unwrap();
+
+        let traverse_from_root = tree.traverse_post_order(&root_id).unwrap();
+        let traverse_from_root_clone = traverse_from_root.clone();
+
+        // Clone is a separate entity
+        let data = [3, 1, 2, 0];
+        for (index, (node, clone_it_node)) in
+            traverse_from_root.zip(traverse_from_root_clone).enumerate()
+        {
+            assert_eq!(node.data(), &data[index]);
+            assert_eq!(clone_it_node.data(), &data[index]);
+        }
+
+        // State is copied over to clone
+        let mut traversal_from_root = tree.traverse_post_order(&root_id).unwrap();
+
+        traversal_from_root.next();
+
+        let mut traversal_from_root_ids = traversal_from_root.clone();
+
+        assert_eq!(traversal_from_root_ids.next(), Some(&Node::new(1)));
+    }
+
+    #[test]
     fn test_post_order_traversal_ids() {
         let mut tree = Tree::new();
 
@@ -639,6 +948,43 @@ mod tests {
         for (index, node_id) in tree.traverse_post_order_ids(&node_3).unwrap().enumerate() {
             assert_eq!(tree.get(&node_id).unwrap().data(), &data[index]);
         }
+    }
+
+    #[test]
+    fn test_post_order_traversal_ids_clone() {
+        let mut tree = Tree::new();
+
+        //      0
+        //     / \
+        //    1   2
+        //   /
+        //  3
+        let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+        let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+        tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+        tree.insert(Node::new(3), UnderNode(&node_1)).unwrap();
+
+        let traverse_from_root_ids = tree.traverse_post_order_ids(&root_id).unwrap();
+        let traverse_from_root_ids_clone = traverse_from_root_ids.clone();
+
+        // Clone is a separate entity
+        let data = [3, 1, 2, 0];
+        for (index, (node_id, clone_it_node_id)) in traverse_from_root_ids
+            .zip(traverse_from_root_ids_clone)
+            .enumerate()
+        {
+            assert_eq!(tree.get(&node_id).unwrap().data(), &data[index]);
+            assert_eq!(tree.get(&clone_it_node_id).unwrap().data(), &data[index]);
+        }
+
+        // State is copied over from clone
+        let mut traversal_from_root_ids = tree.traverse_post_order_ids(&root_id).unwrap();
+
+        traversal_from_root_ids.next();
+
+        let mut traversal_from_root_ids_clone = traversal_from_root_ids.clone();
+
+        assert_eq!(traversal_from_root_ids_clone.next(), Some(node_1));
     }
 
     #[test]
@@ -677,6 +1023,42 @@ mod tests {
     }
 
     #[test]
+    fn test_level_order_traversal_clone() {
+        let mut tree = Tree::new();
+
+        //      0
+        //     / \
+        //    1   2
+        //   /
+        //  3
+        let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+        let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+        tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+        tree.insert(Node::new(3), UnderNode(&node_1)).unwrap();
+
+        let traverse_from_root = tree.traverse_level_order(&root_id).unwrap();
+        let traverse_from_root_clone = traverse_from_root.clone();
+
+        // Clone is a separate entity
+        let data = [0, 1, 2, 3];
+        for (index, (node, clone_it_node)) in
+            traverse_from_root.zip(traverse_from_root_clone).enumerate()
+        {
+            assert_eq!(node.data(), &data[index]);
+            assert_eq!(clone_it_node.data(), &data[index]);
+        }
+
+        // State is copied over to clone
+        let mut traversal_from_root = tree.traverse_level_order(&root_id).unwrap();
+
+        traversal_from_root.next();
+
+        let mut traversal_from_root_clone = traversal_from_root.clone();
+
+        assert_eq!(traversal_from_root_clone.next(), Some(&Node::new(1)));
+    }
+
+    #[test]
     fn test_level_order_traversal_ids() {
         let mut tree = Tree::new();
 
@@ -709,5 +1091,42 @@ mod tests {
         for (index, node_id) in tree.traverse_level_order_ids(&node_3).unwrap().enumerate() {
             assert_eq!(tree.get(&node_id).unwrap().data(), &data[index]);
         }
+    }
+
+    #[test]
+    fn test_level_order_traversal_ids_clone() {
+        let mut tree = Tree::new();
+
+        //      0
+        //     / \
+        //    1   2
+        //   /
+        //  3
+        let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+        let node_1 = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+        tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+        tree.insert(Node::new(3), UnderNode(&node_1)).unwrap();
+
+        let traverse_from_root_ids = tree.traverse_level_order_ids(&root_id).unwrap();
+        let traverse_from_root_ids_clone = traverse_from_root_ids.clone();
+
+        // Clone is a separate entity
+        let data = [0, 1, 2, 3];
+        for (index, (node_id, clone_it_node_id)) in traverse_from_root_ids
+            .zip(traverse_from_root_ids_clone)
+            .enumerate()
+        {
+            assert_eq!(tree.get(&node_id).unwrap().data(), &data[index]);
+            assert_eq!(tree.get(&clone_it_node_id).unwrap().data(), &data[index]);
+        }
+
+        // State is copied over to clone
+        let mut traversal_from_root_ids = tree.traverse_level_order_ids(&root_id).unwrap();
+
+        traversal_from_root_ids.next();
+
+        let mut traversal_from_root_ids_clone = traversal_from_root_ids.clone();
+
+        assert_eq!(traversal_from_root_ids_clone.next(), Some(node_1));
     }
 }
