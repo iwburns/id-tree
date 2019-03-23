@@ -65,6 +65,13 @@
 //! attempts to solve them.
 //!
 
+#[cfg(feature = "serde_support")]
+extern crate serde;
+
+#[cfg(feature = "serde_support")]
+#[macro_use]
+extern crate serde_derive;
+
 extern crate snowflake;
 use self::snowflake::ProcessUniqueId;
 
@@ -141,6 +148,7 @@ pub use tree::TreeBuilder;
 /// sort out because an explicit `Clone` is required for such an error to occur.
 ///
 #[derive(Clone, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
+#[cfg_attr(feature = "serde_support", derive(Serialize))]
 pub struct NodeId {
     tree_id: ProcessUniqueId,
     index: usize,
