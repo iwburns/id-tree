@@ -1612,6 +1612,90 @@ where
     }
 }
 
+impl<T: std::fmt::Debug> Tree<T> {
+    /// Write formatted tree representation and nodes with debug formatting.
+    ///
+    /// Example:
+    ///
+    /// ```
+    /// use id_tree::Tree;
+    /// use id_tree::Node;
+    /// use id_tree::InsertBehavior::*;
+    ///
+    /// let mut tree = Tree::<i32>::new();
+    /// let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
+    /// let first_child_id = tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    /// let _ = tree.insert(Node::new(2), UnderNode(&first_child_id)).unwrap();
+    /// let _ = tree.insert(Node::new(3), UnderNode(&root_id)).unwrap();
+    /// let mut s = String::new();
+    /// tree.write_formatted(&mut s).unwrap();
+    /// assert_eq!(&s, "\
+    /// 0
+    /// ├── 1
+    /// │   └── 2
+    /// └── 3
+    /// ");
+    /// ```
+    ///
+    /// Writes nothing if the tree is empty.
+    ///
+    /// ```
+    /// use id_tree::Tree;
+    ///
+    /// let tree = Tree::<i32>::new();
+    /// let mut s = String::new();
+    /// tree.write_formatted(&mut s).unwrap();
+    /// assert_eq!(&s, "");
+    /// ```
+    pub fn write_formatted<W: std::fmt::Write>(&self, w: &mut W) -> std::fmt::Result {
+        if let Some(node_id) = self.root_node_id() {
+            let childn = 0;
+            let level = 0;
+            let last = vec![];
+            let mut stack = vec![(node_id, childn, level, last)];
+            while let Some((node_id, childn, level, last)) = stack.pop() {
+                debug_assert_eq!(
+                    last.len(),
+                    level,
+                    "each previous level should indicate whether it has reached the last node"
+                );
+                let node = self
+                    .get(node_id)
+                    .expect("getting node of existing node ref id");
+                if childn == 0 {
+                    for i in 1..level {
+                        if last[i - 1] {
+                            write!(w, "    ")?;
+                        } else {
+                            write!(w, "│   ")?;
+                        }
+                    }
+                    if level > 0 {
+                        if last[level - 1] {
+                            write!(w, "└── ")?;
+                        } else {
+                            write!(w, "├── ")?;
+                        }
+                    }
+                    writeln!(w, "{:?}", node.data())?;
+                }
+                let mut children = node.children().iter().skip(childn);
+                if let Some(child_id) = children.next() {
+                    let mut next_last = last.clone();
+                    if children.next().is_some() {
+                        stack.push((node_id, childn + 1, level, last));
+                        next_last.push(false);
+                    } else {
+                        next_last.push(true);
+                    }
+                    stack.push((child_id, 0, level + 1, next_last));
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tree_builder_tests {
     use super::super::Node;
