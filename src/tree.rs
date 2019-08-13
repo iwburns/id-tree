@@ -1101,8 +1101,9 @@ impl<T> Tree<T> {
     pub fn ancestor_ids(&self, node_id: &NodeId) -> Result<AncestorIds<T>, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
-            return Err(error
-                .expect("Tree::ancestor_ids: Missing an error value but found an invalid NodeId."));
+            return Err(error.expect(
+                "Tree::ancestor_ids: Missing an error value but found an invalid NodeId.",
+            ));
         }
 
         Ok(AncestorIds::new(self, node_id.clone()))
@@ -1161,8 +1162,9 @@ impl<T> Tree<T> {
     pub fn children_ids(&self, node_id: &NodeId) -> Result<ChildrenIds, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(node_id);
         if !is_valid {
-            return Err(error
-                .expect("Tree::children_ids: Missing an error value but found an invalid NodeId."));
+            return Err(error.expect(
+                "Tree::children_ids: Missing an error value but found an invalid NodeId.",
+            ));
         }
 
         Ok(ChildrenIds::new(self, node_id.clone()))
