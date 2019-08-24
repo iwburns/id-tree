@@ -694,6 +694,115 @@ impl<T> Tree<T> {
         Result::Ok(())
     }
 
+    /// Puts the node in the first position relative to other sibling nodes.
+    ///
+    /// Any children will remain attached to this node.
+    ///
+    /// Returns false if the node was already the first node or the root node.
+    ///
+    /// ```
+    /// use id_tree::*;
+    /// use id_tree::InsertBehavior::*;
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    ///
+    /// let root_id = tree.insert(Node::new(1), AsRoot).unwrap();
+    ///
+    /// let first_child_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+    /// let second_child_id = tree.insert(Node::new(3), UnderNode(&root_id)).unwrap();
+    /// let grandchild_id = tree.insert(Node::new(4), UnderNode(&second_child_id)).unwrap();
+    ///
+    /// assert_eq!(tree.get(&root_id).unwrap().children()[0], first_child_id);
+    /// assert_eq!(tree.get(&root_id).unwrap().children()[1], second_child_id);
+    /// assert!(tree.get(&second_child_id).unwrap().children().contains(&grandchild_id));
+    ///
+    /// assert!(!tree.make_first_sibling(&root_id).unwrap());
+    /// assert!(!tree.make_first_sibling(&grandchild_id).unwrap());
+    /// assert!(tree.make_first_sibling(&second_child_id).unwrap());
+    ///
+    /// assert_eq!(tree.get(&root_id).unwrap().children()[0], second_child_id);
+    /// assert_eq!(tree.get(&root_id).unwrap().children()[1], first_child_id);
+    /// assert!(tree.get(&second_child_id).unwrap().children().contains(&grandchild_id));
+    /// ```
+    ///
+    pub fn make_first_sibling(&mut self, node_id: &NodeId) -> Result<bool, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::make_first_sibling: Missing an error value but found an invalid NodeId.",
+            ));
+        }
+
+        let mut moved = false;
+        if let Some(parent_id) = self.get(node_id)?.parent().cloned() {
+            let parent = self
+                .get_mut(&parent_id)
+                .expect("Tree::make_first_sibling: invalid parent id");
+            let mut position = parent.children.iter().position(|id| id == node_id).unwrap();
+            moved = position > 0;
+            while position > 0 {
+                parent.children.swap(position - 1, position);
+                position -= 1;
+            }
+        }
+        Ok(moved)
+    }
+
+    /// Puts the node in the last position relative to other sibling nodes.
+    ///
+    /// Any children will remain attached to this node.
+    ///
+    /// Returns false if the node was already the first node or the root node.
+    ///
+    /// ```
+    /// use id_tree::*;
+    /// use id_tree::InsertBehavior::*;
+    ///
+    /// let mut tree: Tree<i32> = Tree::new();
+    ///
+    /// let root_id = tree.insert(Node::new(1), AsRoot).unwrap();
+    ///
+    /// let first_child_id = tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+    /// let second_child_id = tree.insert(Node::new(3), UnderNode(&root_id)).unwrap();
+    /// let grandchild_id = tree.insert(Node::new(4), UnderNode(&second_child_id)).unwrap();
+    ///
+    /// assert_eq!(tree.get(&root_id).unwrap().children()[0], first_child_id);
+    /// assert_eq!(tree.get(&root_id).unwrap().children()[1], second_child_id);
+    /// assert!(tree.get(&second_child_id).unwrap().children().contains(&grandchild_id));
+    ///
+    /// assert!(tree.make_last_sibling(&first_child_id).unwrap());
+    /// assert!(!tree.make_last_sibling(&root_id).unwrap());
+    /// assert!(!tree.make_last_sibling(&grandchild_id).unwrap());
+    ///
+    /// assert_eq!(tree.get(&root_id).unwrap().children()[0], second_child_id);
+    /// assert_eq!(tree.get(&root_id).unwrap().children()[1], first_child_id);
+    /// assert!(tree.get(&second_child_id).unwrap().children().contains(&grandchild_id));
+    /// ```
+    ///
+    pub fn make_last_sibling(&mut self, node_id: &NodeId) -> Result<bool, NodeIdError> {
+        let (is_valid, error) = self.is_valid_node_id(node_id);
+        if !is_valid {
+            return Err(error.expect(
+                "Tree::make_last_sibling: Missing an error value but found an invalid NodeId.",
+            ));
+        }
+
+        let mut moved = false;
+        if let Some(parent_id) = self.get(node_id)?.parent().cloned() {
+            let parent = self
+                .get_mut(&parent_id)
+                .expect("Tree::make_last_sibling: invalid parent id");
+            let mut position = parent.children.iter().position(|id| id == node_id).unwrap();
+            let last_position = parent.children.len() - 1;
+            moved = position < last_position;
+            while position < last_position {
+                parent.children.swap(position + 1, position);
+                position += 1;
+            }
+        }
+        Ok(moved)
+    }
+
     /// Swap `Node`s in the `Tree` based upon the `SwapBehavior` provided.
     ///
     /// Both `NodeId`s are still valid after this process and are not swapped.
