@@ -148,7 +148,7 @@ pub use tree::TreeBuilder;
 /// sort out because an explicit `Clone` is required for such an error to occur.
 ///
 #[derive(Clone, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
-#[cfg_attr(feature = "serde_support", derive(Serialize))]
+#[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
 pub struct NodeId {
     tree_id: ProcessUniqueId,
     index: usize,

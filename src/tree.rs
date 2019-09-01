@@ -154,6 +154,7 @@ impl<T> TreeBuilder<T> {
 /// library, but they can happen due to bugs.
 ///
 #[derive(Debug)]
+#[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
 pub struct Tree<T> {
     id: ProcessUniqueId,
     root: Option<NodeId>,
