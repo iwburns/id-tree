@@ -1505,6 +1505,7 @@ impl<T> Tree<T> {
     /// assert_eq!(10, *tree.get(&tree.root_node_id().unwrap()).unwrap().data());
     /// ```
     ///
+    #[cfg(feature = "map")]
     pub fn map<V, F, E>(mut self, mut map: F) -> Result<Tree<V>, E>
     where
         F: FnMut(T) -> Result<V, E>,
@@ -3064,6 +3065,7 @@ mod tree_tests {
         assert_eq!(tree, cloned);
     }
 
+    #[cfg(feature = "map")]
     #[test]
     fn test_map() {
         use InsertBehavior::*;
