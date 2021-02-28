@@ -695,6 +695,71 @@ impl<T> Tree<T> {
         Result::Ok(())
     }
 
+    /// Moves the node to a position amongst sibling nodes.
+    ///
+    /// Any children will remain attached to this node.
+    ///
+    /// ```
+    /// use id_tree::*;
+    /// use id_tree::InsertBehavior::*;
+
+    /// let mut my_tree = TreeBuilder::<i32>::new()
+    ///         .with_node_capacity(5)
+    ///         .build();
+
+    /// let root_id: NodeId = my_tree.insert(Node::new(0), AsRoot).unwrap();
+    /// let c1: NodeId = my_tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
+    /// let _c2 = my_tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
+    /// let _c3 = my_tree.insert(Node::new(3), UnderNode(&root_id)).unwrap();
+    /// let _c4 = my_tree.insert(Node::new(4), UnderNode(&root_id)).unwrap();
+
+    /// for (i,n) in my_tree.children(&root_id).unwrap().enumerate() {
+    ///     println!("i={} n={:?}", i, n.data());
+    /// }
+    
+    /// my_tree.make_nth_sibling(&c1, 3).unwrap();
+
+    /// for (i,n) in my_tree.children(&root_id).unwrap().enumerate() {
+    ///     println!("i={} n={:?}", i, n.data());
+    /// }
+    /// ```
+    ///
+
+    pub fn make_nth_sibling(&mut self, node: &NodeId, pos: usize) -> Result<(), NodeIdError> {
+
+        let parent = self.get(node)?.parent()
+            .ok_or(NodeIdError::NodeIdNoLongerValid)?
+            .clone();
+
+        let num_children = self.children_ids(&parent)?.count();
+        if pos >= num_children {
+            return Err(NodeIdError::NodeIdNoLongerValid);
+        }
+        
+        // First determine the current index that the node has
+        // unwrap should not be reachable, since we are searching under node's
+        // own parent, barring bugs in id_tree
+        let mut current_pos = self.children_ids(&parent)?
+            .enumerate()
+            .find_map(|(i, n) | if n==node { Some(i) } else { None })
+            .unwrap();
+        
+        while current_pos != pos {
+            let pos_to_swap = if current_pos < pos {
+                current_pos+1
+            } else if current_pos > pos {
+                current_pos-1
+            } else {
+                break;
+            };
+            let node_to_swap = self.children_ids(&parent)?.nth(pos_to_swap).unwrap().clone();
+            self.swap_nodes(node, &node_to_swap, SwapBehavior::TakeChildren)?;
+            current_pos = pos_to_swap;
+        }
+
+        Ok(())
+    }
+
     /// Puts the node in the first position relative to other sibling nodes.
     ///
     /// Any children will remain attached to this node.
