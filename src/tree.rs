@@ -695,6 +695,7 @@ impl<T> Tree<T> {
         Result::Ok(())
     }
 
+    ///
     /// Moves the node to a position amongst sibling nodes.
     ///
     /// Any children will remain attached to this node.
@@ -702,23 +703,23 @@ impl<T> Tree<T> {
     /// ```
     /// use id_tree::*;
     /// use id_tree::InsertBehavior::*;
-
+    ///
     /// let mut my_tree = TreeBuilder::<i32>::new()
     ///         .with_node_capacity(5)
     ///         .build();
-
+    ///
     /// let root_id: NodeId = my_tree.insert(Node::new(0), AsRoot).unwrap();
     /// let c1: NodeId = my_tree.insert(Node::new(1), UnderNode(&root_id)).unwrap();
     /// let _c2 = my_tree.insert(Node::new(2), UnderNode(&root_id)).unwrap();
     /// let _c3 = my_tree.insert(Node::new(3), UnderNode(&root_id)).unwrap();
     /// let _c4 = my_tree.insert(Node::new(4), UnderNode(&root_id)).unwrap();
-
+    ///
     /// for (i,n) in my_tree.children(&root_id).unwrap().enumerate() {
     ///     println!("i={} n={:?}", i, n.data());
     /// }
-    
+    ///
     /// my_tree.make_nth_sibling(&c1, 3).unwrap();
-
+    ///
     /// for (i,n) in my_tree.children(&root_id).unwrap().enumerate() {
     ///     println!("i={} n={:?}", i, n.data());
     /// }
@@ -732,9 +733,7 @@ impl<T> Tree<T> {
             .clone();
 
         let num_children = self.children_ids(&parent)?.count();
-        if pos >= num_children {
-            return Err(NodeIdError::NodeIdNoLongerValid);
-        }
+        let pos = pos.min(num_children - 1);
         
         // First determine the current index that the node has
         // unwrap should not be reachable, since we are searching under node's
