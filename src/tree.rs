@@ -423,7 +423,7 @@ impl<T> Tree<T> {
     fn remove_node_drop_children(&mut self, node_id: NodeId) -> Result<Node<T>, NodeIdError> {
         let mut children = self.get_mut_unsafe(&node_id).take_children();
         for child in children.drain(..) {
-            try!(self.remove_node_drop_children(child));
+            self.remove_node_drop_children(child)?;
         }
         Ok(self.remove_node_internal(node_id))
     }
@@ -547,7 +547,7 @@ impl<T> Tree<T> {
         self.root = Some(node_id.clone());
 
         if let Some(old_root) = old_root {
-            try!(self.move_node_to_parent(&old_root, node_id));
+            self.move_node_to_parent(&old_root, node_id)?;
         }
 
         Ok(())
@@ -696,7 +696,8 @@ impl<T> Tree<T> {
     }
 
     ///
-    /// Moves the node to a position amongst sibling nodes.
+    /// Moves the node to a position amongst sibling nodes. If the `pos` provided is too large then
+    /// the node in question will be placed after all of its other siblings.
     ///
     /// Any children will remain attached to this node.
     ///
@@ -714,44 +715,51 @@ impl<T> Tree<T> {
     /// let _c3 = my_tree.insert(Node::new(3), UnderNode(&root_id)).unwrap();
     /// let _c4 = my_tree.insert(Node::new(4), UnderNode(&root_id)).unwrap();
     ///
-    /// for (i,n) in my_tree.children(&root_id).unwrap().enumerate() {
-    ///     println!("i={} n={:?}", i, n.data());
+    /// let expected_values = [1, 2, 3, 4];
+    /// for (child, expected) in my_tree.children(&root_id).unwrap().zip(expected_values.iter()) {
+    ///     assert_eq!(child.data(), expected);
     /// }
     ///
     /// my_tree.make_nth_sibling(&c1, 3).unwrap();
     ///
-    /// for (i,n) in my_tree.children(&root_id).unwrap().enumerate() {
-    ///     println!("i={} n={:?}", i, n.data());
+    /// let expected_values = [2, 3, 4, 1];
+    /// for (child, expected) in my_tree.children(&root_id).unwrap().zip(expected_values.iter()) {
+    ///     assert_eq!(child.data(), expected);
     /// }
     /// ```
     ///
-
     pub fn make_nth_sibling(&mut self, node: &NodeId, pos: usize) -> Result<(), NodeIdError> {
-
-        let parent = self.get(node)?.parent()
+        let parent = self
+            .get(node)?
+            .parent()
             .ok_or(NodeIdError::NodeIdNoLongerValid)?
             .clone();
 
         let num_children = self.children_ids(&parent)?.count();
         let pos = pos.min(num_children - 1);
-        
+
         // First determine the current index that the node has
         // unwrap should not be reachable, since we are searching under node's
         // own parent, barring bugs in id_tree
-        let mut current_pos = self.children_ids(&parent)?
+        let mut current_pos = self
+            .children_ids(&parent)?
             .enumerate()
-            .find_map(|(i, n) | if n==node { Some(i) } else { None })
+            .find_map(|(i, n)| if n == node { Some(i) } else { None })
             .unwrap();
-        
+
         while current_pos != pos {
             let pos_to_swap = if current_pos < pos {
-                current_pos+1
+                current_pos + 1
             } else if current_pos > pos {
-                current_pos-1
+                current_pos - 1
             } else {
                 break;
             };
-            let node_to_swap = self.children_ids(&parent)?.nth(pos_to_swap).unwrap().clone();
+            let node_to_swap = self
+                .children_ids(&parent)?
+                .nth(pos_to_swap)
+                .unwrap()
+                .clone();
             self.swap_nodes(node, &node_to_swap, SwapBehavior::TakeChildren)?;
             current_pos = pos_to_swap;
         }
