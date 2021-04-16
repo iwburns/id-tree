@@ -66,3 +66,4 @@ fn main() {
 * [Cecile Tonglet](https://github.com/cecton)
 * [Drakulix](https://github.com/Drakulix)
 * [石博文](https://github.com/sbwtw)
+* [Robin Stumm](https://github.com/dermetfan)

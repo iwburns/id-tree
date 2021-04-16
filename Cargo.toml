@@ -26,3 +26,4 @@ path = "examples/basic.rs"
 
 [features]
 serde_support = ["serde", "serde_derive", "snowflake/serde_support"]
+map = []
