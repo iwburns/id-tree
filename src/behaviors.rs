@@ -27,8 +27,7 @@ pub enum RemoveBehavior {
     ///
     /// assert!(tree.get(&grandchild_id).is_err());
     /// assert_eq!(tree.get(&root_id).unwrap().children().len(), 0);
-    /// assert_eq!(child.children().len(), 0);
-    /// assert_eq!(child.parent(), None);
+    /// assert_eq!(child, 1);
     /// ```
     ///
     DropChildren,
@@ -55,8 +54,7 @@ pub enum RemoveBehavior {
     ///
     /// assert!(tree.get(&grandchild_id).is_ok());
     /// assert!(tree.get(&root_id).unwrap().children().contains(&grandchild_id));
-    /// assert_eq!(child.children().len(), 0);
-    /// assert_eq!(child.parent(), None);
+    /// assert_eq!(child, 1);
     /// ```
     ///
     LiftChildren,
@@ -81,8 +79,7 @@ pub enum RemoveBehavior {
     ///
     /// assert!(tree.get(&grandchild_id).is_ok());
     /// assert_eq!(tree.get(&root_id).unwrap().children().len(), 0);
-    /// assert_eq!(child.children().len(), 0);
-    /// assert_eq!(child.parent(), None);
+    /// assert_eq!(child, 1);
     /// ```
     ///
     OrphanChildren,
