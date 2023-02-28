@@ -72,9 +72,6 @@ extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 
-extern crate snowflake;
-use self::snowflake::ProcessUniqueId;
-
 mod behaviors;
 mod error;
 mod iterators;
@@ -150,6 +147,6 @@ pub use tree::TreeBuilder;
 #[derive(Clone, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
 #[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
 pub struct NodeId {
-    tree_id: ProcessUniqueId,
+    tree_id: i64,
     index: usize,
 }

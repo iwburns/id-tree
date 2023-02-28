@@ -1,6 +1,5 @@
 use std::cmp::Ordering;
 
-use super::snowflake::ProcessUniqueId;
 use super::*;
 
 ///
@@ -119,7 +118,7 @@ impl<T> TreeBuilder<T> {
     /// ```
     ///
     pub fn build(mut self) -> Tree<T> {
-        let tree_id = ProcessUniqueId::new();
+        let tree_id = idgenerator::IdInstance::next_id();
 
         let mut tree = Tree {
             id: tree_id,
@@ -156,7 +155,7 @@ impl<T> TreeBuilder<T> {
 #[derive(Debug)]
 #[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
 pub struct Tree<T> {
-    id: ProcessUniqueId,
+    id: i64,
     root: Option<NodeId>,
     pub(crate) nodes: Vec<Option<Node<T>>>,
     free_ids: Vec<NodeId>,
@@ -1755,7 +1754,7 @@ where
     T: Clone,
 {
     fn clone(&self) -> Self {
-        let tree_id = ProcessUniqueId::new();
+        let tree_id = idgenerator::IdInstance::next_id();
 
         Tree {
             id: tree_id,
