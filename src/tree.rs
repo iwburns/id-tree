@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use std::collections::VecDeque;
 
 use super::snowflake::ProcessUniqueId;
 use super::*;
@@ -200,6 +201,7 @@ impl<T> Tree<T> {
     /// assert_eq!(2, tree.height());
     /// ```
     ///
+    #[inline(always)]
     pub fn height(&self) -> usize {
         match self.root {
             Some(ref id) => self.height_of_node(id),
@@ -207,13 +209,21 @@ impl<T> Tree<T> {
         }
     }
 
+    #[inline(always)]
     fn height_of_node(&self, node: &NodeId) -> usize {
-        let mut h = 0;
-        for n in self.children_ids(node).unwrap() {
-            h = std::cmp::max(h, self.height_of_node(n));
-        }
+        let mut h = 1;
+        let mut to_process = VecDeque::new();
 
-        h + 1
+        to_process.push_back((h, node));
+        while !to_process.is_empty() {
+            let (next_h, id) = to_process.pop_front().unwrap();
+            self.children_ids(id).unwrap().for_each(|child_id| {
+                to_process.push_back((next_h + 1, child_id));
+                h = std::cmp::max(h, next_h + 1);
+            });
+        }
+        
+        h
     }
 
     /// Inserts a new `Node` into the `Tree`.  The `InsertBehavior` provided will determine where
