@@ -1,5 +1,17 @@
 # id_tree
 
+## Project Status: No Longer Maintained
+
+This project is no longer actively maintained.
+
+There is a similar project called [nary-tree](https://github.com/osimarr/nary-tree) which may interest some users of `id-tree`.
+
+That project (`nary-tree`) is an actively maintained fork of my other tree library `slab-tree` (which, is also no longer maintained).
+
+Thank you for your support and contributions to this project over the years!
+
+---
+
 [![Build Status](https://travis-ci.org/iwburns/id-tree.svg?branch=master)](https://travis-ci.org/iwburns/id-tree)
 [![Build status](https://ci.appveyor.com/api/projects/status/rw42btsa1i7bqcx9/branch/master?svg=true)](https://ci.appveyor.com/project/iwburns/id-tree/branch/master)
 [![Coverage Status](https://coveralls.io/repos/github/iwburns/id-tree/badge.svg?branch=master)](https://coveralls.io/github/iwburns/id-tree?branch=master)
