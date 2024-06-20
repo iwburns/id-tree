@@ -336,17 +336,7 @@ impl<T> Tree<T> {
     /// Remove a `Node` from the `Tree`.  The `RemoveBehavior` provided determines what happens to
     /// the removed `Node`'s children.
     ///
-    /// Returns a `Result` containing the removed `Node` or a `NodeIdError` if one occurred.
-    ///
-    /// **NOTE:** The `Node` that is returned will have its parent and child values cleared to avoid
-    /// providing the caller with extra copies of `NodeId`s should the corresponding `Node`s be
-    /// removed from the `Tree` at a later time.
-    ///
-    /// If the caller needs a copy of the parent or child `NodeId`s, they must `Clone` them before
-    /// this `Node` is removed from the `Tree`.  Please see the
-    /// [Potential `NodeId` Issues](struct.NodeId.html#potential-nodeid-issues) section
-    /// of the `NodeId` documentation for more information on the implications of calling `Clone` on
-    /// a `NodeId`.
+    /// Returns a `Result` containing the removed `Node` data or a `NodeIdError` if one occurred.
     ///
     /// ```
     /// use id_tree::*;
@@ -361,17 +351,16 @@ impl<T> Tree<T> {
     ///
     /// let child = tree.remove_node(child_id, DropChildren).unwrap();
     ///
+    /// # assert_eq!(child, 1);
     /// # assert!(tree.get(&grandchild_id).is_err());
     /// # assert_eq!(tree.get(&root_id).unwrap().children().len(), 0);
-    /// # assert_eq!(child.children().len(), 0);
-    /// # assert_eq!(child.parent(), None);
     /// ```
     ///
     pub fn remove_node(
         &mut self,
         node_id: NodeId,
         behavior: RemoveBehavior,
-    ) -> Result<Node<T>, NodeIdError> {
+    ) -> Result<T, NodeIdError> {
         let (is_valid, error) = self.is_valid_node_id(&node_id);
         if !is_valid {
             return Err(error.expect(
@@ -385,6 +374,7 @@ impl<T> Tree<T> {
             RemoveBehavior::LiftChildren => self.remove_node_lift_children(node_id),
             RemoveBehavior::OrphanChildren => self.remove_node_orphan_children(node_id),
         }
+        .map(|node| node.data)
     }
 
     ///
@@ -2097,9 +2087,7 @@ mod tree_tests {
 
         assert_eq!(Some(&root_id), tree.root_node_id());
 
-        assert_eq!(node_1.data(), &1);
-        assert_eq!(node_1.children().len(), 0);
-        assert!(node_1.parent().is_none());
+        assert_eq!(node_1, 1);
         assert!(tree.get(&node_1_id).is_err());
 
         let root_ref = tree.get(&root_id).unwrap();
@@ -2133,9 +2121,7 @@ mod tree_tests {
 
         assert_eq!(Some(&root_id), tree.root_node_id());
 
-        assert_eq!(node_1.data(), &1);
-        assert_eq!(node_1.children().len(), 0);
-        assert!(node_1.parent().is_none());
+        assert_eq!(node_1, 1);
         assert!(tree.get(&node_1_id).is_err());
 
         let node_2_ref = tree.get(&node_2_id).unwrap();
